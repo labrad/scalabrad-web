@@ -1,0 +1,12 @@
+.cellTableHeader {
+  background-color: #E4E4E4;
+  border: none;
+  color: black;
+  text-shadow: none;
+  padding: 10px;
+  test-align: right;
+}
+
+.cellTableCell input {
+  width: 100%;
+}

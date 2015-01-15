@@ -1,0 +1,22 @@
+<ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder' xmlns:g='urn:import:com.google.gwt.user.client.ui'>
+  <ui:style>
+    .server {
+      padding: 1em;
+    }
+    .title {
+      margin: 0;
+    }
+    .doc {
+      margin-top: 1em;
+      margin-bottom: 1em;
+    }
+  </ui:style>
+
+  <g:HTMLPanel>
+    <div class='{style.server}'>
+      <h1 class='{style.title}'><span ui:field='id'></span>: <span ui:field='nameField'></span></h1>
+      <div ui:field='doc' class='{style.doc}'></div>
+      <g:VerticalPanel ui:field='settings'></g:VerticalPanel>
+    </div>
+  </g:HTMLPanel>
+</ui:UiBinder>
