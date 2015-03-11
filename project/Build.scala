@@ -18,17 +18,13 @@ object ApplicationBuild extends Build {
     base = file("."),
     settings = Project.defaultSettings ++ XwpPlugin.jetty() ++ Seq(
       version := "1.0-SNAPSHOT",
-      scalaVersion := "2.11.4",
+      scalaVersion := "2.11.6",
       resolvers += "bintray" at "http://jcenter.bintray.com",
       resolvers += "bintray-maffoo" at "http://dl.bintray.com/maffoo/maven",
       libraryDependencies ++= Seq(
         "org.eclipse.jetty" % "jetty-continuation" % jettyVersion withSources(),
         "org.eclipse.jetty" % "jetty-server" % jettyVersion withSources(),
         "org.eclipse.jetty" % "jetty-util" % jettyVersion withSources(),
-        "org.scalatra" %% "scalatra" % "2.3.0" withSources(),
-        "org.scalatra" %% "scalatra-json" % "2.3.0" withSources(),
-        "org.json4s" %% "json4s-jackson" % "3.2.11" withSources(),
-        "net.maffoo" %% "jsonquote-play" % "0.2.1" withSources(),
         "com.google.inject" % "guice" % "3.0" withSources() exclude("asm", "asm"),
         "com.google.inject.extensions" % "guice-servlet" % "3.0" withSources(),
         "com.google.gwt" % "gwt-codeserver" % gwtVersion withSources(),
@@ -38,7 +34,7 @@ object ApplicationBuild extends Build {
         "com.google.gwt" % "gwt-user" % gwtVersion withSources(),
         "com.google.gwt.inject" % "gin" % "2.1.2" withSources(),
         "com.googlecode.gflot" % "gflot" % "3.3.0" withSources(),
-        "org.labrad" %% "scalabrad" % "0.2.0-M1" withSources()
+        "org.labrad" %% "scalabrad" % "0.2.0-M3-9" withSources()
       ),
       gwtModules := Seq("org.labrad.browser.LabradBrowser"),
       gwtCompile := {

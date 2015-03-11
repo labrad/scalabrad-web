@@ -29,7 +29,7 @@ import org.eclipse.jetty.continuation.{Continuation, ContinuationSupport}
 object AsyncServlet {
   val CONTINUATION_THROWABLE = "org.eclipse.jetty.continuation.ContinuationThrowable"
   val PAYLOAD = "com.google.gwt.payload"
-  val FUTURE = "scala.concurrent.future"
+  val FUTURE = "org.labrad.browser.AsyncServlet.FUTURE"
 }
 
 /**
@@ -46,9 +46,7 @@ class AsyncServlet extends RemoteServiceServlet {
   protected def future[A](f: => Future[A])(implicit executor: ExecutionContext): A = {
     val request = getThreadLocalRequest
     val future = request.getAttribute(FUTURE) match {
-      case future: Future[A] =>
-        future
-      case _ =>
+      case null =>
         val future = f
         request.setAttribute(FUTURE, future)
         if (!future.isCompleted) {
@@ -61,6 +59,9 @@ class AsyncServlet extends RemoteServiceServlet {
           continuation.undispatch()
         }
         future
+
+      case future: Future[_] =>
+        future.asInstanceOf[Future[A]]
     }
     Await.result(future, 10.millis)
   }

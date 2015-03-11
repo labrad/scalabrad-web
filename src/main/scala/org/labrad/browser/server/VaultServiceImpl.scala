@@ -27,7 +27,7 @@ class VaultServiceImpl extends AsyncServlet with VaultService {
   }
 
   def getListing(path: Array[String]) = {
-    val pkt = LabradConnection.to("Data Vault").packet
+    val pkt = LabradConnection.to("Data Vault").packet()
     pkt.call("cd", Arr(sanitizePath(path)))
     val dir = pkt.call("dir")
     pkt.send
@@ -46,7 +46,7 @@ class VaultServiceImpl extends AsyncServlet with VaultService {
     getDatasetInfo(path, UInt(dataset.toLong))
 
   private def getDatasetInfo(path: Array[String], identifier: Data): DatasetInfo = {
-    val req = LabradConnection.to("Data Vault").packet
+    val req = LabradConnection.to("Data Vault").packet()
     req.call("cd", Arr(sanitizePath(path)))
     val fOpen = req.call("open", identifier)
     val fVars = req.call("variables")
@@ -71,8 +71,7 @@ class VaultServiceImpl extends AsyncServlet with VaultService {
 
     val paramMap = new HashMap[String, String]
     if (params.isCluster) { // might be Empty if there are no params
-      for (i <- 0 until params.clusterSize) yield {
-        val Cluster(Str(key), value) = params(i)
+      for (Cluster(Str(key), value) <- params.clusterIterator) yield {
         paramMap.put(key, value.toString)
       }
     }
@@ -86,7 +85,7 @@ class VaultServiceImpl extends AsyncServlet with VaultService {
     parseData(path, UInt(dataset.toLong))
 
   private def parseData(path: Array[String], identifier: Data) = {
-    val req = LabradConnection.to("Data Vault").packet
+    val req = LabradConnection.to("Data Vault").packet()
     req.call("cd", Arr(sanitizePath(path)))
     req.call("open", identifier)
     val idx = req.call("get")

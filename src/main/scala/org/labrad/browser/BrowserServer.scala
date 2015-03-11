@@ -78,18 +78,18 @@ object BrowserServer {
   }
 
   private def loadUserInfo(): HashLoginService = {
-    //val cxn = LabradConnection.to("Registry")
-    //val req = cxn.packet
+    //val reg = LabradConnection.getRegistry
+    //val pkt = reg.packet
     // change into the correct directory
-    //req.call("cd", Arr(REGISTRY_PATH))
+    //pkt.cd(REGISTRY_PATH)
     //val defaultUsers = Arr(Cluster(Str("webuser"), Str(Random.nextInt(1000000000).toString)))
     // load the user info, setting a default value if it doesn't exist
-    //val f = req.call("get", Str("users"), Str("*(ss)"), Bool(true), defaultUsers)
-    //req.send
-    //val ans = Await.result(f, 10.seconds).getDataArray
-    val ans = Array(Cluster(Str("webuser"), Str("webpassword")))
+    //val f = pkt.get("users", tag = "*(ss)", default = Some((defaultUsers, true)))
+    //pkt.send()
+    //val ans = Await.result(f, 10.seconds).get[Array[(String, String)]]
+    val ans = Array(("webuser", "webpassword"))
     val loginService = new HashLoginService("LabRAD Controller")
-    for (Cluster(Str(user), Str(pw)) <- ans) {
+    for ((user, pw) <- ans) {
       loginService.putUser(user, new Password(pw), Array("user"))
     }
     loginService

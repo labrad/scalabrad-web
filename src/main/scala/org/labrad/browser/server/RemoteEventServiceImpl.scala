@@ -1,14 +1,10 @@
 package org.labrad.browser.server
 
-import java.util.{List, ArrayList}
-
+import com.google.gwt.event.shared.GwtEvent
 import javax.inject.Singleton
-
+import org.eclipse.jetty.continuation.{Continuation, ContinuationSupport}
 import org.labrad.browser.client.event.RemoteEventService
 import org.labrad.util.Logging
-import org.eclipse.jetty.continuation.{Continuation, ContinuationSupport}
-
-import com.google.gwt.event.shared.GwtEvent
 
 @Singleton
 class RemoteEventServiceImpl extends AsyncServlet with RemoteEventService with Logging {

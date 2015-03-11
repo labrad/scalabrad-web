@@ -17,8 +17,8 @@ class ManagerServiceImpl extends AsyncServlet with ManagerService {
   val log = LoggerFactory.getLogger(classOf[ManagerServiceImpl])
 
   def getConnectionInfo: Array[ConnectionInfo] = future {
-    LabradConnection.to("Manager").call("Connection Info").map {
-      _.get[Array[(Long, String, Boolean, Long, Long, Long, Long, Long, Long)]].map {
+    LabradConnection.getManager.connectionInfo().map { infos =>
+      infos.toArray.map {
         case (id, name, isServer, srvReq, srvRep, clReq, clRep, msgSend, msgRecv) =>
           new ConnectionInfo(id, name, isServer, true, srvReq, srvRep, clReq, clRep, msgSend, msgRecv)
       }
@@ -26,6 +26,6 @@ class ManagerServiceImpl extends AsyncServlet with ManagerService {
   }
 
   def closeConnection(id: Long): Unit = future {
-    LabradConnection.to("Manager").call("Close Connection", UInt(id)).map { _ => () }
+    LabradConnection.getManager.call("Close Connection", UInt(id)).map { _ => () }
   }
 }

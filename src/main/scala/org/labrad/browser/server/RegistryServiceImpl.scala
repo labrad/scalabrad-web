@@ -19,7 +19,7 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
 
   private def getAbsPath(path: Array[String]) = "" +: path
 
-  private def send(req: PacketProxy) = Await.result(req.send, 10.seconds)
+  private def send(pkt: PacketProxy) = Await.result(pkt.send(), 10.seconds)
 
   private def oops(message: => String): PartialFunction[Throwable, Nothing] = {
     case e: InterruptedException =>
@@ -37,34 +37,32 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
    */
   private def startPacket(path: Array[String], create: Boolean = false) = {
     val absPath = getAbsPath(path)
-    val req = LabradConnection.to("Registry").packet
-    req.call("cd", Cluster(Arr(absPath), Bool(create)))
-    req
+    val pkt = LabradConnection.getRegistry.packet()
+    pkt.cd(absPath, create = create)
+    pkt
   }
 
   def getListing(path: Array[String]): RegistryListing = getListing(path, false)
 
   private def getListing(path: Array[String], create: Boolean): RegistryListing = {
     // get directory listing
-    val req = startPacket(path)
-    val idx = req.call("dir")
-    try send(req) catch oops("getting listing")
-    val listing = Await.result(idx, 10.seconds)
-    val dirs = listing(0).get[Array[String]]
-    val keys = listing(1).get[Array[String]]
+    val pkt = startPacket(path)
+    val idx = pkt.dir()
+    try send(pkt) catch oops("getting listing")
+    val (dirs, keys) = Await.result(idx, 10.seconds)
 
     val vals = if (keys.size == 0)
       Array.empty[String]
     else {
       // get the values of all keys
-      val req = startPacket(path)
-      val fs = keys.map(key => req.call("get", Str(key)))
-      try send(req) catch oops("getting key values")
+      val pkt = startPacket(path)
+      val fs = keys.map(key => pkt.get(key))
+      try send(pkt) catch oops("getting key values")
       val data = Await.result(Future.sequence(fs.toSeq), 10.seconds)
       data.map(_.toString).toArray
     }
 
-    new RegistryListing(path, dirs, keys, vals)
+    new RegistryListing(path, dirs.toArray, keys.toArray, vals)
   }
 
   /**
@@ -79,10 +77,10 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
    * Set a key in the registry at a particular path.
    */
   def set(path: Array[String], key: String, value: Data): RegistryListing = {
-    val req = startPacket(path)
-    req.call("set", Cluster(Str(key), value))
+    val pkt = startPacket(path)
+    pkt.set(key, value)
 
-    try send(req) catch oops("setting key")
+    try send(pkt) catch oops("setting key")
 
     getListing(path)
   }
@@ -91,9 +89,9 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
    * Remove a key.
    */
   def del(path: Array[String], key: String) = {
-    val req = startPacket(path)
-    req.call("del", Str(key))
-    try send(req) catch oops("deleting key")
+    val pkt = startPacket(path)
+    pkt.del(key)
+    try send(pkt) catch oops("deleting key")
     getListing(path)
   }
 
@@ -101,9 +99,9 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
    * Make a new directory.
    */
   def mkdir(path: Array[String], dir: String) = {
-    val req = startPacket(path)
-    req.call("mkdir", Str(dir))
-    try send(req) catch oops("creating directory")
+    val pkt = startPacket(path)
+    pkt.mkDir(dir)
+    try send(pkt) catch oops("creating directory")
     getListing(path)
   }
 
@@ -127,9 +125,9 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
       }
 
       // remove the directory itself
-      val req = startPacket(path)
-      req.call("rmdir", Str(dir))
-      send(req)
+      val pkt = startPacket(path)
+      pkt.rmDir(dir)
+      send(pkt)
     }
 
     try doRmdir(path, dir) catch oops("removing directory")
@@ -138,14 +136,14 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
 
   def copy(path: Array[String], key: String, newPath: Array[String], newKey: String) = {
     try {
-      var req = startPacket(path)
-      val dataIdx = req.call("get", Str(key))
-      send(req)
-      val value = Await.result(dataIdx, 10.seconds)
+      var pkt = startPacket(path)
+      val dataF = pkt.get(key)
+      send(pkt)
+      val value = Await.result(dataF, 10.seconds)
 
-      req = startPacket(newPath)
-      req.call("set", Str(newKey), value)
-      send(req)
+      pkt = startPacket(newPath)
+      pkt.set(newKey, value)
+      send(pkt)
     } catch oops("copying key")
     getListing(newPath)
   }

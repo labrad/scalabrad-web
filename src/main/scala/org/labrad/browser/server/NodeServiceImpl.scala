@@ -36,8 +36,8 @@ class NodeServiceImpl extends AsyncServlet with NodeService with Logging {
 
   def getNodeInfo: Array[NodeStatusEvent] = future {
     (for {
-      serverData <- LabradConnection.to("Manager").call("Servers")
-      servers = serverData.get[Seq[Data]].map { case Cluster(_, Str(name)) => name }
+      serverData <- LabradConnection.getManager.servers()
+      servers = serverData.map { case (id, name) => name }
 
       nodes <- Future.sequence {
         for (server <- servers if server.toLowerCase.startsWith("node")) yield

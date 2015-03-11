@@ -18,21 +18,17 @@ class IpListServiceImpl extends RemoteServiceServlet with IpListService {
    * Get a list of allowed and disallowed ip addresses.
    */
   def getIpList: Array[IpAddress] = {
-//    val req = Request.to("Manager")
-//    val whitelist = req.addRecord("Whitelist")
-//    val blacklist = req.addRecord("Blacklist")
+//    val pkt = LabradConnection.getManager.packet()
+//    val whitelistF = pkt.whitelist()
+//    val blacklistF = pkt.blacklist()
 //
-//    val ans = try {
-//      LabradConnection.get.sendAndWait(req)
-//    } catch {
-//      case e: InterruptedException => throw new RuntimeException(e);
-//      case e: ExecutionException => throw new RuntimeException(e)
-//    }
+//    pkt.send()
 //
-//    val allowed =  for (addr <- ans.get(whitelist).getStringList) yield new IpAddress(addr, true)
-//    val blocked = for (addr <- ans.get(blacklist).getStringList) yield new IpAddress(addr, false)
+//    for {
+//      allowed <- whitelistF
+//      blocked <- blacklistF
+//    } yield (allowed ++ blocked).sortBy(_.address).toArray
 //
-//    (allowed ++ blocked).sortBy(_.getAddress).toArray
     Array()
   }
 
@@ -40,8 +36,7 @@ class IpListServiceImpl extends RemoteServiceServlet with IpListService {
    * Add an ip address to the blacklist
    */
   def addToBlacklist(ip: String): Array[IpAddress] = {
-    //val cxn = LabradConnection.get
-    //cxn.sendAndWait(Request.to("Manager").add("Blacklist", Data.valueOf(ip)))
+    //LabradConnection.getManager.blacklist(ip)
     getIpList()
   }
 
@@ -49,8 +44,7 @@ class IpListServiceImpl extends RemoteServiceServlet with IpListService {
    * Add an ip address to the whitelist
    */
   def addToWhitelist(ip: String): Array[IpAddress] = {
-    //val cxn = LabradConnection.get
-    //cxn.sendAndWait(Request.to("Manager").add("Whitelist", Data.valueOf(ip)))
+    //LabradConnection.getManager.whitelist(ip)
     getIpList()
   }
 }

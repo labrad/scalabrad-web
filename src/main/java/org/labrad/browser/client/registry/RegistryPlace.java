@@ -42,6 +42,9 @@ public class RegistryPlace extends Place {
     public String getToken(RegistryPlace place) {
       StringBuilder sb = new StringBuilder("/");
       for (String dir : place.getPath()) {
+        dir = dir.replace("&", "&amp;");
+        dir = dir.replace("%", "&pct;");
+        dir = dir.replace("/", "&fs;");
         if (dir.equals("") || dir.equals(".") || dir.equals("..")) continue;
         sb.append(dir).append("/");
       }
@@ -52,7 +55,13 @@ public class RegistryPlace extends Place {
       if ("".equals(token) || "/".equals(token)) return new RegistryPlace();
       if (token.startsWith("/")) token = token.substring(1);
       if (token.endsWith("/")) token = token.substring(0, token.length() - 1);
-      return new RegistryPlace(Arrays.asList(token.split("/")));
+      String[] tokens = token.split("/");
+      for (int i = 0; i < tokens.length; i++) {
+        tokens[i] = tokens[i].replace("&fs;", "/");
+        tokens[i] = tokens[i].replace("&pct;", "%");
+        tokens[i] = tokens[i].replace("&amp;", "&");
+      }
+      return new RegistryPlace(Arrays.asList(tokens));
     }
   }
 }

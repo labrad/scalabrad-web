@@ -7,7 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-import org.labrad.{Client, Connection, GenericProxy, Requester}
+import org.labrad._
 import org.labrad.browser.client.event._
 import org.labrad.browser.client.nodes.InstanceStatus
 import org.labrad.data._
@@ -19,8 +19,18 @@ object LabradConnection {
   def get(implicit context: ServletContext) =
     context.getAttribute(classOf[LabradConnection].getName).asInstanceOf[LabradConnection].get
 
-  def to(server: String)(implicit context: ServletContext): GenericProxy =
-    new GenericProxy(get, server)
+  def to(server: String)(implicit context: ServletContext): GenericProxy = {
+    val cxn = get
+    new GenericProxy(cxn, server, context = cxn.newContext)
+  }
+
+  def getManager(implicit context: ServletContext): ManagerServerProxy = {
+    new ManagerServerProxy(get)
+  }
+
+  def getRegistry(implicit context: ServletContext): RegistryServerProxy = {
+    new RegistryServerProxy(get)
+  }
 }
 
 class LabradConnection extends ServletContextListener {
@@ -49,7 +59,7 @@ class LabradConnection extends ServletContextListener {
   }
 
   private def makeClient = {
-    new Client("Browser", host = "localhost", password = "")
+    new Client("Browser", host = "localhost", password = Array.empty)
   }
 
   /**
@@ -104,23 +114,22 @@ class LabradConnection extends ServletContextListener {
    */
   private def setupConnection(cxn: Connection) {
     try {
-      val ctx = cxn.newContext
-      val req = new GenericProxy(cxn, "Manager").packet(ctx)
-      subscribeToServerConnectMessages(cxn, req, ctx)
-      subscribeToServerDisconnectMessages(cxn, req, ctx)
+      val pkt = new ManagerServerProxy(cxn, context = cxn.newContext).packet()
+      subscribeToServerConnectMessages(pkt)
+      subscribeToServerDisconnectMessages(pkt)
 
-      subscribeToNodeServerMessage(cxn, req, ctx, "node.server_starting", InstanceStatus.STARTING)
-      subscribeToNodeServerMessage(cxn, req, ctx, "node.server_started", InstanceStatus.STARTED)
-      subscribeToNodeServerMessage(cxn, req, ctx, "node.server_stopping", InstanceStatus.STOPPING)
-      subscribeToNodeServerMessage(cxn, req, ctx, "node.server_stopped", InstanceStatus.STOPPED)
+      subscribeToNodeServerMessage(pkt, "node.server_starting", InstanceStatus.STARTING)
+      subscribeToNodeServerMessage(pkt, "node.server_started", InstanceStatus.STARTED)
+      subscribeToNodeServerMessage(pkt, "node.server_stopping", InstanceStatus.STOPPING)
+      subscribeToNodeServerMessage(pkt, "node.server_stopped", InstanceStatus.STOPPED)
 
-      subscribeToNodeStatusMessages(cxn, req, ctx)
-      Await.result(req.send, 10.seconds)
+      subscribeToNodeStatusMessages(pkt)
+      Await.result(pkt.send(), 10.seconds)
     } catch {
       case e: Throwable =>
         // if this failed, we should disconnect and try again later
         log.error("failed to setup connection", e)
-        cxn.close
+        cxn.close()
         throw new RuntimeException(e)
     }
   }
@@ -141,10 +150,11 @@ class LabradConnection extends ServletContextListener {
    * @param message
    * @param id
    */
-  private def addSubscription(cxn: Connection, req: Requester, ctx: Context, message: String)(listener: Message => Unit) {
+  private def addSubscription(mgr: ManagerServer, message: String)(listener: Message => Unit) {
     val id = getMessageId
-    req.call("Subscribe to Named Message", Str(message), UInt(id), Bool(true))
-    cxn.addMessageListener {
+    val ctx = mgr.context
+    mgr.subscribeToNamedMessage(message, id, active = true)
+    mgr.cxn.addMessageListener {
       case msg @ Message(src, `ctx`, `id`, data) => listener(msg)
     }
   }
@@ -153,8 +163,8 @@ class LabradConnection extends ServletContextListener {
    * Subscribe to server connection messages
    * @param req
    */
-  private def subscribeToServerConnectMessages(cxn: Connection, req: Requester, ctx: Context) {
-    addSubscription(cxn, req, ctx, "Server Connect") {
+  private def subscribeToServerConnectMessages(mgr: ManagerServer) {
+    addSubscription(mgr, "Server Connect") {
       case Message(_, _, _, Cluster(_, Str(server))) =>
         ClientEventQueue.dispatch(new ServerConnectEvent(server))
     }
@@ -165,16 +175,16 @@ class LabradConnection extends ServletContextListener {
    * Subscribe to server disconnection messages
    * @param req
    */
-  private def subscribeToServerDisconnectMessages(cxn: Connection, req: Requester, ctx: Context) {
-    addSubscription(cxn, req, ctx, "Server Disconnect") {
+  private def subscribeToServerDisconnectMessages(mgr: ManagerServer) {
+    addSubscription(mgr, "Server Disconnect") {
       case Message(_, _, _, Cluster(_, Str(server))) =>
         ClientEventQueue.dispatch(new ServerDisconnectEvent(server))
     }
   }
 
 
-  private def subscribeToNodeServerMessage(cxn: Connection, req: Requester, ctx: Context, messageName: String, status: InstanceStatus) {
-    addSubscription(cxn, req, ctx, messageName) {
+  private def subscribeToNodeServerMessage(mgr: ManagerServer, messageName: String, status: InstanceStatus) {
+    addSubscription(mgr, messageName) {
       case Message(_, _, _, data) =>
         val map = parseNodeMessage(data)
         val node = map("node").get[String]
@@ -189,8 +199,8 @@ class LabradConnection extends ServletContextListener {
    * Subscribe to status messages from node servers
    * @param req
    */
-  private def subscribeToNodeStatusMessages(cxn: Connection, req: Requester, ctx: Context) {
-    addSubscription(cxn, req, ctx, "node.status") {
+  private def subscribeToNodeStatusMessages(mgr: ManagerServer) {
+    addSubscription(mgr, "node.status") {
       case Message(_, _, _, data) =>
         val map = parseNodeMessage(data)
         val node = map("node").get[String]
