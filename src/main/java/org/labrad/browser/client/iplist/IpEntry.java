@@ -1,4 +1,6 @@
-package org.labrad.browser.client;
+package org.labrad.browser.client.iplist;
+
+import org.labrad.browser.client.BrowserImages;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -9,12 +11,13 @@ import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.PushButton;
 
 public class IpEntry extends HorizontalPanel {
-  private static final NodeImages images = GWT.create(NodeImages.class);
+  private static final BrowserImages images = GWT.create(BrowserImages.class);
 
   public IpEntry(final IpListControl parent, final String address, final boolean allowed) {
     Image img = new Image(allowed ? images.ipAllowed() : images.ipDisallowed());
     PushButton button = new PushButton(img);
     button.addClickHandler(new ClickHandler() {
+      @Override
       public void onClick(ClickEvent e) {
         if (allowed) {
           parent.blacklist(address);

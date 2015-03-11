@@ -1,4 +1,4 @@
-package org.labrad.browser.client;
+package org.labrad.browser.client.iplist;
 
 import java.io.Serializable;
 

@@ -1,4 +1,4 @@
-package org.labrad.browser.client;
+package org.labrad.browser.client.iplist;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;

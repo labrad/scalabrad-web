@@ -6,7 +6,7 @@ import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import org.labrad.Connection
-import org.labrad.browser.client.{IpAddress, IpListService}
+import org.labrad.browser.client.iplist.{IpAddress, IpListService}
 import org.labrad.data.{Data, Request}
 
 import com.google.gwt.user.server.rpc.RemoteServiceServlet
