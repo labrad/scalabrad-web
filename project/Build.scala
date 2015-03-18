@@ -34,7 +34,7 @@ object ApplicationBuild extends Build {
         "com.google.gwt" % "gwt-user" % gwtVersion withSources(),
         "com.google.gwt.inject" % "gin" % "2.1.2" withSources(),
         "com.googlecode.gflot" % "gflot" % "3.3.0" withSources(),
-        "org.labrad" %% "scalabrad" % "0.2.0-M3-9" withSources()
+        "org.labrad" %% "scalabrad" % "0.2.0-M3" withSources()
       ),
       gwtModules := Seq("org.labrad.browser.LabradBrowser"),
       gwtCompile := {
