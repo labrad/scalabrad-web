@@ -14,7 +14,7 @@ object ApplicationBuild extends Build {
   //val jettyVersion = "9.2.6.v20141205"
 
   val main = Project(
-    id = "scalabrad-web-gwt",
+    id = "scalabrad-web",
     base = file("."),
     settings = Project.defaultSettings ++ XwpPlugin.jetty() ++ Seq(
       version := "1.0-SNAPSHOT",
