@@ -1,0 +1,23 @@
+{
+  "name": "scalabrad-web",
+  "version": "0.0.0",
+  "homepage": "https://github.com/maffoo/scalabrad-web",
+  "authors": [
+    "Matthew Neeley <maffoo@google.com>"
+  ],
+  "moduleType": [
+    "es6"
+  ],
+  "license": "GPL",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "paper-tabs": "Polymer/paper-tabs#~0.5.5"
+  }
+}

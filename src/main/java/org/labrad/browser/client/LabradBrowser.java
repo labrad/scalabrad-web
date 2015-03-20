@@ -30,7 +30,10 @@ import com.google.gwt.place.shared.PlaceChangeEvent;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
+import com.google.gwt.safehtml.client.SafeHtmlTemplates;
+import com.google.gwt.safehtml.shared.SafeHtml;
 import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.HasHorizontalAlignment;
 import com.google.gwt.user.client.ui.Hyperlink;
 import com.google.gwt.user.client.ui.RootPanel;
@@ -79,6 +82,19 @@ public class LabradBrowser implements EntryPoint {
     }
   }
 
+  public static interface Templates extends SafeHtmlTemplates {
+    @Template(
+      "<paper-tabs selected=\"0\">" +
+        "<paper-tab>info</paper-tab>" +
+        "<paper-tab>nodes</paper-tab>" +
+        "<paper-tab>registry</paper-tab>" +
+        "<paper-tab>vault</paper-tab>" +
+      "</paper-tabs>")
+    SafeHtml tabs();
+  }
+
+  private static final Templates TEMPLATES = GWT.create(Templates.class);
+
   private Place defaultPlace = new NodesPlace();
   private SimplePanel appWidget = new SimplePanel();
 
@@ -109,6 +125,8 @@ public class LabradBrowser implements EntryPoint {
       }
     });
 
+    HTMLPanel tabs = new HTMLPanel(TEMPLATES.tabs());
+
     FlowPanel menu = new FlowPanel();
     menu.add(managerLink);
     menu.add(nodesLink);
@@ -119,6 +137,7 @@ public class LabradBrowser implements EntryPoint {
     VerticalPanel page = new VerticalPanel();
     page.addStyleName("full-page");
     page.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_LEFT);
+    page.add(tabs);
     page.add(menu);
     page.add(appWidget);
     RootPanel.get().add(page);
