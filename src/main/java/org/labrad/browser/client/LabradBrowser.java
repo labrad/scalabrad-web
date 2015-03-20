@@ -58,9 +58,13 @@ public class LabradBrowser implements EntryPoint {
         .build(ViewFactory.class));
     }
 
-    @SuppressWarnings("deprecation")
     @Provides @Singleton
-    PlaceController providePlaceController(EventBus eventBus) {
+    com.google.web.bindery.event.shared.EventBus provideBinderyEventBus(EventBus eventBus) {
+      return eventBus;
+    }
+
+    @Provides @Singleton
+    PlaceController providePlaceController(com.google.web.bindery.event.shared.EventBus eventBus) {
       return new PlaceController(eventBus);
     }
 
@@ -78,10 +82,9 @@ public class LabradBrowser implements EntryPoint {
   private Place defaultPlace = new NodesPlace();
   private SimplePanel appWidget = new SimplePanel();
 
-  @SuppressWarnings("deprecation")
   public void onModuleLoad() {
     ClientInjector injector = GWT.create(ClientInjector.class);
-    EventBus eventBus = injector.getEventBus();
+    com.google.web.bindery.event.shared.EventBus eventBus = injector.getEventBus();
     PlaceController placeController = injector.getPlaceController();
     PlaceHistoryHandler historyHandler = injector.getPlaceHistoryHandler();
     historyHandler.register(placeController, eventBus, defaultPlace);
