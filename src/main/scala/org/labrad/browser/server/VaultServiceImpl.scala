@@ -7,7 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-import org.labrad.browser.client.grapher.{DatasetInfo, DirectoryListing, VaultException, VaultService}
+import org.labrad.browser.client.grapher.{DatasetInfo, DirectoryListing, VaultError, VaultService}
 import org.labrad.data._
 
 @Singleton
@@ -23,7 +23,7 @@ class VaultServiceImpl extends AsyncServlet with VaultService {
 
   private val catcher: PartialFunction[Throwable, Nothing] = {
     case e: Exception =>
-      throw new VaultException(e.toString)
+      throw new VaultError(e.toString)
   }
 
   def getListing(path: Array[String]) = {

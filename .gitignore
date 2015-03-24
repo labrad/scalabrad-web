@@ -5,3 +5,5 @@ project/boot/
 .project
 .gwt
 .settings
+*._trace
+/bin/

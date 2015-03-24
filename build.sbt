@@ -11,8 +11,11 @@ lazy val root = (project in file(".")).settings(
   name := "scalabrad-web",
   version := "1.0-SNAPSHOT",
   scalaVersion := "2.11.6",
-  resolvers += "bintray" at "http://jcenter.bintray.com",
-  resolvers += "bintray-maffoo" at "http://dl.bintray.com/maffoo/maven",
+  resolvers ++= Seq(
+    "bintray" at "http://jcenter.bintray.com",
+    "bintray-maffoo" at "http://dl.bintray.com/maffoo/maven",
+    "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+  ),
   libraryDependencies ++= Seq(
     "org.eclipse.jetty" % "jetty-continuation" % jettyVersion withSources(),
     "org.eclipse.jetty" % "jetty-server" % jettyVersion withSources(),
@@ -26,8 +29,13 @@ lazy val root = (project in file(".")).settings(
     "com.google.gwt" % "gwt-user" % gwtVersion withSources(),
     "com.google.gwt.inject" % "gin" % "2.1.2" withSources(),
     "com.googlecode.gflot" % "gflot" % "3.3.0" withSources(),
+    "org.eclipse.xtend" % "org.eclipse.xtend.lib.gwt" % "2.8.0" withSources(),
+    "de.itemis.xtend" % "auto-gwt" % "1.0-SNAPSHOT",
     "org.labrad" %% "scalabrad" % "0.2.0-M3" withSources()
   ),
+
+  unmanagedSourceDirectories in Compile += baseDirectory.value / "src" / "main" / "xtend-gen",
+  // TODO: invoke xtend compiler before running compile...
 
   jetty(port = 8080), // add jetty settings for xsbt-web-plugin
   postProcess := { _ => gwtCompile.value }, // compile gwt before starting webapp
