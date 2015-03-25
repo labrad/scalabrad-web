@@ -18,27 +18,32 @@ class RegistryPlace extends Place {
     this.path = path
   }
 
-  def List<String> getPath() {
-    path
-  }
-
-  def String[] getPathArray() {
-    path.toArray(#[])
-  }
+  def List<String> getPath() { path }
+  def String[] getPathArray() { path.toArray(#[]) }
 
   def String getPathString() {
     new Tokenizer().getToken(this).replace("registry:", "")
   }
 
-  def RegistryPlace subDir(String dir){
+  def RegistryPlace getParent() {
+    if (path.isEmpty) {
+      this
+    } else {
+      val parentPath = new ArrayList<String>(path)
+      parentPath.remove(parentPath.size - 1)
+      new RegistryPlace(parentPath)
+    }
+  }
+
+  def RegistryPlace subDir(String dir) {
     val subPath = new ArrayList<String>(path)
     subPath.add(dir)
-    return new RegistryPlace(subPath)
+    new RegistryPlace(subPath)
   }
 
   @Prefix("registry")
-  public static class Tokenizer implements PlaceTokenizer<RegistryPlace>{
-    override String getToken(RegistryPlace place){
+  public static class Tokenizer implements PlaceTokenizer<RegistryPlace> {
+    override String getToken(RegistryPlace place) {
       val sb = new StringBuilder("/")
       for (String dir : place.path) {
         var escaped = dir.replace("&", "&amp;").replace("%", "&pct;").replace("/", "&fs;")

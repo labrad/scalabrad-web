@@ -11,9 +11,6 @@ import org.labrad.browser.client.util.DataTransferUtil
 import org.labrad.browser.client.util.LogUtil
 import com.google.gwt.cell.client.AbstractCell
 import com.google.gwt.cell.client.Cell
-import com.google.gwt.cell.client.EditTextCell
-import com.google.gwt.cell.client.IconCellDecorator
-import com.google.gwt.cell.client.TextCell
 import com.google.gwt.core.client.GWT
 import com.google.gwt.dom.client.Style.Unit
 import com.google.gwt.event.dom.client.DragEnterEvent
@@ -25,7 +22,6 @@ import com.google.gwt.safehtml.client.SafeHtmlTemplates
 import com.google.gwt.safehtml.shared.SafeHtml
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder
 import com.google.gwt.user.cellview.client.CellTable
-import com.google.gwt.user.cellview.client.TextColumn
 import com.google.gwt.user.client.Window
 import com.google.gwt.user.client.rpc.AsyncCallback
 import com.google.gwt.user.client.ui.AbsolutePanel
@@ -39,38 +35,61 @@ import org.labrad.browser.client.ui.ImageButtonColumn
 import com.google.gwt.event.shared.EventHandler
 import com.google.gwt.event.shared.HandlerRegistration
 import com.google.gwt.event.dom.client.DomEvent
-import org.labrad.browser.client.ui.DraggableCell
-import static extension org.labrad.browser.client.ui.Cells.toColumn
+import com.google.gwt.safehtml.shared.SafeUri
+import com.google.gwt.safehtml.shared.UriUtils
+import static extension org.labrad.browser.client.ui.Cells.*
+import com.google.gwt.user.cellview.client.IdentityColumn
+import com.google.gwt.user.client.ui.DialogBox
+import com.google.gwt.user.client.ui.TextArea
+import com.google.gwt.cell.client.TextCell
+
+/**
+ * A cell for a registry entry, which can be a directory or key,
+ * or a special case link to go back to the parent directory.
+ */
+class EntryCell extends AbstractCell<TableRow> {
+  static interface Templates extends SafeHtmlTemplates{
+    @Template('<a href="{0}">{1}</a>')
+    def SafeHtml link(SafeUri link, String label)
+
+    @Template('<span>{0}</span>')
+    def SafeHtml label(String label)
+  }
+
+  static val templates = GWT::create(Templates) as Templates
+
+  package RegistryPlace place
+  package PlaceHistoryMapper historyMapper
+
+  new(RegistryPlace place, PlaceHistoryMapper historyMapper) {
+    super()
+    this.place = place
+    this.historyMapper = historyMapper
+  }
+
+  override void render(Cell.Context context, TableRow row, SafeHtmlBuilder sb) {
+    switch row {
+      ParentTableRow: {
+        sb.append(templates.link(UriUtils.fromString("#" + historyMapper.getToken(place.parent)), ".."))
+      }
+      DirectoryTableRow: {
+        sb.append(templates.link(UriUtils.fromString("#" + historyMapper.getToken(place.subDir(row.name))), row.name))
+      }
+      KeyTableRow: {
+        sb.append(templates.label(row.key))
+      }
+    }
+  }
+}
+
 
 class RegistryViewImpl extends Composite implements RegistryView{
 
   static val log = Logger::getLogger(RegistryViewImpl.name)
 
-  static interface Templates extends SafeHtmlTemplates {
-    @Template('<a href="#{0}">{1}</a>')
-    def SafeHtml subDirLink(String token, String linkText)
-  }
-
-  static val templates = GWT::create(Templates) as Templates
-
   static val DATA_REG_LOC = "text/labrad-registry-loc"
   static val DATA_REG_DIR = "text/labrad-registry-dir"
   static val DATA_REG_KEY = "text/labrad-registry-key"
-
-  static class SubDirCell extends AbstractCell<String> {
-    package RegistryPlace place
-    package PlaceHistoryMapper historyMapper
-
-    new(RegistryPlace place, PlaceHistoryMapper historyMapper) {
-      super()
-      this.place = place
-      this.historyMapper = historyMapper
-    }
-    override void render(Cell.Context context, String dir, SafeHtmlBuilder sb) {
-      val subDir = place.subDir(dir)
-      sb.append(templates.subDirLink(historyMapper.getToken(subDir), dir))
-    }
-  }
 
   val defaultCallback = new AsyncCallback<RegistryListing> {
     override void onFailure(Throwable caught) {
@@ -87,8 +106,10 @@ class RegistryViewImpl extends Composite implements RegistryView{
   final List<String> path
   final PlaceHistoryMapper historyMapper
   final RegistryServiceAsync registryService
-  CellTable<DirectoryTableRow> dirTable
-  CellTable<KeyTableRow> keyTable
+  CellTable<TableRow> table
+
+  final TextArea editKeyTextArea
+  final DialogBox editKeyDialog
 
   /**
    * Variant of the standard addDomHandler method that reverses the order
@@ -137,120 +158,166 @@ class RegistryViewImpl extends Composite implements RegistryView{
       ]
     ]
 
-    val dirCell = new DraggableCell(new IconCellDecorator(images.folder, new SubDirCell(place, historyMapper))) [ dir, dt |
-      DataTransferUtil::setEffectAllowed(dt, "copyMove")
-      dt.setData(DATA_REG_LOC, historyMapper.getToken(place))
-      dt.setData(DATA_REG_DIR, dir)
-    ]
-    val dirColumn = dirCell.toColumn[DirectoryTableRow dir | dir.name]
-    dirColumn.setFieldUpdater [i, dir, value |
-      val newPath = new ArrayList<String>(path)
-      newPath.add(dir.name)
-      presenter.goTo(new RegistryPlace(newPath))
-    ]
+    editKeyTextArea = new TextArea
 
-    val dummyColumn = new TextColumn<DirectoryTableRow> {
-      override String getValue(DirectoryTableRow object) {
-        ""
-      }
-    }
+    editKeyDialog = new DialogBox => [
+      glassEnabled = true
+      animationEnabled = false
 
-    val renameDirColumn = new ImageButtonColumn<DirectoryTableRow>(images.edit)
-    renameDirColumn.setFieldUpdater [i, object, value |
-      val from = object.name
-      val to = Window::prompt("New directory name", from)
-      if (to != null && to != from) {
-        registryService.renameDir(place.pathArray, from, to, defaultCallback)
-      }
+      add(new VerticalPanel => [
+        add(editKeyTextArea)
+        add(new Button("Ok") => [
+          addClickHandler [
+            editKeyDialog.hide()
+          ]
+        ])
+      ])
     ]
 
-    val copyDirColumn = new ImageButtonColumn<DirectoryTableRow>(images.copy)
-    copyDirColumn.setFieldUpdater [i, object, value |
-      val from = object.name
-      val to = Window::prompt("New directory name", from)
-      if (to != null && to != from) {
-        registryService.copyDir(place.pathArray, from, place.pathArray, to, defaultCallback)
-      }
-    ]
+    val dirCell = new EntryCell(place, historyMapper)
+      .decorated [ row |
+        switch row {
+          ParentTableRow: images.goBack
+          DirectoryTableRow: images.folder
+          KeyTableRow: images.key
+        }
+      ]
+      .draggable [ row, dt |
+        switch row {
+          ParentTableRow: {}
+          DirectoryTableRow: {
+            DataTransferUtil::setEffectAllowed(dt, "copyMove")
+            dt.setData(DATA_REG_LOC, historyMapper.getToken(place))
+            dt.setData(DATA_REG_DIR, row.name)
+          }
+          KeyTableRow: {
+            DataTransferUtil::setEffectAllowed(dt, "copyMove")
+            dt.setData(DATA_REG_LOC, historyMapper.getToken(place))
+            dt.setData(DATA_REG_KEY, row.key)
+          }
+        }
+      ]
 
-    val deleteDirColumn = new ImageButtonColumn<DirectoryTableRow>(images.delete)
-    deleteDirColumn.setFieldUpdater [i, object, value|
-      val dir = object.name
-      val confirmed = Window::confirm('''Delete directory «dir»?''')
-      if (confirmed) {
-        registryService.rmdir(place.pathArray, dir, defaultCallback)
-      }
-    ]
-
-    val keyCell = new DraggableCell(new IconCellDecorator(images.key, new TextCell)) [ key, dt |
-      DataTransferUtil::setEffectAllowed(dt, "copyMove")
-      dt.setData(DATA_REG_LOC, historyMapper.getToken(place))
-      dt.setData(DATA_REG_KEY, key)
-    ]
-    val keyColumn = keyCell.toColumn[KeyTableRow key | key.key]
-
-    val valueColumn = new EditTextCell().toColumn[KeyTableRow key | key.value]
-    valueColumn.setFieldUpdater [i, object, value |
-      registryService.set(place.pathArray, object.key, value, defaultCallback)
-    ]
-
-    val renameKeyColumn = new ImageButtonColumn<KeyTableRow>(images.edit)
-    renameKeyColumn.setFieldUpdater [i, object, value|
-      val from = object.key
-      val to = Window::prompt("New key name", from)
-      if (to != null && to != from) {
-        registryService.rename(place.pathArray, from, to, defaultCallback) 
+    val nameColumn = new IdentityColumn(dirCell)
+    nameColumn.setFieldUpdater [i, row, value |
+      switch row {
+        ParentTableRow: presenter.goTo(place.parent)
+        DirectoryTableRow: presenter.goTo(place.subDir(row.name))
+        KeyTableRow: {}
       }
     ]
 
-    val copyKeyColumn = new ImageButtonColumn<KeyTableRow>(images.copy)
-    copyKeyColumn.fieldUpdater = [i, object, value|
-      val from = object.key
-      val to = Window::prompt("New key name", from)
-      if (to != null && to != from) {
-        registryService.copy(place.pathArray, from, place.pathArray, to, defaultCallback)
+    val valueColumn = new TextCell().toColumn [ TableRow row |
+      switch row {
+        ParentTableRow: ""
+        DirectoryTableRow: ""
+        KeyTableRow: row.value
+      }
+    ]
+    valueColumn.setFieldUpdater [i, row, value |
+      switch row {
+        ParentTableRow: {}
+        DirectoryTableRow: {}
+        KeyTableRow: registryService.set(place.pathArray, row.key, value, defaultCallback)
       }
     ]
 
-    val deleteKeyColumn = new ImageButtonColumn<KeyTableRow>(images.delete)
-    deleteKeyColumn.fieldUpdater = [i, object, value|
-      val confirmed = Window::confirm('''Delete key «object.key»?''')
-      if (confirmed) {
-        registryService.del(place.pathArray, object.key, defaultCallback)
+    val editColumn = new ImageButtonColumn<TableRow>(images.edit)
+    editColumn.setFieldUpdater [i, row, value |
+      switch row {
+        ParentTableRow: {}
+        DirectoryTableRow: {}
+        KeyTableRow: {
+          val from = row.value
+          val to = Window::prompt("New value for " + row.key, from)
+          if (to != null && to != from) {
+            registryService.set(place.pathArray, row.key, to, defaultCallback)
+          }
+        }
       }
     ]
 
-    dirTable = new CellTable<DirectoryTableRow>(15, resources) => [
+    val renameColumn = new ImageButtonColumn<TableRow>(images.edit)
+    renameColumn.setFieldUpdater [i, row, value |
+      switch row {
+        ParentTableRow: {}
+        DirectoryTableRow: {
+          val from = row.name
+          val to = Window::prompt("New directory name", from)
+          if (to != null && to != from) {
+            registryService.renameDir(place.pathArray, from, to, defaultCallback)
+          }
+        }
+        KeyTableRow: {
+          val from = row.key
+          val to = Window::prompt("New key name", from)
+          if (to != null && to != from) {
+            registryService.rename(place.pathArray, from, to, defaultCallback)
+          }
+        }
+      }
+    ]
+
+    val copyColumn = new ImageButtonColumn<TableRow>(images.copy)
+    copyColumn.setFieldUpdater [i, row, value |
+      switch row {
+        ParentTableRow: {}
+        DirectoryTableRow: {
+          val from = row.name
+          val to = Window::prompt("New directory name", from)
+          if (to != null && to != from) {
+            registryService.copyDir(place.pathArray, from, place.pathArray, to, defaultCallback)
+          }
+        }
+        KeyTableRow: {
+          val from = row.key
+          val to = Window::prompt("New key name", from)
+          if (to != null && to != from) {
+            registryService.copy(place.pathArray, from, place.pathArray, to, defaultCallback)
+          }
+        }
+      }
+    ]
+
+    val deleteColumn = new ImageButtonColumn<TableRow>(images.delete)
+    deleteColumn.setFieldUpdater [i, row, value |
+      switch row {
+        ParentTableRow: {}
+        DirectoryTableRow: {
+          val dir = row.name
+          val confirmed = Window::confirm('''Delete directory «dir»?''')
+          if (confirmed) {
+            registryService.rmdir(place.pathArray, dir, defaultCallback)
+          }
+        }
+        KeyTableRow: {
+          val confirmed = Window::confirm('''Delete key «row.key»?''')
+          if (confirmed) {
+            registryService.del(place.pathArray, row.key, defaultCallback)
+          }
+        }
+      }
+    ]
+
+    table = new CellTable<TableRow>(15, resources) => [
       setWidth("100%", true)
-      addColumn(dirColumn)
-      addColumn(dummyColumn)
-      addColumn(renameDirColumn)
-      addColumn(copyDirColumn)
-      addColumn(deleteDirColumn)
-      setColumnWidth(dirColumn, 150, Unit::PX)
-      setColumnWidth(renameDirColumn, 48, Unit::PX)
-      setColumnWidth(copyDirColumn, 48, Unit::PX)
-      setColumnWidth(deleteDirColumn, 48, Unit::PX)
-    ]
-
-    keyTable = new CellTable<KeyTableRow>(15, resources) => [
-      setWidth("100%", true)
-      addColumn(keyColumn)
+      addColumn(nameColumn)
       addColumn(valueColumn)
-      addColumn(renameKeyColumn)
-      addColumn(copyKeyColumn)
-      addColumn(deleteKeyColumn)
-      setColumnWidth(keyColumn, 150, Unit::PX)
-      setColumnWidth(renameKeyColumn, 48, Unit::PX)
-      setColumnWidth(copyKeyColumn, 48, Unit::PX)
-      setColumnWidth(deleteKeyColumn, 48, Unit::PX)
+      addColumn(editColumn)
+      addColumn(renameColumn)
+      addColumn(copyColumn)
+      addColumn(deleteColumn)
+      setColumnWidth(nameColumn, 150, Unit::PX)
+      setColumnWidth(editColumn, 48, Unit::PX)
+      setColumnWidth(renameColumn, 48, Unit::PX)
+      setColumnWidth(copyColumn, 48, Unit::PX)
+      setColumnWidth(deleteColumn, 48, Unit::PX)
     ]
 
     val verticalPanel = new VerticalPanel => [
       setSize("100%", "")
       add(breadcrumbs)
-      add(dirTable)
-      add(keyTable)
+      add(table)
       add(new AbsolutePanel => [setHeight("10px")])
       add(new HorizontalPanel => [
         add(newDir)
@@ -320,20 +387,21 @@ class RegistryViewImpl extends Composite implements RegistryView{
   }
 
   def void setListing(RegistryListing result) {
-    val dirRows = new ArrayList<DirectoryTableRow>
+    val dirRows = new ArrayList<TableRow>
+
+    if (!place.path.isEmpty) {
+      dirRows.add(new ParentTableRow)
+    }
     for (dir : result.dirs) {
       dirRows.add(new DirectoryTableRow(dir))
     }
-    dirTable.setRowData(dirRows)
-
-    val keyRows = new ArrayList<KeyTableRow>
-
-    for (var int i = 0 ; i < result.keys.length; i++) {
+    for (var int i = 0; i < result.keys.length; i++) {
       val key = result.keys.get(i)
       val value = result.vals.get(i)
-      keyRows.add(new KeyTableRow(key, value))
+      dirRows.add(new KeyTableRow(key, value))
     }
-    keyTable.setRowData(keyRows)
+
+    table.setRowData(dirRows)
   }
 
   def void refresh() {

@@ -25,6 +25,8 @@ class RegistryListing implements IsSerializable {
 
 interface TableRow {}
 
+class ParentTableRow implements TableRow {}
+
 class DirectoryTableRow implements TableRow {
   String name
 
