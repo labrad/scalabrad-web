@@ -17,8 +17,8 @@ import com.google.gwt.user.client.ui.Label
 import java.util.logging.Logger
 
 class DataViewImpl extends Composite implements DataView {
-  final PlaceHistoryMapper historyMapper
-  final Images images
+  val PlaceHistoryMapper historyMapper
+  val Images images
 
   @AssistedInject
   new(

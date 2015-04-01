@@ -32,8 +32,8 @@ class ManagerViewImpl extends Composite implements ManagerView {
   static val UP = "\u2191"
   static val DOWN = "\u2193"
 
-  final CellTable<ConnectionInfo> table
-  final ListDataProvider<ConnectionInfo> dataProvider
+  val CellTable<ConnectionInfo> table
+  val ListDataProvider<ConnectionInfo> dataProvider
 
   @AssistedInject
   new(

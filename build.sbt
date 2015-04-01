@@ -3,6 +3,8 @@ lazy val gwtCompile = taskKey[Unit]("invoke the gwt compiler")
 lazy val gwtDevMode = taskKey[Unit]("invoke gwt dev mode")
 lazy val gwtCodeServer = taskKey[Unit]("invoke gwt code server")
 
+lazy val xtendCompile = taskKey[Unit]("invoke the xtend compiler")
+
 lazy val gwtVersion = "2.7.0"
 lazy val jettyVersion = "8.1.12.v20130726" // this version is embedded in gwt 2.7
 //lazy val jettyVersion = "9.2.6.v20141205"
@@ -29,7 +31,9 @@ lazy val root = (project in file(".")).settings(
     "com.google.gwt" % "gwt-user" % gwtVersion withSources(),
     "com.google.gwt.inject" % "gin" % "2.1.2" withSources(),
     "com.googlecode.gflot" % "gflot" % "3.3.0" withSources(),
-    "org.eclipse.xtend" % "org.eclipse.xtend.lib.gwt" % "2.8.0" withSources(),
+    "org.eclipse.xtend" % "org.eclipse.xtend.core" % "2.8.1" withSources(),
+    "org.eclipse.xtend" % "org.eclipse.xtend.lib" % "2.8.1" withSources(),
+    "org.eclipse.xtend" % "org.eclipse.xtend.lib.gwt" % "2.8.1" withSources(),
     "de.itemis.xtend" % "auto-gwt" % "1.0-SNAPSHOT",
     "org.labrad" %% "scalabrad" % "0.2.0-M3" withSources()
   ),
@@ -106,6 +110,40 @@ lazy val root = (project in file(".")).settings(
     )
     val scalaRun = new ForkRun(forkOptions)
     scalaRun.run("com.google.gwt.dev.codeserver.CodeServer", cp, args, streams.value.log)
+  },
+  xtendCompile := {
+    val in = (sourceDirectory in Compile).value / "java"
+    val out = (sourceDirectory in Compile).value / "xtend-gen"
+    val srcs = (sourceDirectories in Compile).value
+    val classes = (fullClasspath in Compile).value.map(_.data)
+    val cp = srcs ++ classes
+    val s = streams.value
+
+    val args: Array[String] = Array(
+      "-d", out.toString,  // where to place generated xtend files
+      "-cp", cp.mkString(":"),  // where to find user class files
+      "-javaSourceVersion", "1.7",
+      "-generateGeneratedAnnotation",
+      "-includeDateInGeneratedAnnnotation",
+      in.toString
+      // -tp <path>                          Temp directory to hold generated stubs and classes
+      // -encoding <encoding>                Specify character encoding used by source files
+      // -noSuppressWarningsAnnotation       Don't put @SuppressWarnings() into generated Java Code
+      // -generateAnnotationComment <string> If -generateGeneratedAnnotation is used, add a comment.
+      // -useCurrentClassLoader              Use current classloader as parent classloader
+    )
+
+    val forkOptions = ForkOptions(
+      bootJars = Nil,
+      javaHome = javaHome.value,
+      connectInput = connectInput.value,
+      outputStrategy = outputStrategy.value,
+      runJVMOptions = javaOptions.value,
+      workingDirectory = Some(target.value),
+      envVars = envVars.value
+    )
+    val scalaRun = new ForkRun(forkOptions)
+    scalaRun.run("org.eclipse.xtend.core.compiler.batch.Main", cp, args, streams.value.log)
   }
 )
 

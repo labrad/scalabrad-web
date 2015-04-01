@@ -101,10 +101,10 @@ interface DataView extends IsWidget {
 }
 
 class DataActivity extends AbstractActivity implements DataView.Presenter {
-  final DataPlace place
-  final ViewFactory viewFactory
-  final VaultServiceAsync service
-  final PlaceController placeController
+  val DataPlace place
+  val ViewFactory viewFactory
+  val VaultServiceAsync service
+  val PlaceController placeController
 
   @AssistedInject
   new(
@@ -143,10 +143,10 @@ interface DatasetView extends IsWidget {
 }
 
 class DatasetActivity extends AbstractActivity implements DatasetView.Presenter {
-  final DatasetPlace place
-  final ViewFactory viewFactory
-  final PlaceController placeController
-  final VaultServiceAsync vaultService
+  val DatasetPlace place
+  val ViewFactory viewFactory
+  val PlaceController placeController
+  val VaultServiceAsync vaultService
 
   @AssistedInject
   new(

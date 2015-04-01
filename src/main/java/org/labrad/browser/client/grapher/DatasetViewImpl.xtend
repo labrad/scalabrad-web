@@ -15,8 +15,8 @@ class DatasetViewImpl extends Composite implements DatasetView {
   Presenter presenter
   DatasetPlace place
   DatasetInfo info
-  final VerticalPanel panel = new VerticalPanel
-  final VaultServiceAsync service
+  val VerticalPanel panel = new VerticalPanel
+  val VaultServiceAsync service
 
   @AssistedInject
   new(

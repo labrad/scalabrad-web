@@ -27,12 +27,12 @@ class NodesPlace extends Place {
 }
 
 class NodesActivity extends AbstractActivity implements NodesView.Presenter {
-  final NodesPlace place
-  final ViewFactory viewFactory
-  final PlaceController placeController
-  final PlaceRedirector placeRedirector
-  final RemoteEventBus remoteEventBus
-  final NodeServiceAsync nodeService
+  val NodesPlace place
+  val ViewFactory viewFactory
+  val PlaceController placeController
+  val PlaceRedirector placeRedirector
+  val RemoteEventBus remoteEventBus
+  val NodeServiceAsync nodeService
 
   @AssistedInject
   new(

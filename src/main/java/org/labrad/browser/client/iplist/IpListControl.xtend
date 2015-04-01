@@ -83,7 +83,7 @@ class IpListControl extends VerticalPanel implements AsyncCallback<IpAddress[]> 
 }
 
 class IpEntry extends HorizontalPanel {
-  static final BrowserImages images = GWT.create(BrowserImages)
+  static val BrowserImages images = GWT.create(BrowserImages)
 
   new(IpListControl parent, String address, boolean allowed) {
     val img = new Image(if(allowed) images.ipAllowed else images.ipDisallowed)

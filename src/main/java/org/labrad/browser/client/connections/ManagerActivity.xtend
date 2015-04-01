@@ -44,15 +44,17 @@ interface ManagerView extends IsWidget {
 }
 
 class ManagerActivity extends AbstractActivity implements ManagerView.Presenter, AsyncCallback<ConnectionInfo[]> {
-  final ManagerPlace place
-  final ManagerServiceAsync managerService
-  final ViewFactory viewFactory
-  final PlaceController placeController
-  final PlaceHistoryMapper placeMapper
-  ManagerView view = null
-  boolean alive = true
+
   static val log = Logger.getLogger(ManagerActivity.name)
   static val UPDATE_INTERVAL = 2000
+
+  val ManagerPlace place
+  val ManagerServiceAsync managerService
+  val ViewFactory viewFactory
+  val PlaceController placeController
+  val PlaceHistoryMapper placeMapper
+  var ManagerView view = null
+  var alive = true
 
   @AssistedInject new(@Assisted ManagerPlace place, ManagerServiceAsync managerService, ViewFactory viewFactory,
     PlaceController placeController, PlaceHistoryMapper placeMapper) {
@@ -94,7 +96,7 @@ class ManagerActivity extends AbstractActivity implements ManagerView.Presenter,
 
   private def void pingLater() {
     if (alive) {
-      var Timer timer = [ping()]
+      val timer = [ping()] as Timer
       timer.schedule(UPDATE_INTERVAL)
     }
 

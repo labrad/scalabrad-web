@@ -29,13 +29,13 @@ interface RegistryView extends IsWidget {
 
 class RegistryActivity extends AbstractActivity implements RegistryView.Presenter {
   static val log = Logger.getLogger("RegistryActivity")
-  final RegistryPlace place
-  final RegistryServiceAsync registryService
-  final RemoteEventServiceAsync remoteEventService
-  final RemoteEventBus remoteEventBus
-  final ViewFactory viewFactory
-  final PlaceController placeController
-  final PlaceRedirector redirector
+  val RegistryPlace place
+  val RegistryServiceAsync registryService
+  val RemoteEventServiceAsync remoteEventService
+  val RemoteEventBus remoteEventBus
+  val ViewFactory viewFactory
+  val PlaceController placeController
+  val PlaceRedirector redirector
 
   val watchId = Util.randomId()
 
@@ -47,11 +47,10 @@ class RegistryActivity extends AbstractActivity implements RegistryView.Presente
       log.info('''watchRegistryPath. path=«place.pathString», watchId=«watchId»''')
     }
   }
-  final AsyncCallback<Void> unwatchCallback = new AsyncCallback<Void> {
+  val unwatchCallback = new AsyncCallback<Void> {
     override void onFailure(Throwable caught) {
       log.severe('''unwatchRegistryPath failed. path=«place.pathString», error=«caught.message»''')
     }
-
     override void onSuccess(Void result) {
       log.info('''unwatchRegistryPath. path=«place.pathString»''')
     }

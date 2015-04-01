@@ -5,7 +5,7 @@ import com.google.gwt.event.shared.GwtEvent
 import com.google.gwt.user.client.rpc.IsSerializable
 
 class RemoteEventBusDisconnectEvent extends GwtEvent<RemoteEventBusDisconnectEvent.Handler> implements IsSerializable {
-  final RemoteEventBus source
+  val RemoteEventBus source
 
   new(RemoteEventBus source) {
     this.source = source

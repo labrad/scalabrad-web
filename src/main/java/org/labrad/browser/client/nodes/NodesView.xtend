@@ -17,7 +17,7 @@ interface NodesView extends IsWidget {
 }
 
 class NodesViewImpl extends Composite implements NodesView {
-  final Presenter presenter
+  val Presenter presenter
 
   @AssistedInject
   new(

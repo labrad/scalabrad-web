@@ -1,7 +1,6 @@
 package org.labrad.browser.client.nodes
 
 import java.util.ArrayList
-import java.util.List
 import java.util.logging.Logger
 import org.labrad.browser.client.BrowserImages
 import org.labrad.browser.client.event.NodeServerEvent
@@ -37,20 +36,20 @@ class InstanceController extends HorizontalPanel implements ClickHandler, AsyncC
     RED
   }
 
-  final EventBus eventBus
-  final PlaceController placeController
-  final ControlPanel parent
-  final String node
-  final String server
+  val EventBus eventBus
+  val PlaceController placeController
+  val ControlPanel parent
+  val String node
+  val String server
   String instance
-  final String version
-  final Label statusLabel
-  final PushButton info
-  final PushButton start
-  final PushButton stop
-  final PushButton restart
-  final DeckPanel controls
-  boolean isLocal
+  val String version
+  val Label statusLabel
+  val PushButton info
+  val PushButton start
+  val PushButton stop
+  val PushButton restart
+  val DeckPanel controls
+  val boolean isLocal
 
   Color color
   InstanceStatus status
@@ -128,7 +127,7 @@ class InstanceController extends HorizontalPanel implements ClickHandler, AsyncC
   /**
    * Keep track of all event registrations so we can remove them later
    */
-  final List<HandlerRegistration> registrations = new ArrayList<HandlerRegistration>()
+  val registrations = new ArrayList<HandlerRegistration>
 
   /**
    * Register event handlers for events we care about

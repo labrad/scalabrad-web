@@ -17,8 +17,8 @@ import com.google.inject.assistedinject.AssistedInject
  * loading a RedirectPlace pointing to that location.
  */
 class PlaceRedirector {
-  final PlaceController controller
-  final PlaceHistoryMapper placeMapper
+  val PlaceController controller
+  val PlaceHistoryMapper placeMapper
 
   @Inject
   new(PlaceHistoryMapper placeMapper, PlaceController controller) {
@@ -36,7 +36,7 @@ class PlaceRedirector {
  * A place that contains a token pointing to another place
  */
 class RedirectPlace extends Place {
-  final String token
+  val String token
 
   new(String token) {
     this.token = token
@@ -63,9 +63,9 @@ class RedirectPlace extends Place {
  * redirect place.
  */
 class RedirectActivity extends AbstractActivity {
-  final RedirectPlace place
-  final PlaceController controller
-  final PlaceHistoryMapper placeMapper
+  val RedirectPlace place
+  val PlaceController controller
+  val PlaceHistoryMapper placeMapper
 
   @AssistedInject new(@Assisted RedirectPlace place, PlaceRedirector placeRedirector, PlaceController controller) {
     this.place = place

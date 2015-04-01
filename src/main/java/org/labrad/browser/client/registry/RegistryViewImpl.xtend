@@ -42,6 +42,10 @@ import com.google.gwt.user.cellview.client.IdentityColumn
 import com.google.gwt.user.client.ui.DialogBox
 import com.google.gwt.user.client.ui.TextArea
 import com.google.gwt.cell.client.TextCell
+import com.google.gwt.dom.client.Element
+import com.google.gwt.dom.client.NativeEvent
+import com.google.gwt.cell.client.ValueUpdater
+import com.google.gwt.place.shared.PlaceController
 
 /**
  * A cell for a registry entry, which can be a directory or key,
@@ -58,13 +62,15 @@ class EntryCell extends AbstractCell<TableRow> {
 
   static val templates = GWT::create(Templates) as Templates
 
-  package RegistryPlace place
-  package PlaceHistoryMapper historyMapper
+  val RegistryPlace place
+  val PlaceHistoryMapper historyMapper
+  val (TableRow)=>void onEnter
 
-  new(RegistryPlace place, PlaceHistoryMapper historyMapper) {
-    super()
+  new(RegistryPlace place, PlaceHistoryMapper historyMapper, (TableRow)=>void onEnter) {
+    super("keydown")
     this.place = place
     this.historyMapper = historyMapper
+    this.onEnter = onEnter
   }
 
   override void render(Cell.Context context, TableRow row, SafeHtmlBuilder sb) {
@@ -79,6 +85,16 @@ class EntryCell extends AbstractCell<TableRow> {
         sb.append(templates.label(row.key))
       }
     }
+  }
+
+  override void onEnterKeyDown(
+    Cell.Context context,
+    Element parent,
+    TableRow row,
+    NativeEvent event,
+    ValueUpdater<TableRow> valueUpdater
+  ) {
+    onEnter.apply(row)
   }
 }
 
@@ -102,14 +118,14 @@ class RegistryViewImpl extends Composite implements RegistryView{
     }
   }
 
-  final RegistryPlace place
-  final List<String> path
-  final PlaceHistoryMapper historyMapper
-  final RegistryServiceAsync registryService
-  CellTable<TableRow> table
+  val RegistryPlace place
+  val List<String> path
+  val PlaceHistoryMapper historyMapper
+  val RegistryServiceAsync registryService
+  val CellTable<TableRow> table
 
-  final TextArea editKeyTextArea
-  final DialogBox editKeyDialog
+  val TextArea editKeyTextArea
+  val DialogBox editKeyDialog
 
   /**
    * Variant of the standard addDomHandler method that reverses the order
@@ -126,6 +142,7 @@ class RegistryViewImpl extends Composite implements RegistryView{
     @Assisted Presenter presenter,
     @Assisted EventBus eventBus,
     PlaceHistoryMapper historyMapper,
+    PlaceController placeController,
     RegistryServiceAsync registryService,
     BrowserImages images,
     CellTable.Resources resources
@@ -174,7 +191,19 @@ class RegistryViewImpl extends Composite implements RegistryView{
       ])
     ]
 
-    val dirCell = new EntryCell(place, historyMapper)
+    val dirCell = new EntryCell(place, historyMapper) [ row |
+        switch row {
+          ParentTableRow: {
+            placeController.goTo(place.parent)
+          }
+          DirectoryTableRow: {
+            placeController.goTo(place.subDir(row.name))
+          }
+          KeyTableRow: {
+            // do nothing
+          }
+        }
+      ]
       .decorated [ row |
         switch row {
           ParentTableRow: images.goBack

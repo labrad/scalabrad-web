@@ -18,10 +18,10 @@ class RemoteEventBus {
   boolean running = false
   boolean connected = false
   val connectionId = Util::randomId()
-  final RemoteEventServiceAsync eventService
-  final AsyncCallback<Void> connectCallback
-  final AsyncCallback<GwtEvent<?>[]> getEventCallback
-  final Timer pollTimer
+  val RemoteEventServiceAsync eventService
+  val AsyncCallback<Void> connectCallback
+  val AsyncCallback<GwtEvent<?>[]> getEventCallback
+  val Timer pollTimer
 
   @Inject
   new(EventBus eventBus, RemoteEventServiceAsync eventService) {
