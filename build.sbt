@@ -31,7 +31,8 @@ lazy val root = (project in file(".")).settings(
     "com.google.gwt" % "gwt-user" % gwtVersion withSources(),
     "com.google.gwt.inject" % "gin" % "2.1.2" withSources(),
     "com.googlecode.gflot" % "gflot" % "3.3.0" withSources(),
-    "org.eclipse.xtend" % "org.eclipse.xtend.core" % "2.8.1" withSources(),
+    "com.google.guava" % "guava-gwt" % "18.0" withSources(), // override the version included with xtend
+    "org.eclipse.xtend" % "org.eclipse.xtend.core" % "2.8.1" withSources(), // has the compiler; might not actually need this...
     "org.eclipse.xtend" % "org.eclipse.xtend.lib" % "2.8.1" withSources(),
     "org.eclipse.xtend" % "org.eclipse.xtend.lib.gwt" % "2.8.1" withSources(),
     "de.itemis.xtend" % "auto-gwt" % "1.0-SNAPSHOT",
@@ -52,6 +53,7 @@ lazy val root = (project in file(".")).settings(
 
     val warDir = (webappDest in webapp).value
     val args: Array[String] = Array(
+      "-strict",
       "-war", warDir.getAbsolutePath
     ) ++ gwtModules.value
 
