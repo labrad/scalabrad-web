@@ -59,7 +59,7 @@ class LabradConnection extends ServletContextListener {
   }
 
   private def makeClient = {
-    new Client("Browser", host = "localhost", password = Array.empty)
+    new Client("Browser")
   }
 
   /**
