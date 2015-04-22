@@ -26,7 +26,7 @@ lazy val root = (project in file(".")).settings(
     "com.google.gwt" % "gwt-user" % gwtVersion withSources(),
     "com.google.gwt.inject" % "gin" % "2.1.2" withSources(),
     "com.googlecode.gflot" % "gflot" % "3.3.0" withSources(),
-    "org.labrad" %% "scalabrad" % "0.2.0-M3" withSources()
+    "org.labrad" %% "scalabrad" % "0.2.0-M4" withSources()
   ),
 
   jetty(port = 8080), // add jetty settings for xsbt-web-plugin
