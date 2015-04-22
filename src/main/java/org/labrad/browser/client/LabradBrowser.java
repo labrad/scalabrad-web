@@ -90,7 +90,7 @@ public class LabradBrowser implements EntryPoint {
     historyHandler.register(placeController, eventBus, defaultPlace);
 
     PlaceHistoryMapper historyMapper = injector.getPlaceHistoryMapper();
-    final Hyperlink managerLink = new Hyperlink("info", historyMapper.getToken(new ManagerPlace()));
+    final Hyperlink managerLink = new Hyperlink("manager", historyMapper.getToken(new ManagerPlace()));
     final Hyperlink nodesLink = new Hyperlink("nodes", historyMapper.getToken(new NodesPlace()));
     final Hyperlink registryLink = new Hyperlink("registry", historyMapper.getToken(new RegistryPlace()));
     //final Hyperlink dataLink = new Hyperlink("data", historyMapper.getToken(new DataPlace()));

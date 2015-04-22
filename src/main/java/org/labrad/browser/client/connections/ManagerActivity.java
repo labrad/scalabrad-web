@@ -12,6 +12,7 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.gwt.user.client.Timer;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.inject.assistedinject.Assisted;
@@ -47,6 +48,7 @@ public class ManagerActivity
   }
 
   public void start(final AcceptsOneWidget container, final EventBus eventBus) {
+    Window.setTitle("LabRAD - Manager");
     managerService.getConnectionInfo(new AsyncCallback<ConnectionInfo[]>() {
 
       @Override

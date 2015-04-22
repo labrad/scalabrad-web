@@ -16,6 +16,7 @@ import com.google.gwt.activity.shared.AbstractActivity;
 import com.google.gwt.event.shared.EventBus;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.inject.assistedinject.Assisted;
@@ -71,6 +72,7 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
   }
 
   public void start(final AcceptsOneWidget container, final EventBus eventBus) {
+    Window.setTitle("LabRAD - Registry");
     remoteEventBus.start();
 
     // when the event bus connects, start watching the registry path
