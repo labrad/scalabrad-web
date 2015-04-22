@@ -215,12 +215,9 @@ class LabradConnection extends ServletContextListener {
    * @param msg
    * @return
    */
-  private def parseNodeMessage(msg: Data) = {
-    val map = for (i <- 0 until msg.clusterSize) yield {
-      val Cluster(Str(key), value) = msg(i)
-      key -> value
-    }
-    map.toMap
+  private def parseNodeMessage(msg: Data): Map[String, Data] = {
+    val (src, payload) = msg.get[(Long, Data)]
+    payload.clusterIterator.map(_.get[(String, Data)]).toMap
   }
 
 }
