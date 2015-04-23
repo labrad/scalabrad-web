@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 import org.labrad.Connection
-import org.labrad.browser.client.event.{NodeServerStatus, NodeStatusEvent}
+import org.labrad.browser.client.message.{NodeServerStatus, NodeStatusMessage}
 import org.labrad.browser.client.nodes.{NodeRequestError, NodeService}
 import org.labrad.data._
 import org.labrad.util.Logging
@@ -20,21 +20,15 @@ object NodeServiceImpl {
   }
 
   private def getServerStatus(statusData: Data): NodeServerStatus = {
-    val status = new NodeServerStatus
-    status.setName(statusData(0).getString)
-    status.setDescription(statusData(1).getString)
-    status.setVersion(statusData(2).getString)
-    status.setInstanceName(statusData(3).getString)
-    status.setEnvironmentVars(statusData(4).get[Array[String]])
-    status.setInstances(statusData(5).get[Array[String]])
-    status
+    val (name, desc, ver, instName, env, instances) = statusData.get[(String, String, String, String, Array[String], Array[String])]
+    new NodeServerStatus(name, desc, ver, instName, env, instances)
   }
 }
 
 @Singleton
 class NodeServiceImpl extends AsyncServlet with NodeService with Logging {
 
-  def getNodeInfo: Array[NodeStatusEvent] = future {
+  def getNodeInfo: Array[NodeStatusMessage] = Array() /*future {
     (for {
       serverData <- LabradConnection.getManager.servers()
       servers = serverData.map { case (id, name) => name }
@@ -47,7 +41,7 @@ class NodeServiceImpl extends AsyncServlet with NodeService with Logging {
         new NodeStatusEvent(server, NodeServiceImpl.getServerStatuses(status))
       }
     } yield statuses.toArray).recover(oops("", "", "get_node_info"))
-  }
+  }*/
 
   def refreshServers(node: String): String = future {
     log.info(s"refreshServers. node=$node")

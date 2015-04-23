@@ -5,3 +5,4 @@ project/boot/
 .project
 .gwt
 .settings
+/bin/

@@ -177,12 +177,12 @@ public class InstanceController extends HorizontalPanel
    * @param status
    */
   public void onNodeServerEvent(NodeServerEvent e) {
-    if (e.getServer().equals(server)) {
-      boolean here = e.getNode().equals(node);
-      if (here && e.getInstance() != null) {
-        instance = e.getInstance();
+    if (e.msg.getServer().equals(server)) {
+      boolean here = e.msg.getNode().equals(node);
+      if (here && e.msg.getInstance() != null) {
+        instance = e.msg.getInstance();
       }
-      setStatus(e.getStatus(), here);
+      setStatus(e.msg.getStatus(), here);
     }
   }
 

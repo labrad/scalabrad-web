@@ -8,7 +8,6 @@ import org.labrad.browser.client.event.LabradDisconnectEvent;
 import org.labrad.browser.client.event.RemoteEventBus;
 import org.labrad.browser.client.event.RemoteEventBusConnectEvent;
 import org.labrad.browser.client.event.RemoteEventBusDisconnectEvent;
-import org.labrad.browser.client.event.RemoteEventServiceAsync;
 import org.labrad.browser.client.ui.PlaceRedirector;
 import org.labrad.browser.client.util.Util;
 
@@ -27,7 +26,6 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
 
   private final RegistryPlace place;
   private final RegistryServiceAsync registryService;
-  private final RemoteEventServiceAsync remoteEventService;
   private final RemoteEventBus remoteEventBus;
   private final ViewFactory viewFactory;
   private final PlaceController placeController;
@@ -56,7 +54,6 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
   @AssistedInject
   public RegistryActivity(
       @Assisted RegistryPlace place,
-      RemoteEventServiceAsync remoteEventService,
       RemoteEventBus remoteEventBus,
       RegistryServiceAsync registryService,
       ViewFactory viewFactory,
@@ -64,7 +61,6 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
       PlaceRedirector redirector) {
     this.place = place;
     this.registryService = registryService;
-    this.remoteEventService = remoteEventService;
     this.remoteEventBus = remoteEventBus;
     this.viewFactory = viewFactory;
     this.placeController = placeController;

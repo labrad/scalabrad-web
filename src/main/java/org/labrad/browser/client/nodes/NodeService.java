@@ -1,6 +1,6 @@
 package org.labrad.browser.client.nodes;
 
-import org.labrad.browser.client.event.NodeStatusEvent;
+import org.labrad.browser.client.message.NodeStatusMessage;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
@@ -8,7 +8,7 @@ import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 @RemoteServiceRelativePath(NodeService.PATH)
 public interface NodeService extends RemoteService {
   public static String PATH = "node";
-  public NodeStatusEvent[] getNodeInfo() throws NodeRequestError;
+  public NodeStatusMessage[] getNodeInfo() throws NodeRequestError;
   public String refreshServers(String node) throws NodeRequestError;
 
   public String startServer(String node, String server) throws NodeRequestError;

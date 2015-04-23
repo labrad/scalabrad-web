@@ -1,32 +1,27 @@
 package org.labrad.browser.client.event;
 
-import java.io.Serializable;
+import org.labrad.browser.client.message.ServerConnectMessage;
 
 import com.google.gwt.event.shared.EventHandler;
 import com.google.gwt.event.shared.GwtEvent;
 
 
-@SuppressWarnings("serial")
-public class ServerConnectEvent extends GwtEvent<ServerConnectEvent.Handler> implements Serializable {
-  private String server;
-
-  protected ServerConnectEvent() {}
-
-  public ServerConnectEvent(String server) {
-    this.server = server;
-  }
-
-  public String getServer() { return server; }
-
-  @Override
-  public String toString() { return "server='" + server + "'"; }
-
+public class ServerConnectEvent extends GwtEvent<ServerConnectEvent.Handler> {
 
   public static interface Handler extends EventHandler {
     void onServerConnect(ServerConnectEvent event);
   }
-
   public static Type<Handler> TYPE = new Type<Handler>();
+
+
+  public ServerConnectMessage msg;
+
+  public ServerConnectEvent(ServerConnectMessage msg) {
+    this.msg = msg;
+  }
+
+  @Override
+  public String toString() { return msg.toString(); }
 
   @Override
   public GwtEvent.Type<Handler> getAssociatedType() {

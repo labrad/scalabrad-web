@@ -1,11 +1,9 @@
 package org.labrad.browser.client.nodes;
 
 import org.labrad.browser.client.ViewFactory;
-import org.labrad.browser.client.connections.DisconnectedView;
 import org.labrad.browser.client.event.NodeStatusEvent;
 import org.labrad.browser.client.event.RemoteEventBus;
 import org.labrad.browser.client.event.RemoteEventBusDisconnectEvent;
-import org.labrad.browser.client.event.RemoteEventServiceAsync;
 import org.labrad.browser.client.ui.PlaceRedirector;
 
 import com.google.gwt.activity.shared.AbstractActivity;
@@ -23,7 +21,6 @@ public class NodesActivity extends AbstractActivity implements NodesView.Present
   private final ViewFactory viewFactory;
   private final PlaceController placeController;
   private final PlaceRedirector placeRedirector;
-  private final RemoteEventServiceAsync remoteEventService;
   private final RemoteEventBus remoteEventBus;
   private final NodeServiceAsync nodeService;
 
@@ -32,7 +29,6 @@ public class NodesActivity extends AbstractActivity implements NodesView.Present
     @Assisted NodesPlace place,
     ViewFactory viewFactory,
     PlaceController placeController,
-    RemoteEventServiceAsync remoteEventService,
     RemoteEventBus remoteEventBus,
     PlaceRedirector placeRedirector,
     NodeServiceAsync nodeService
@@ -41,7 +37,6 @@ public class NodesActivity extends AbstractActivity implements NodesView.Present
     this.viewFactory = viewFactory;
     this.placeController = placeController;
     this.placeRedirector = placeRedirector;
-    this.remoteEventService = remoteEventService;
     this.remoteEventBus = remoteEventBus;
     this.nodeService = nodeService;
   }

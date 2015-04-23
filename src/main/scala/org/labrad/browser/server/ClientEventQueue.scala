@@ -5,7 +5,7 @@ import java.util.UUID
 import javax.servlet.ServletContext
 import javax.servlet.http.{HttpSession, HttpSessionEvent, HttpSessionListener}
 import org.labrad.RegistryServerProxy
-import org.labrad.browser.client.event.{RegistryDirEvent, RegistryKeyEvent}
+import org.labrad.browser.client.message.{RegistryDirMessage, RegistryKeyMessage}
 import org.labrad.data._
 import org.eclipse.jetty.continuation.Continuation
 import org.slf4j.LoggerFactory
@@ -62,12 +62,12 @@ class ClientEventQueue {
 
     val listener: PartialFunction[Message, Unit] = {
       case Message(src, `ctx`, `msgId`, Cluster(Str(name), Bool(isDir), Bool(addOrChange))) =>
-        val event: GwtEvent[_] = if (isDir) {
-          new RegistryDirEvent(path, name, addOrChange)
-        } else {
-          new RegistryKeyEvent(path, name, addOrChange)
-        }
-        dispatch(event)
+//        val event: GwtEvent[_] = if (isDir) {
+//          new RegistryDirMessage(path, name, addOrChange)
+//        } else {
+//          new RegistryKeyMessage(path, name, addOrChange)
+//        }
+//        dispatch(event)
     }
     cxn.addMessageListener(listener)
 

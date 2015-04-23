@@ -8,9 +8,10 @@ import java.util.logging.Logger;
 
 import org.labrad.browser.client.BrowserImages;
 import org.labrad.browser.client.event.NodeServerEvent;
-import org.labrad.browser.client.event.NodeServerStatus;
 import org.labrad.browser.client.event.NodeStatusEvent;
 import org.labrad.browser.client.event.ServerDisconnectEvent;
+import org.labrad.browser.client.message.NodeServerMessage;
+import org.labrad.browser.client.message.NodeServerStatus;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -65,8 +66,8 @@ public class ControlPanel extends VerticalPanel
   }
 
   public void onServerDisconnect(ServerDisconnectEvent e) {
-    if (nodeExists(e.getServer())) {
-      removeNode(e.getServer());
+    if (nodeExists(e.msg.getServer())) {
+      removeNode(e.msg.getServer());
     }
   }
 
@@ -118,14 +119,14 @@ public class ControlPanel extends VerticalPanel
    * @param globalServers
    */
   private void updateNodeStatus(NodeStatusEvent nodeInfo) {
-    String node = nodeInfo.getName();
+    String node = nodeInfo.msg.getName();
     // insert node name into node list in sorted order
     if (!nodeExists(node)) {
       insertSorted(node, nodes);
     }
     clearControllers(node);
     controllers.put(node, new HashMap<String, InstanceController>());
-    for (NodeServerStatus serverInfo : nodeInfo.getServers()) {
+    for (NodeServerStatus serverInfo : nodeInfo.msg.getServers()) {
       updateServerInfo(node, serverInfo);
     }
   }
@@ -293,8 +294,10 @@ public class ControlPanel extends VerticalPanel
     for (String node : controllers.keySet()) {
       for (String server : controllers.get(node).keySet()) {
         InstanceController ic = controllers.get(node).get(server);
-        if (ic.isRunning() && !ic.isLocal())
-          eventBus.fireEvent(new NodeServerEvent(node, server, null, InstanceStatus.STARTED));
+        if (ic.isRunning() && !ic.isLocal()) {
+          NodeServerMessage m = new NodeServerMessage(node, server, null, InstanceStatus.STARTED);
+          eventBus.fireEvent(new NodeServerEvent(m));
+        }
       }
     }
 

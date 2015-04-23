@@ -4,8 +4,8 @@ lazy val gwtDevMode = taskKey[Unit]("invoke gwt dev mode")
 lazy val gwtCodeServer = taskKey[Unit]("invoke gwt code server")
 
 lazy val gwtVersion = "2.7.0"
-lazy val jettyVersion = "8.1.12.v20130726" // this version is embedded in gwt 2.7
-//lazy val jettyVersion = "9.2.6.v20141205"
+//lazy val jettyVersion = "8.1.12.v20130726" // this version is embedded in gwt 2.7
+lazy val jettyVersion = "9.2.9.v20150224"
 
 lazy val root = (project in file(".")).settings(
   name := "scalabrad-web",
@@ -17,6 +17,8 @@ lazy val root = (project in file(".")).settings(
     "org.eclipse.jetty" % "jetty-continuation" % jettyVersion withSources(),
     "org.eclipse.jetty" % "jetty-server" % jettyVersion withSources(),
     "org.eclipse.jetty" % "jetty-util" % jettyVersion withSources(),
+    "org.eclipse.jetty.websocket" % "websocket-servlet" % jettyVersion withSources(),
+    "com.fasterxml.jackson.core" % "jackson-databind" % "2.5.0",
     "com.google.inject" % "guice" % "3.0" withSources() exclude("asm", "asm"),
     "com.google.inject.extensions" % "guice-servlet" % "3.0" withSources(),
     "com.google.gwt" % "gwt-codeserver" % gwtVersion withSources(),
@@ -26,6 +28,9 @@ lazy val root = (project in file(".")).settings(
     "com.google.gwt" % "gwt-user" % gwtVersion withSources(),
     "com.google.gwt.inject" % "gin" % "2.1.2" withSources(),
     "com.googlecode.gflot" % "gflot" % "3.3.0" withSources(),
+    "com.sksamuel.gwt" % "gwt-websockets" % "1.0.4",
+    "net.maffoo" %% "jsonquote-core" % "0.2.1",
+    "org.fusesource.restygwt" % "restygwt" % "2.0.2",
     "org.labrad" %% "scalabrad" % "0.2.0-M4" withSources()
   ),
 
@@ -40,6 +45,7 @@ lazy val root = (project in file(".")).settings(
 
     val warDir = (webappDest in webapp).value
     val args: Array[String] = Array(
+      "-XjsInteropMode", "JS",
       "-war", warDir.getAbsolutePath
     ) ++ gwtModules.value
 
@@ -62,6 +68,7 @@ lazy val root = (project in file(".")).settings(
 
     val warDir = (webappDest in webapp).value
     val args: Array[String] = Array(
+      "-XjsInteropMode", "JS",
       "-war", warDir.getAbsolutePath,
       "-port", "7667"
     ) ++ gwtModules.value
@@ -84,6 +91,7 @@ lazy val root = (project in file(".")).settings(
     val cp = srcs ++ classes
 
     val args: Array[String] = Array(
+      "-XjsInteropMode", "JS",
       "-port", "9876"
     ) ++ gwtModules.value
 

@@ -1,9 +1,8 @@
-package org.labrad.browser.client.event;
+package org.labrad.browser.client.message;
 
-import java.io.Serializable;
+import com.google.gwt.user.client.rpc.IsSerializable;
 
-@SuppressWarnings("serial")
-public class NodeServerStatus implements Serializable {
+public class NodeServerStatus implements IsSerializable {
   private String name;
   private String description;
   private String version;
@@ -11,29 +10,14 @@ public class NodeServerStatus implements Serializable {
   private String[] environmentVars;
   private String[] instances;
 
-  public NodeServerStatus() {}
+  protected NodeServerStatus() {}
 
-  public void setName(String name) {
+  public NodeServerStatus(String name, String description, String version, String instanceName, String[] envVars, String[] instances) {
     this.name = name;
-  }
-
-  public void setDescription(String description) {
     this.description = description;
-  }
-
-  public void setVersion(String version) {
     this.version = version;
-  }
-
-  public void setInstanceName(String instanceName) {
     this.instanceName = instanceName;
-  }
-
-  public void setEnvironmentVars(String[] environmentVars) {
-    this.environmentVars = environmentVars;
-  }
-
-  public void setInstances(String[] instances) {
+    this.environmentVars = envVars;
     this.instances = instances;
   }
 
