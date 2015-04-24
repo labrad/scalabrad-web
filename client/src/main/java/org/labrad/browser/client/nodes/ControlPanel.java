@@ -12,6 +12,7 @@ import org.labrad.browser.client.event.NodeStatusEvent;
 import org.labrad.browser.client.event.ServerDisconnectEvent;
 import org.labrad.browser.client.message.NodeServerMessage;
 import org.labrad.browser.client.message.NodeServerStatus;
+import org.labrad.browser.client.message.NodeStatusMessage;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
@@ -61,7 +62,7 @@ public class ControlPanel extends VerticalPanel
   }
 
   public void onNodeStatus(NodeStatusEvent event) {
-    updateNodeStatus(event);
+    updateNodeStatus(event.msg);
     makeTables();
   }
 
@@ -75,17 +76,17 @@ public class ControlPanel extends VerticalPanel
    * Fetch the current status of all running nodes.
    */
   public void updateStatus() {
-    nodeService.getNodeInfo(new AsyncCallback<NodeStatusEvent[]>() {
+    nodeService.getNodeInfo(new AsyncCallback<NodeStatusMessage[]>() {
       public void onFailure(Throwable caught) {
         log.severe("getNodeInfo: " + caught.getMessage());
       }
 
-      public void onSuccess(NodeStatusEvent[] result) {
+      public void onSuccess(NodeStatusMessage[] result) {
         nodes.clear();
         globalServers.clear();
         localServers.clear();
         clearControllers();
-        for (NodeStatusEvent info : result) {
+        for (NodeStatusMessage info : result) {
           updateNodeStatus(info);
         }
         makeTables();
@@ -118,15 +119,15 @@ public class ControlPanel extends VerticalPanel
    * @param node
    * @param globalServers
    */
-  private void updateNodeStatus(NodeStatusEvent nodeInfo) {
-    String node = nodeInfo.msg.getName();
+  private void updateNodeStatus(NodeStatusMessage nodeInfo) {
+    String node = nodeInfo.getName();
     // insert node name into node list in sorted order
     if (!nodeExists(node)) {
       insertSorted(node, nodes);
     }
     clearControllers(node);
     controllers.put(node, new HashMap<String, InstanceController>());
-    for (NodeServerStatus serverInfo : nodeInfo.msg.getServers()) {
+    for (NodeServerStatus serverInfo : nodeInfo.getServers()) {
       updateServerInfo(node, serverInfo);
     }
   }

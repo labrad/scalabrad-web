@@ -28,7 +28,7 @@ object NodeServiceImpl {
 @Singleton
 class NodeServiceImpl extends AsyncServlet with NodeService with Logging {
 
-  def getNodeInfo: Array[NodeStatusMessage] = Array() /*future {
+  def getNodeInfo: Array[NodeStatusMessage] = future {
     (for {
       serverData <- LabradConnection.getManager.servers()
       servers = serverData.map { case (id, name) => name }
@@ -38,10 +38,10 @@ class NodeServiceImpl extends AsyncServlet with NodeService with Logging {
           LabradConnection.to(server).call("status").map((server, _))
       }
       statuses = nodes.map { case (server, status) =>
-        new NodeStatusEvent(server, NodeServiceImpl.getServerStatuses(status))
+        new NodeStatusMessage(server, NodeServiceImpl.getServerStatuses(status))
       }
     } yield statuses.toArray).recover(oops("", "", "get_node_info"))
-  }*/
+  }
 
   def refreshServers(node: String): String = future {
     log.info(s"refreshServers. node=$node")

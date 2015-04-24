@@ -1,9 +1,11 @@
 package org.labrad.browser.client.nodes;
 
+import java.util.logging.Logger;
+
 import org.labrad.browser.client.ViewFactory;
-import org.labrad.browser.client.event.NodeStatusEvent;
 import org.labrad.browser.client.event.RemoteEventBus;
 import org.labrad.browser.client.event.RemoteEventBusDisconnectEvent;
+import org.labrad.browser.client.message.NodeStatusMessage;
 import org.labrad.browser.client.ui.PlaceRedirector;
 
 import com.google.gwt.activity.shared.AbstractActivity;
@@ -17,6 +19,8 @@ import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
 
 public class NodesActivity extends AbstractActivity implements NodesView.Presenter {
+  private static final Logger log = Logger.getLogger("NodesActivity");
+
   private final NodesPlace place;
   private final ViewFactory viewFactory;
   private final PlaceController placeController;
@@ -51,14 +55,14 @@ public class NodesActivity extends AbstractActivity implements NodesView.Present
       }
     });
 
-    nodeService.getNodeInfo(new AsyncCallback<NodeStatusEvent[]>() {
+    nodeService.getNodeInfo(new AsyncCallback<NodeStatusMessage[]>() {
       @Override
       public void onFailure(Throwable caught) {
         container.setWidget(viewFactory.createDisconnectedView(place, caught));
       }
 
       @Override
-      public void onSuccess(NodeStatusEvent[] result) {
+      public void onSuccess(NodeStatusMessage[] result) {
         container.setWidget(viewFactory.createNodesView(NodesActivity.this, eventBus));
       }
     });
