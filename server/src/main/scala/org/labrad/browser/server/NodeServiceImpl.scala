@@ -16,12 +16,10 @@ import org.labrad.util.Logging
 
 object NodeServiceImpl {
   def getServerStatuses(servers: Data): Array[NodeServerStatus] = {
-    servers.get[Array[Data]].map(getServerStatus)
-  }
-
-  private def getServerStatus(statusData: Data): NodeServerStatus = {
-    val (name, desc, ver, instName, env, instances) = statusData.get[(String, String, String, String, Array[String], Array[String])]
-    new NodeServerStatus(name, desc, ver, instName, env, instances)
+    servers.get[Array[(String, String, String, String, Array[String], Array[String])]].map {
+      case (name, desc, ver, instName, env, instances) =>
+        new NodeServerStatus(name, desc, ver, instName, env, instances)
+    }
   }
 }
 

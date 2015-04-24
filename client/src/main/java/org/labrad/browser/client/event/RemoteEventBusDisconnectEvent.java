@@ -1,12 +1,15 @@
 package org.labrad.browser.client.event;
 
-import java.io.Serializable;
-
 import com.google.gwt.event.shared.EventHandler;
 import com.google.gwt.event.shared.GwtEvent;
 
-@SuppressWarnings("serial")
-public class RemoteEventBusDisconnectEvent extends GwtEvent<RemoteEventBusDisconnectEvent.Handler> implements Serializable {
+public class RemoteEventBusDisconnectEvent extends GwtEvent<RemoteEventBusDisconnectEvent.Handler> {
+
+  public static interface Handler extends EventHandler {
+    void onDisconnect(RemoteEventBusDisconnectEvent event);
+  }
+  public static Type<Handler> TYPE = new Type<Handler>();
+
 
   private final RemoteEventBus source;
 
@@ -14,17 +17,12 @@ public class RemoteEventBusDisconnectEvent extends GwtEvent<RemoteEventBusDiscon
     this.source = source;
   }
 
-  @Override
-  public String toString() { return "disconnected"; }
-
   public RemoteEventBus getSource() {
     return source;
   }
 
-  public static interface Handler extends EventHandler {
-    void onDisconnect(RemoteEventBusDisconnectEvent event);
-  }
-  public static Type<Handler> TYPE = new Type<Handler>();
+  @Override
+  public String toString() { return "disconnected"; }
 
   @Override
   public GwtEvent.Type<Handler> getAssociatedType() {
