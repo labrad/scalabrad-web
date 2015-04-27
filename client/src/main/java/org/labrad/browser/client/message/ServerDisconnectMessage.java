@@ -11,4 +11,5 @@ public class ServerDisconnectMessage implements Message {
   }
 
   public String getServer() { return server; }
+  public void setServer(String server) { this.server = server; }
 }

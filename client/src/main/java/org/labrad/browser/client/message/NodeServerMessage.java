@@ -19,7 +19,14 @@ public class NodeServerMessage implements Message {
   }
 
   public String getNode() { return node; }
+  public void setNode(String node) { this.node = node; }
+
   public String getServer() { return server; }
+  public void setServer(String server) { this.server = server; }
+
   public String getInstance() { return instance; }
+  public void setInstance(String instance) { this.instance = instance; }
+
   public InstanceStatus getStatus() { return status; }
+  public void setStatus(InstanceStatus status) { this.status = status; }
 }

@@ -14,11 +14,9 @@ public class NodeStatusMessage implements Message, IsSerializable {
     this.servers = servers;
   }
 
-  public String getName() {
-    return name;
-  }
+  public String getName() { return name; }
+  public void setName(String name) { this.name = name; }
 
-  public NodeServerStatus[] getServers() {
-    return servers;
-  }
+  public NodeServerStatus[] getServers() { return servers; }
+  public void setServers(NodeServerStatus[] servers) { this.servers = servers; }
 }

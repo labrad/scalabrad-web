@@ -21,27 +21,21 @@ public class NodeServerStatus implements IsSerializable {
     this.instances = instances;
   }
 
-  public String getName() {
-    return name;
-  }
+  public String getName() { return name; }
+  public void setName(String name) { this.name = name; }
 
-  public String getDescription() {
-    return description;
-  }
+  public String getDescription() { return description; }
+  public void setDescription(String description) { this.description = description; }
 
-  public String getVersion() {
-    return version;
-  }
+  public String getVersion() { return version; }
+  public void setVersion(String version) { this.version = version; }
 
-  public String getInstanceName() {
-    return instanceName;
-  }
+  public String getInstanceName() { return instanceName; }
+  public void setInstanceName(String instanceName) { this.instanceName = instanceName; }
 
-  public String[] getEnvironmentVars() {
-    return environmentVars;
-  }
+  public String[] getEnvironmentVars() { return environmentVars; }
+  public void setEnvironmentVars(String[] vars) { this.environmentVars = vars; }
 
-  public String[] getInstances() {
-    return instances;
-  }
+  public String[] getInstances() { return instances; }
+  public void setInstances(String[] instances) { this.instances = instances; }
 }

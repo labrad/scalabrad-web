@@ -11,4 +11,5 @@ public class LabradDisconnectMessage implements Message {
   }
 
   public String getHost() { return host; }
+  public void setHost(String host) { this.host = host; }
 }
