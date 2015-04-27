@@ -45,7 +45,8 @@ lazy val client = project.in(file("client"))
       val warDir = target.value / "war"
       val args: Array[String] = Array(
         "-XjsInteropMode", "JS",
-        "-war", warDir.getAbsolutePath
+        "-war", warDir.getAbsolutePath,
+        "-gen", (target.value / "gwt-gen").getAbsolutePath
       ) ++ gwtModules.value
 
       val forkOptions = ForkOptions(
