@@ -27,7 +27,7 @@ class BrowserServletConfig extends GuiceServletContextListener {
         serve(moduleName + RegistryService.PATH) `with` classOf[RegistryServiceImpl]
         serve(moduleName + VaultService.PATH) `with` classOf[VaultServiceImpl]
 
-        serve("/ws/echo") `with` classOf[MyEchoServlet]
+        serve("/ws/echo") `with` classOf[LabradSocketServlet]
       }
     })
   }

@@ -198,20 +198,20 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
     val request = getThreadLocalRequest
     val session = request.getSession
     log(s"watchRegistryPath: session=${session.getId}, id=$id, path=$path")
-    val queue = ClientEventQueue.get(session, id).getOrElse {
-      sys.error(s"no ClientEventQueue found. session=${session.getId}, id=$id")
-    }
-    queue.watchRegistryPath(watchId, path)
+//    val queue = ClientEventQueue.get(session, id).getOrElse {
+//      sys.error(s"no ClientEventQueue found. session=${session.getId}, id=$id")
+//    }
+//    queue.watchRegistryPath(watchId, path)
   }
 
   def unwatchRegistryPath(id: String, watchId: String): Unit = {
     val request = getThreadLocalRequest
     val session = request.getSession
     log(s"unwatchRegistryPath: session=${session.getId}, id=$id, watchId=$watchId")
-    val queue = ClientEventQueue.get(session, id).getOrElse {
-      sys.error(s"no ClientEventQueue found. session=${session.getId}, id=$id")
-    }
-    queue.unwatchRegistryPath(watchId)
+//    val queue = ClientEventQueue.get(session, id).getOrElse {
+//      sys.error(s"no ClientEventQueue found. session=${session.getId}, id=$id")
+//    }
+//    queue.unwatchRegistryPath(watchId)
   }
 
   private def samePath(a: Array[String], b: Array[String]) = getAbsPath(a).toSeq == getAbsPath(b).toSeq

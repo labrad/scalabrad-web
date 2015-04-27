@@ -7,6 +7,7 @@ import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.WebSocketListener
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
+import org.labrad.Client
 import org.labrad.browser.client.message._
 import org.labrad.browser.client.nodes.InstanceStatus
 import org.labrad.util.Logging
@@ -17,56 +18,60 @@ import scala.reflect.ClassTag
 
 case class ServerStatus(name: String, description: String, version: String, instanceName: String, envVars: Seq[String], instances: Seq[String])
 
-object EventSockets {
+object LabradSockets {
   private[server] val mapper = new ObjectMapper
 
   private val lock = new Object
-  private val sockets = mutable.Set.empty[EventSocket]
+  private val sockets = mutable.Set.empty[LabradSocket]
 
-  def all: Set[EventSocket] = {
+  def all: Set[LabradSocket] = {
     lock.synchronized { sockets.toSet }
   }
 
-  def register(socket: EventSocket): Unit = {
+  def register(socket: LabradSocket): Unit = {
     lock.synchronized { sockets += socket }
   }
 
-  def unregister(socket: EventSocket): Unit = {
+  def unregister(socket: LabradSocket): Unit = {
     lock.synchronized { sockets -= socket }
   }
 }
 
 @Singleton
-class MyEchoServlet extends WebSocketServlet {
+class LabradSocketServlet extends WebSocketServlet {
 
   override def configure(factory: WebSocketServletFactory): Unit = {
     factory.getPolicy.setIdleTimeout(60.seconds.toMillis)
-    factory.register(classOf[EventSocket])
+    factory.register(classOf[LabradSocket])
   }
 }
 
-class EventSocket extends WebSocketListener with Logging {
+class LabradSocket extends WebSocketListener with Logging {
 
   private var session: Session = _
+  private var cxn: LabradConnection2 = _
 
   override def onWebSocketConnect(session: Session): Unit = {
     log.info(s"connected! session=$session")
     this.session = session
-    EventSockets.register(this)
+    this.cxn = new LabradConnection2(this)
+    LabradSockets.register(this)
   }
 
   override def onWebSocketClose(statusCode: Int, reason: String): Unit = {
     log.info(s"closed! statusCode=$statusCode, reason=$reason")
     this.session = null
-    EventSockets.unregister(this)
+    this.cxn.close()
+    this.cxn = null
+    LabradSockets.unregister(this)
   }
 
   override def onWebSocketText(message: String): Unit = {
     log.info(s"got message: $message")
     if ((session != null) && (session.isOpen)) {
-      println(s"Echoing back message: $message")
-      send(new RegistryDirMessage("thePath", "theName", true))
-      send(new RegistryKeyMessage("thePath", "theName", true))
+      if (message == "PING") {
+        session.getRemote.sendString("PONG")
+      }
     }
   }
 
@@ -80,7 +85,7 @@ class EventSocket extends WebSocketListener with Logging {
 
   def send[T <: Message](t: T)(implicit tag: ClassTag[T]): Unit = {
     val className = tag.runtimeClass.getName
-    val payload = Json(EventSockets.mapper.writeValueAsString(t))
+    val payload = Json(LabradSockets.mapper.writeValueAsString(t))
     val message = json"""{
       type: $className,
       payload: $payload
