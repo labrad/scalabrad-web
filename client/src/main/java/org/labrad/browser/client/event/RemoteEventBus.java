@@ -6,6 +6,7 @@ import org.labrad.browser.client.message.Codecs;
 import org.labrad.browser.client.message.LabradConnectMessage;
 import org.labrad.browser.client.message.LabradDisconnectMessage;
 import org.labrad.browser.client.message.NodeServerMessage;
+import org.labrad.browser.client.message.NodeServerStatus;
 import org.labrad.browser.client.message.NodeStatusMessage;
 import org.labrad.browser.client.message.RegistryDirMessage;
 import org.labrad.browser.client.message.RegistryKeyMessage;
@@ -20,6 +21,7 @@ import com.google.gwt.core.client.js.JsType;
 import com.google.gwt.event.shared.EventBus;
 import com.google.gwt.event.shared.GwtEvent;
 import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.inject.Inject;
@@ -33,6 +35,7 @@ public class RemoteEventBus {
   private static final int ERROR_DELAY = 5000;
   private static final int INITIAL_POLL_DELAY = 1000;
   private static final int MINIMUM_POLL_DELAY = 100;
+  private static final int PING_DELAY = 30000;
   private static final Logger log = Logger.getLogger("RemoteEventBus");
 
   private boolean running = false;
@@ -42,6 +45,7 @@ public class RemoteEventBus {
   private final AsyncCallback<Void> connectCallback;
   private final AsyncCallback<GwtEvent<?>[]> getEventCallback;
   private final Timer pollTimer;
+  private final Timer pingTimer;
 
   private final String location = GWT.getHostPageBaseURL().replace("http", "ws") + "ws/echo";
   private final Websocket socket = new Websocket(location);
@@ -60,47 +64,54 @@ public class RemoteEventBus {
       @Override
       public void onOpen() {
         log.info("web socket sending: Hello!!");
-        socket.send("Hello!!");
+        ping();
       }
 
       @Override
       public void onMessage(String data) {
         log.info("web socket received: " + data);
-        Message msg = JsonUtil.parse(data);
-        if (RegistryKeyMessage.class.getName().equals(msg.type())) {
-          RegistryKeyMessage m = Codecs.registryKey.decode(payload(msg));
-          eventBus.fireEvent(new RegistryKeyEvent(m));
-
-        } else if (RegistryDirMessage.class.getName().equals(msg.type())) {
-          RegistryDirMessage m = Codecs.registryDir.decode(payload(msg));
-          eventBus.fireEvent(new RegistryDirEvent(m));
-
-        } else if (LabradConnectMessage.class.getName().equals(msg.type())) {
-          LabradConnectMessage m = Codecs.labradConnect.decode(payload(msg));
-          eventBus.fireEvent(new LabradConnectEvent(m));
-
-        } else if (LabradDisconnectMessage.class.getName().equals(msg.type())) {
-          LabradDisconnectMessage m = Codecs.labradDisconnect.decode(payload(msg));
-          eventBus.fireEvent(new LabradDisconnectEvent(m));
-
-        } else if (ServerConnectMessage.class.getName().equals(msg.type())) {
-          ServerConnectMessage m = Codecs.serverConnect.decode(payload(msg));
-          eventBus.fireEvent(new ServerConnectEvent(m));
-
-        } else if (ServerDisconnectMessage.class.getName().equals(msg.type())) {
-          ServerDisconnectMessage m = Codecs.serverDisconnect.decode(payload(msg));
-          eventBus.fireEvent(new ServerDisconnectEvent(m));
-
-        } else if (NodeServerMessage.class.getName().equals(msg.type())) {
-          NodeServerMessage m = Codecs.nodeServer.decode(payload(msg));
-          eventBus.fireEvent(new NodeServerEvent(m));
-
-        } else if (NodeStatusMessage.class.getName().equals(msg.type())) {
-          NodeStatusMessage m = Codecs.nodeStatus.decode(payload(msg));
-          eventBus.fireEvent(new NodeStatusEvent(m));
-
+        if ("PING".equals(data)) {
+          pong();
+        } else if ("PONG".equals(data)) {
+          // send another ping in a few seconds
+          pingLater(PING_DELAY);
         } else {
-          log.info("got message with unknown type: " + msg.type());
+          Message msg = JsonUtil.parse(data);
+          if (RegistryKeyMessage.class.getName().equals(msg.type())) {
+            RegistryKeyMessage m = Codecs.registryKey.decode(payload(msg));
+            eventBus.fireEvent(new RegistryKeyEvent(m));
+
+          } else if (RegistryDirMessage.class.getName().equals(msg.type())) {
+            RegistryDirMessage m = Codecs.registryDir.decode(payload(msg));
+            eventBus.fireEvent(new RegistryDirEvent(m));
+
+          } else if (LabradConnectMessage.class.getName().equals(msg.type())) {
+            LabradConnectMessage m = Codecs.labradConnect.decode(payload(msg));
+            eventBus.fireEvent(new LabradConnectEvent(m));
+
+          } else if (LabradDisconnectMessage.class.getName().equals(msg.type())) {
+            LabradDisconnectMessage m = Codecs.labradDisconnect.decode(payload(msg));
+            eventBus.fireEvent(new LabradDisconnectEvent(m));
+
+          } else if (ServerConnectMessage.class.getName().equals(msg.type())) {
+            ServerConnectMessage m = Codecs.serverConnect.decode(payload(msg));
+            eventBus.fireEvent(new ServerConnectEvent(m));
+
+          } else if (ServerDisconnectMessage.class.getName().equals(msg.type())) {
+            ServerDisconnectMessage m = Codecs.serverDisconnect.decode(payload(msg));
+            eventBus.fireEvent(new ServerDisconnectEvent(m));
+
+          } else if (NodeServerMessage.class.getName().equals(msg.type())) {
+            NodeServerMessage m = Codecs.nodeServer.decode(payload(msg));
+            eventBus.fireEvent(new NodeServerEvent(m));
+
+          } else if (NodeStatusMessage.class.getName().equals(msg.type())) {
+            NodeStatusMessage m = Codecs.nodeStatus.decode(payload(msg));
+            eventBus.fireEvent(new NodeStatusEvent(m));
+
+          } else {
+            log.info("got message with unknown type: " + msg.type());
+          }
         }
       }
 
@@ -159,6 +170,10 @@ public class RemoteEventBus {
       }
     };
 
+    pingTimer = new Timer() {
+      public void run() { ping(); }
+    };
+
     pollTimer = new Timer() {
       public void run() { poll(); }
     };
@@ -202,6 +217,20 @@ public class RemoteEventBus {
   private void pollLater(int delayMillis) {
     if (running) {
       pollTimer.schedule(delayMillis);
+    }
+  }
+
+  private void ping() {
+    socket.send("PING");
+  }
+
+  private void pong() {
+    socket.send("PONG");
+  }
+
+  private void pingLater(int delayMillis) {
+    if (running) {
+      pingTimer.schedule(delayMillis);
     }
   }
 
