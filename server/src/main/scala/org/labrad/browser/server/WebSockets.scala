@@ -1,7 +1,6 @@
 package org.labrad.browser.server
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import javax.inject.Singleton
 import net.maffoo.jsonquote.literal._
 import org.eclipse.jetty.websocket.api.Session
 import org.eclipse.jetty.websocket.api.WebSocketListener
@@ -37,7 +36,6 @@ object LabradSockets {
   }
 }
 
-@Singleton
 class LabradSocketServlet extends WebSocketServlet {
 
   override def configure(factory: WebSocketServletFactory): Unit = {
@@ -49,12 +47,12 @@ class LabradSocketServlet extends WebSocketServlet {
 class LabradSocket extends WebSocketListener with Logging {
 
   private var session: Session = _
-  private var cxn: LabradConnection2 = _
+  private var cxn: LabradConnection = _
 
   override def onWebSocketConnect(session: Session): Unit = {
     log.info(s"connected! session=$session")
     this.session = session
-    this.cxn = new LabradConnection2(this)
+    this.cxn = new LabradConnection(socketOpt = Some(this))
     LabradSockets.register(this)
   }
 

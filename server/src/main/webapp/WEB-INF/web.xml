@@ -11,31 +11,41 @@
   </welcome-file-list>
 
   <listener>
-    <listener-class>org.labrad.browser.server.BrowserServletConfig</listener-class>
-  </listener>
-
-  <listener>
-    <listener-class>org.labrad.browser.server.ClientEventQueue$SessionListener</listener-class>
-  </listener>
-
-  <listener>
-    <listener-class>org.labrad.browser.server.LabradConnection</listener-class>
+    <listener-class>org.labrad.browser.server.LabradConnectionListener</listener-class>
   </listener>
 
   <session-config>
     <session-timeout>5</session-timeout>
   </session-config>
 
-  <!-- filter everything through Guice -->
-  <filter>
-    <filter-name>guiceFilter</filter-name>
-    <filter-class>com.google.inject.servlet.GuiceFilter</filter-class>
-    <async-supported>true</async-supported>
-  </filter>
-  <filter-mapping>
-    <filter-name>guiceFilter</filter-name>
-    <url-pattern>/*</url-pattern>
-    <async-supported>true</async-supported>
-  </filter-mapping>
+
+  <servlet>
+    <servlet-name>rest-api-servlet</servlet-name>
+    <servlet-class>
+      org.glassfish.jersey.servlet.ServletContainer
+    </servlet-class>
+    <init-param>
+      <param-name>jersey.config.server.provider.packages</param-name>
+      <param-value>org.labrad.browser.server</param-value>
+    </init-param>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>rest-api-servlet</servlet-name>
+    <url-pattern>/labradbrowser/api/*</url-pattern>
+  </servlet-mapping>
+
+
+  <servlet>
+    <servlet-name>websocket-api-servlet</servlet-name>
+    <servlet-class>org.labrad.browser.server.LabradSocketServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>websocket-api-servlet</servlet-name>
+    <url-pattern>/ws/api</url-pattern>
+  </servlet-mapping>
 
 </web-app>

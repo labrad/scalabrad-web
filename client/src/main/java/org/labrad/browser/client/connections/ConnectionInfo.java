@@ -3,25 +3,25 @@ package org.labrad.browser.client.connections;
 import com.google.gwt.user.client.rpc.IsSerializable;
 
 public class ConnectionInfo implements IsSerializable {
-  private long ID;
-  private String name;
-  private boolean isServer;
-  private boolean isActive;
-  private long serverReqCount;
-  private long serverRespCount;
-  private long clientReqCount;
-  private long clientRespCount;
-  private long msgSendCount;
-  private long msgRecvCount;
+  public long id;
+  public String name;
+  public boolean server;
+  public boolean active;
+  public long serverReqCount;
+  public long serverRespCount;
+  public long clientReqCount;
+  public long clientRespCount;
+  public long msgSendCount;
+  public long msgRecvCount;
 
-  public ConnectionInfo(long ID, String name, boolean isServer, boolean isActive,
+  public ConnectionInfo(long ID, String name, boolean server, boolean active,
                         long serverReqCount, long serverRespCount,
                         long clientReqCount, long clientRespCount,
                         long msgSendCount, long msgRecvCount) {
-    this.ID = ID;
+    this.id = ID;
     this.name = name;
-    this.isServer = isServer;
-    this.isActive = isActive;
+    this.server = server;
+    this.active = active;
     this.serverReqCount = serverReqCount;
     this.serverRespCount = serverRespCount;
     this.clientReqCount = clientReqCount;
@@ -31,15 +31,4 @@ public class ConnectionInfo implements IsSerializable {
   }
 
   protected ConnectionInfo() {}
-
-  public long getId() { return ID; }
-  public String getName() { return name; }
-  public boolean isServer() { return isServer; }
-  public boolean isActive() { return isActive; }
-  public long getServerReqCount() { return serverReqCount; }
-  public long getServerRespCount() { return serverRespCount; }
-  public long getClientReqCount() { return clientReqCount; }
-  public long getClientRespCount() { return clientRespCount; }
-  public long getMsgSendCount() { return msgSendCount; }
-  public long getMsgRecvCount() { return msgRecvCount; }
 }

@@ -1,23 +1,26 @@
 package org.labrad.browser.server
 
-import scala.collection.JavaConversions._
-
+import com.fasterxml.jackson.databind.ObjectMapper
+import java.util.{List => JList}
 import java.util.concurrent.ExecutionException
-
-import javax.inject.Singleton
-import javax.servlet.ServletContext
+import javax.ws.rs.GET
+import javax.ws.rs.Path
+import javax.ws.rs.PathParam
+import javax.ws.rs.POST
+import javax.ws.rs.QueryParam
+import javax.ws.rs.core.Context
+import org.labrad.PacketProxy
+import org.labrad.browser.client.registry.RegistryListing
+import org.labrad.data._
+import scala.collection.JavaConverters._
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-import org.labrad.PacketProxy
-import org.labrad.browser.client.registry.{RegistryError, RegistryListing, RegistryService}
-import org.labrad.data._
+@Path("/registry")
+class RegistryService extends Resource {
 
-@Singleton
-class RegistryServiceImpl extends AsyncServlet with RegistryService {
-
-  private def getAbsPath(path: Array[String]) = "" +: path
+  private def getAbsPath(path: Seq[String]) = "" +: path
 
   private def send(pkt: PacketProxy) = Await.result(pkt.send(), 10.seconds)
 
@@ -35,16 +38,22 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
    * @param create
    * @return
    */
-  private def startPacket(path: Array[String], create: Boolean = false) = {
+  private def startPacket(path: Seq[String], create: Boolean = false) = {
     val absPath = getAbsPath(path)
     val pkt = LabradConnection.getRegistry.packet()
     pkt.cd(absPath, create = create)
     pkt
   }
 
-  def getListing(path: Array[String]): RegistryListing = getListing(path, false)
+  @Path("/dir")
+  @GET
+  def listDir(
+    @QueryParam("path") path: JList[String]
+  ): String = {
+    mapper.writeValueAsString(getListing(path.asScala))
+  }
 
-  private def getListing(path: Array[String], create: Boolean): RegistryListing = {
+  private def getListing(path: Seq[String], create: Boolean = false): RegistryListing = {
     // get directory listing
     val pkt = startPacket(path)
     val idx = pkt.dir()
@@ -52,31 +61,37 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
     val (dirs, keys) = Await.result(idx, 10.seconds)
 
     val vals = if (keys.size == 0)
-      Array.empty[String]
+      Seq.empty[String]
     else {
       // get the values of all keys
       val pkt = startPacket(path)
       val fs = keys.map(key => pkt.get(key))
       try send(pkt) catch oops("getting key values")
       val data = Await.result(Future.sequence(fs.toSeq), 10.seconds)
-      data.map(_.toString).toArray
+      data.map(_.toString)
     }
 
-    new RegistryListing(path, dirs.toArray, keys.toArray, vals)
+    new RegistryListing(path.toSeq.asJava, dirs.asJava, keys.asJava, vals.asJava)
   }
 
   /**
    * Set a key in the registry at a particular path.
    */
-  def set(path: Array[String], key: String, value: String): RegistryListing = {
+  @Path("/set")
+  @POST
+  def set(
+    @QueryParam("path") path: JList[String],
+    @QueryParam("key") key: String,
+    @QueryParam("value") value: String
+  ): String = {
     val data = try Data.parse(value) catch oops("converting string value to data")
-    set(path, key, data)
+    mapper.writeValueAsString(set(path.asScala, key, data))
   }
 
   /**
    * Set a key in the registry at a particular path.
    */
-  def set(path: Array[String], key: String, value: Data): RegistryListing = {
+  private def set(path: Seq[String], key: String, value: Data): RegistryListing = {
     val pkt = startPacket(path)
     pkt.set(key, value)
 
@@ -88,38 +103,53 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
   /**
    * Remove a key.
    */
-  def del(path: Array[String], key: String) = {
-    val pkt = startPacket(path)
+  @Path("/del")
+  @POST
+  def del(
+    @QueryParam("path") path: JList[String],
+    @QueryParam("key") key: String
+  ): String = {
+    val pkt = startPacket(path.asScala)
     pkt.del(key)
     try send(pkt) catch oops("deleting key")
-    getListing(path)
+    listDir(path)
   }
 
   /**
    * Make a new directory.
    */
-  def mkdir(path: Array[String], dir: String) = {
-    val pkt = startPacket(path)
+  @Path("/mkdir")
+  @POST
+  def mkdir(
+    @QueryParam("path") path: JList[String],
+    @QueryParam("dir") dir: String
+  ): String = {
+    val pkt = startPacket(path.asScala)
     pkt.mkDir(dir)
     try send(pkt) catch oops("creating directory")
-    getListing(path)
+    listDir(path)
   }
 
   /**
    * Remove a directory.
    */
-  def rmdir(path: Array[String], dir: String) = {
-    def doRmdir(path: Array[String], dir: String) {
+  @Path("/rmdir")
+  @POST
+  def rmdir(
+    @QueryParam("path") path: JList[String],
+    @QueryParam("dir") dir: String
+  ): String = {
+    def doRmdir(path: Seq[String], dir: String) {
        // remove all subdirectories
       val subPath = path :+ dir
       val ls = getListing(subPath)
-      for (subDir <- ls.getDirs)
+      for (subDir <- ls.dirs.asScala)
         doRmdir(subPath, subDir)
 
       // remove all keys
-      if (ls.getKeys.size > 0) {
+      if (ls.keys.size > 0) {
         val req = startPacket(subPath)
-        for (key <- ls.getKeys)
+        for (key <- ls.keys.asScala)
           req.call("del", Str(key))
         send(req)
       }
@@ -130,31 +160,45 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
       send(pkt)
     }
 
-    try doRmdir(path, dir) catch oops("removing directory")
-    getListing(path)
+    try doRmdir(path.asScala, dir) catch oops("removing directory")
+    listDir(path)
   }
 
-  def copy(path: Array[String], key: String, newPath: Array[String], newKey: String) = {
+  @Path("/copy")
+  @POST
+  def copy(
+    @QueryParam("path") path: JList[String],
+    @QueryParam("key") key: String,
+    @QueryParam("newPath") newPath: JList[String],
+    @QueryParam("newKey") newKey: String
+  ): String = {
     try {
-      var pkt = startPacket(path)
+      var pkt = startPacket(path.asScala)
       val dataF = pkt.get(key)
       send(pkt)
       val value = Await.result(dataF, 10.seconds)
 
-      pkt = startPacket(newPath)
+      pkt = startPacket(newPath.asScala)
       pkt.set(newKey, value)
       send(pkt)
     } catch oops("copying key")
-    getListing(newPath)
+    listDir(newPath)
   }
 
-  def copyDir(path: Array[String], dir: String, newPath: Array[String], newDir: String) = {
-    def doCopyDir(path: Array[String], dir: String, newPath: Array[String], newDir: String) {
+  @Path("/copyDir")
+  @POST
+  def copyDir(
+    @QueryParam("path") path: JList[String],
+    @QueryParam("dir") dir: String,
+    @QueryParam("newPath") newPath: JList[String],
+    @QueryParam("newDir") newDir: String
+  ): String = {
+    def doCopyDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String) {
 
       // if newDir does not exist, create it
       val listing = getListing(newPath)
-      if (!listing.getDirs.contains(newDir)) {
-        mkdir(newPath, newDir)
+      if (!listing.dirs.contains(newDir)) {
+        mkdir(newPath.asJava, newDir)
       }
 
       val subpath = path :+ dir
@@ -162,57 +206,94 @@ class RegistryServiceImpl extends AsyncServlet with RegistryService {
       val subListing = getListing(subpath)
 
       // recursively copy all subdirectories
-      for (subdir <- subListing.getDirs)
+      for (subdir <- subListing.dirs.asScala)
         doCopyDir(subpath, subdir, newSubpath, subdir)
 
       // copy all keys
-      for (key <- subListing.getKeys)
-        copy(subpath, key, newSubpath, key)
+      for (key <- subListing.keys.asScala)
+        copy(subpath.asJava, key, newSubpath.asJava, key)
     }
 
-    doCopyDir(path, dir, newPath, newDir)
-    getListing(newPath)
+    doCopyDir(path.asScala, dir, newPath.asScala, newDir)
+    listDir(newPath)
   }
 
-  def rename(path: Array[String], key: String, newKey: String) = move(path, key, path, newKey)
+  @Path("/rename")
+  @POST
+  def rename(
+    @QueryParam("path") path: JList[String],
+    @QueryParam("key") key: String,
+    @QueryParam("newKey") newKey: String
+  ): String = move(path, key, path, newKey)
 
-  def renameDir(path: Array[String], dir: String, newDir: String) = moveDir(path, dir, path, newDir)
+  @Path("/renameDir")
+  @POST
+  def renameDir(
+    @QueryParam("path") path: JList[String],
+    @QueryParam("dir") dir: String,
+    @QueryParam("newDir") newDir: String
+  ): String = moveDir(path, dir, path, newDir)
 
-  def move(path: Array[String], key: String, newPath: Array[String], newKey: String) = {
-    if (!samePath(path, newPath) || newKey != key) {
+  @Path("/move")
+  @POST
+  def move(
+    @QueryParam("path") path: JList[String],
+    @QueryParam("key") key: String,
+    @QueryParam("newPath") newPath: JList[String],
+    @QueryParam("newKey") newKey: String
+  ): String = {
+    if (!samePath(path.asScala, newPath.asScala) || newKey != key) {
       copy(path, key, newPath, newKey)
       del(path, key)
     }
-    getListing(newPath)
+    listDir(newPath)
   }
 
-  def moveDir(path: Array[String], dir: String, newPath: Array[String], newDir: String) = {
-    if (!samePath(path, newPath) || newDir != dir) {
+  @Path("/moveDir")
+  @POST
+  def moveDir(
+    @QueryParam("path") path: JList[String],
+    @QueryParam("dir") dir: String,
+    @QueryParam("newPath") newPath: JList[String],
+    @QueryParam("newDir") newDir: String
+  ): String = {
+    if (!samePath(path.asScala, newPath.asScala) || newDir != dir) {
       copyDir(path, dir, newPath, newDir)
       rmdir(path, dir)
     }
-    getListing(newPath)
+    listDir(newPath)
   }
 
-  def watchRegistryPath(id: String, watchId: String, path: String): Unit = {
-    val request = getThreadLocalRequest
-    val session = request.getSession
-    log(s"watchRegistryPath: session=${session.getId}, id=$id, path=$path")
+  @Path("/watch")
+  @POST
+  def watchRegistryPath(
+    @QueryParam("id") id: String,
+    @QueryParam("watchId") watchId: String,
+    @QueryParam("path") path: String
+  ): Unit = {
+//    val request = getThreadLocalRequest
+//    val session = request.getSession
+//    log(s"watchRegistryPath: session=${session.getId}, id=$id, path=$path")
 //    val queue = ClientEventQueue.get(session, id).getOrElse {
 //      sys.error(s"no ClientEventQueue found. session=${session.getId}, id=$id")
 //    }
 //    queue.watchRegistryPath(watchId, path)
   }
 
-  def unwatchRegistryPath(id: String, watchId: String): Unit = {
-    val request = getThreadLocalRequest
-    val session = request.getSession
-    log(s"unwatchRegistryPath: session=${session.getId}, id=$id, watchId=$watchId")
+  @Path("/unwatch")
+  @POST
+  def unwatchRegistryPath(
+    @QueryParam("id") id: String,
+    @QueryParam("watchId") watchId: String
+  ): Unit = {
+//    val request = getThreadLocalRequest
+//    val session = request.getSession
+//    log(s"unwatchRegistryPath: session=${session.getId}, id=$id, watchId=$watchId")
 //    val queue = ClientEventQueue.get(session, id).getOrElse {
 //      sys.error(s"no ClientEventQueue found. session=${session.getId}, id=$id")
 //    }
 //    queue.unwatchRegistryPath(watchId)
   }
 
-  private def samePath(a: Array[String], b: Array[String]) = getAbsPath(a).toSeq == getAbsPath(b).toSeq
+  private def samePath(a: Seq[String], b: Seq[String]) = getAbsPath(a) == getAbsPath(b)
 }

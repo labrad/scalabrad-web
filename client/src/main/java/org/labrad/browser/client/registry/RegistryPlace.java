@@ -23,10 +23,6 @@ public class RegistryPlace extends Place {
     return path;
   }
 
-  public String[] getPathArray() {
-    return path.toArray(new String[] {});
-  }
-
   public String getPathString() {
     return new Tokenizer().getToken(this).replace("registry:", "");
   }

@@ -1,10 +1,14 @@
 package org.labrad.browser.client.server;
 
-import com.google.gwt.user.client.rpc.RemoteService;
-import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 
-@RemoteServiceRelativePath(InfoService.PATH)
-public interface InfoService extends RemoteService {
-  public static String PATH = "info";
-  public ServerInfo getServerInfo(String name);
+import org.fusesource.restygwt.client.MethodCallback;
+import org.fusesource.restygwt.client.RestService;
+
+public interface InfoService extends RestService {
+  @Path("/api/servers/{name}")
+  @GET
+  void getServerInfo(@PathParam("name") String name, MethodCallback<ServerInfo> callback);
 }

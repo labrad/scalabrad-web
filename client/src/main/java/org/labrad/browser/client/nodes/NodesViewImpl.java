@@ -17,7 +17,7 @@ public class NodesViewImpl extends Composite implements NodesView {
       @Assisted Presenter presenter,
       @Assisted EventBus eventBus,
       PlaceController placeController,
-      NodeServiceAsync nodeService,
+      NodeService nodeService,
       BrowserImages imageBundle) {
     this.presenter = presenter;
     initWidget(new ControlPanel(eventBus, placeController, nodeService, imageBundle));

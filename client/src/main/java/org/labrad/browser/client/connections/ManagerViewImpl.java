@@ -70,7 +70,7 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     // id
     TextColumn<ConnectionInfo> idColumn = new TextColumn<ConnectionInfo>() {
       @Override public String getValue(ConnectionInfo object) {
-        return "" + object.getId();
+        return "" + object.id;
       }
     };
     idColumn.setSortable(true);
@@ -82,10 +82,10 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     //status
     TextColumn<ConnectionInfo> statusColumn = new TextColumn<ConnectionInfo>() {
       @Override public String getValue(ConnectionInfo object) {
-        if (object.isServer()) {
-          return object.isActive() ? "server" : "server";
+        if (object.server) {
+          return object.active ? "server" : "server";
         } else {
-          return object.isActive() ? "client" : "client";
+          return object.active ? "client" : "client";
         }
       }
     };
@@ -97,8 +97,8 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     Cell<MaybeLink> nameCell = new LinkCell();
     Column<ConnectionInfo, MaybeLink> nameColumn = new Column<ConnectionInfo, MaybeLink>(nameCell) {
       @Override public MaybeLink getValue(ConnectionInfo c) {
-        String name = c.getName();
-        if (c.isServer() && c.isActive()) {
+        String name = c.name;
+        if (c.server && c.active) {
           ServerPlace place = new ServerPlace(name);
           return new MaybeLink(name, "#" + placeMapper.getToken(place), true);
         } else {
@@ -113,7 +113,7 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     // server requests
     TextColumn<ConnectionInfo> srvReqColumn = new TextColumn<ConnectionInfo>() {
       @Override public String getValue(ConnectionInfo c) {
-        return (c.isServer() && c.isActive()) ? "" + c.getServerReqCount() : "-";
+        return (c.server && c.active) ? "" + c.serverReqCount : "-";
       }
     };
     srvReqColumn.setSortable(true);
@@ -124,7 +124,7 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     // server responses
     TextColumn<ConnectionInfo> srvRepColumn = new TextColumn<ConnectionInfo>() {
       @Override public String getValue(ConnectionInfo c) {
-        return (c.isServer() && c.isActive()) ? "" + c.getServerRespCount() : "-";
+        return (c.server && c.active) ? "" + c.serverRespCount : "-";
       }
     };
     srvRepColumn.setSortable(true);
@@ -135,7 +135,7 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     // client requests
     TextColumn<ConnectionInfo> clientReqColumn = new TextColumn<ConnectionInfo>() {
       @Override public String getValue(ConnectionInfo c) {
-        return c.isActive() ? "" + c.getClientReqCount() : "-";
+        return c.active ? "" + c.clientReqCount : "-";
       }
     };
     clientReqColumn.setSortable(true);
@@ -146,7 +146,7 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     // client responses
     TextColumn<ConnectionInfo> clientRepColumn = new TextColumn<ConnectionInfo>() {
       @Override public String getValue(ConnectionInfo c) {
-        return c.isActive() ? "" + c.getClientRespCount() : "-";
+        return c.active ? "" + c.clientRespCount : "-";
       }
     };
     clientRepColumn.setSortable(true);
@@ -157,7 +157,7 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     // message send
     TextColumn<ConnectionInfo> msgSendColumn = new TextColumn<ConnectionInfo>() {
       @Override public String getValue(ConnectionInfo c) {
-        return c.isActive() ? "" + c.getMsgSendCount() : "-";
+        return c.active ? "" + c.msgSendCount : "-";
       }
     };
     msgSendColumn.setSortable(true);
@@ -168,7 +168,7 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     // message receive
     TextColumn<ConnectionInfo> msgRecvColumn = new TextColumn<ConnectionInfo>() {
       @Override public String getValue(ConnectionInfo c) {
-        return c.isActive() ? "" + c.getMsgRecvCount() : "-";
+        return c.active ? "" + c.msgRecvCount : "-";
       }
     };
     msgRecvColumn.setSortable(true);
@@ -183,9 +183,9 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     };
     disconnectColumn.setFieldUpdater(new FieldUpdater<ConnectionInfo, ImageResource>() {
       public void update(int index, ConnectionInfo object, ImageResource value) {
-        long id = object.getId();
-        String name = object.getName();
-        String type = object.isServer() ? "server" : "client";
+        long id = object.id;
+        String name = object.name;
+        String type = object.server ? "server" : "client";
         boolean disconnect = Window.confirm("Disconnect " + type + " '" + name + "' (" + id + ")?");
         if (disconnect) {
           presenter.closeConnection(id);
@@ -202,55 +202,55 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     // set up column sorting
     sortOn(idColumn, true, new Comparator<ConnectionInfo>() {
       public int compare(ConnectionInfo o1, ConnectionInfo o2) {
-        return compareLongs(o1.getId(), o2.getId());
+        return compareLongs(o1.id, o2.id);
       }
     });
 
     sortOn(statusColumn, false, new Comparator<ConnectionInfo>() {
       public int compare(ConnectionInfo o1, ConnectionInfo o2) {
-        return compareBools(o1.isServer(), o2.isServer());
+        return compareBools(o1.server, o2.server);
       }
     });
 
     sortOn(nameColumn, false, new Comparator<ConnectionInfo>() {
       public int compare(ConnectionInfo o1, ConnectionInfo o2) {
-        return compareStrings(o1.getName(), o2.getName());
+        return compareStrings(o1.name, o2.name);
       }
     });
 
     sortOn(srvReqColumn, false, new Comparator<ConnectionInfo>() {
       public int compare(ConnectionInfo o1, ConnectionInfo o2) {
-        return compareLongs(o1.getServerReqCount(), o2.getServerReqCount());
+        return compareLongs(o1.serverReqCount, o2.serverReqCount);
       }
     });
 
     sortOn(srvRepColumn, false, new Comparator<ConnectionInfo>() {
       public int compare(ConnectionInfo o1, ConnectionInfo o2) {
-        return compareLongs(o1.getServerRespCount(), o2.getServerRespCount());
+        return compareLongs(o1.serverRespCount, o2.serverRespCount);
       }
     });
 
     sortOn(clientReqColumn, false, new Comparator<ConnectionInfo>() {
       public int compare(ConnectionInfo o1, ConnectionInfo o2) {
-        return compareLongs(o1.getClientReqCount(), o2.getClientReqCount());
+        return compareLongs(o1.clientReqCount, o2.clientReqCount);
       }
     });
 
     sortOn(clientRepColumn, false, new Comparator<ConnectionInfo>() {
       public int compare(ConnectionInfo o1, ConnectionInfo o2) {
-        return compareLongs(o1.getClientRespCount(), o2.getClientRespCount());
+        return compareLongs(o1.clientRespCount, o2.clientRespCount);
       }
     });
 
     sortOn(msgSendColumn, false, new Comparator<ConnectionInfo>() {
       public int compare(ConnectionInfo o1, ConnectionInfo o2) {
-        return compareLongs(o1.getMsgSendCount(), o2.getMsgSendCount());
+        return compareLongs(o1.msgSendCount, o2.msgSendCount);
       }
     });
 
     sortOn(msgRecvColumn, false, new Comparator<ConnectionInfo>() {
       public int compare(ConnectionInfo o1, ConnectionInfo o2) {
-        return compareLongs(o1.getMsgRecvCount(), o2.getMsgRecvCount());
+        return compareLongs(o1.msgRecvCount, o2.msgRecvCount);
       }
     });
 
@@ -299,7 +299,7 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     Map<Integer, Long> idMap = new HashMap<Integer, Long>();
     Map<Long, Integer> idxMap = new HashMap<Long, Integer>();
     for (int i = 0; i < data.size(); i++) {
-      long id = data.get(i).getId();
+      long id = data.get(i).id;
       idMap.put(i, id);
       idxMap.put(id, i);
     }
@@ -308,7 +308,7 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     Set<Long> newIds = new HashSet<Long>();
     for (int i = 0; i < connections.length; i++) {
       ConnectionInfo info = connections[i];
-      long id = info.getId();
+      long id = info.id;
       if (idxMap.containsKey(id)) {
         // update row in the table
         data.set(idxMap.get(id), info);
@@ -322,7 +322,7 @@ public class ManagerViewImpl extends Composite implements ManagerView {
     }
     // remove rows with ids that no longer exist
     for (int i = data.size() - 1; i >= 0; i--) {
-      long id = data.get(i).getId();
+      long id = data.get(i).id;
       if (!newIds.contains(id)) {
         data.remove(i);
       }

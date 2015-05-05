@@ -1,7 +1,10 @@
 package org.labrad.browser.client.nodes;
 
+import java.util.List;
 import java.util.logging.Logger;
 
+import org.fusesource.restygwt.client.Method;
+import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.ViewFactory;
 import org.labrad.browser.client.event.RemoteEventBus;
 import org.labrad.browser.client.event.RemoteEventBusDisconnectEvent;
@@ -13,7 +16,6 @@ import com.google.gwt.event.shared.EventBus;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.assistedinject.AssistedInject;
@@ -26,7 +28,7 @@ public class NodesActivity extends AbstractActivity implements NodesView.Present
   private final PlaceController placeController;
   private final PlaceRedirector placeRedirector;
   private final RemoteEventBus remoteEventBus;
-  private final NodeServiceAsync nodeService;
+  private final NodeService nodeService;
 
   @AssistedInject
   public NodesActivity(
@@ -35,7 +37,7 @@ public class NodesActivity extends AbstractActivity implements NodesView.Present
     PlaceController placeController,
     RemoteEventBus remoteEventBus,
     PlaceRedirector placeRedirector,
-    NodeServiceAsync nodeService
+    NodeService nodeService
   ) {
     this.place = place;
     this.viewFactory = viewFactory;
@@ -55,14 +57,14 @@ public class NodesActivity extends AbstractActivity implements NodesView.Present
       }
     });
 
-    nodeService.getNodeInfo(new AsyncCallback<NodeStatusMessage[]>() {
+    nodeService.getNodeInfo(new MethodCallback<List<NodeStatusMessage>>() {
       @Override
-      public void onFailure(Throwable caught) {
+      public void onFailure(Method method, Throwable caught) {
         container.setWidget(viewFactory.createDisconnectedView(place, caught));
       }
 
       @Override
-      public void onSuccess(NodeStatusMessage[] result) {
+      public void onSuccess(Method method, List<NodeStatusMessage> result) {
         container.setWidget(viewFactory.createNodesView(NodesActivity.this, eventBus));
       }
     });

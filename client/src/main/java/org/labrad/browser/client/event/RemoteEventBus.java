@@ -2,11 +2,11 @@ package org.labrad.browser.client.event;
 
 import java.util.logging.Logger;
 
+import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.message.Codecs;
 import org.labrad.browser.client.message.LabradConnectMessage;
 import org.labrad.browser.client.message.LabradDisconnectMessage;
 import org.labrad.browser.client.message.NodeServerMessage;
-import org.labrad.browser.client.message.NodeServerStatus;
 import org.labrad.browser.client.message.NodeStatusMessage;
 import org.labrad.browser.client.message.RegistryDirMessage;
 import org.labrad.browser.client.message.RegistryKeyMessage;
@@ -19,11 +19,8 @@ import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.js.JsProperty;
 import com.google.gwt.core.client.js.JsType;
 import com.google.gwt.event.shared.EventBus;
-import com.google.gwt.event.shared.GwtEvent;
 import com.google.gwt.json.client.JSONObject;
-import com.google.gwt.json.client.JSONValue;
 import com.google.gwt.user.client.Timer;
-import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.inject.Inject;
 import com.sksamuel.gwt.websockets.Websocket;
 import com.sksamuel.gwt.websockets.WebsocketListener;
@@ -40,20 +37,27 @@ public class RemoteEventBus {
 
   private boolean running = false;
   private boolean connected = false;
+  private int nextRequest = 1;
   private final String connectionId = Util.randomId();
 
-  private final AsyncCallback<Void> connectCallback;
-  private final AsyncCallback<GwtEvent<?>[]> getEventCallback;
   private final Timer pollTimer;
   private final Timer pingTimer;
 
-  private final String location = GWT.getHostPageBaseURL().replace("http", "ws") + "ws/echo";
+  private final String location = GWT.getHostPageBaseURL().replace("http", "ws") + "ws/api";
   private final Websocket socket = new Websocket(location);
 
   @JsType
   public interface Message {
     @JsProperty String type();
     @JsProperty <T> T payload();
+  }
+
+  public interface Request {
+
+  }
+
+  public interface Response {
+
   }
 
   @Inject
@@ -121,54 +125,6 @@ public class RemoteEventBus {
       }
     });
     socket.open();
-
-    // callback for when we connect to the event service
-    connectCallback = new AsyncCallback<Void>() {
-      public void onFailure(Throwable caught) {
-        log.severe("Error while connecting: " + caught.getMessage());
-        if (running) {
-          pollLater(ERROR_DELAY);
-        }
-      }
-
-      public void onSuccess(Void result) {
-        log.info("web socket location: " + location);
-        log.info("Connected remote event bus. id=" + connectionId);
-        connected = true;
-        if (running) {
-          eventBus.fireEvent(new RemoteEventBusConnectEvent(RemoteEventBus.this));
-          pollLater(INITIAL_POLL_DELAY); // if we poll immediately then some browsers (e.g. chrome) display busy icon forever
-        }
-      }
-    };
-
-    // callback for when we are notified that an event is ready
-    getEventCallback = new AsyncCallback<GwtEvent<?>[]>() {
-      public void onFailure(Throwable caught) {
-        log.severe("Error while getting events: " + caught.toString());
-        connected = false;
-        if (running) {
-          eventBus.fireEvent(new RemoteEventBusDisconnectEvent(RemoteEventBus.this));
-          pollLater(ERROR_DELAY);
-        }
-      }
-
-      public void onSuccess(GwtEvent<?>[] events) {
-        log.info("got events: " + (events == null ? 0 : events.length));
-        if (running) {
-          if (events != null) {
-            for (GwtEvent<?> e : events) {
-              String[] segments = e.getClass().getName().split("\\.");
-              String className = segments[segments.length-1];
-              log.info(className + ": " + e.toString());
-
-              eventBus.fireEvent(e);
-            }
-          }
-          pollLater(MINIMUM_POLL_DELAY);
-        }
-      }
-    };
 
     pingTimer = new Timer() {
       public void run() { ping(); }
@@ -251,5 +207,10 @@ public class RemoteEventBus {
 //        public void onSuccess(Void result) {}
 //      });
     }
+  }
+
+  public void call(Request request, MethodCallback<Response> callback) {
+    int id = nextRequest++;
+
   }
 }

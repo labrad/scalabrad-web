@@ -2,6 +2,8 @@ package org.labrad.browser.client.registry;
 
 import java.util.logging.Logger;
 
+import org.fusesource.restygwt.client.Method;
+import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.ViewFactory;
 import org.labrad.browser.client.event.LabradConnectEvent;
 import org.labrad.browser.client.event.LabradDisconnectEvent;
@@ -25,7 +27,7 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
   private static final Logger log = Logger.getLogger("RegistryActivity");
 
   private final RegistryPlace place;
-  private final RegistryServiceAsync registryService;
+  private final RegistryService registryService;
   private final RemoteEventBus remoteEventBus;
   private final ViewFactory viewFactory;
   private final PlaceController placeController;
@@ -33,20 +35,20 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
   private final String watchId = Util.randomId();
 
 
-  private final AsyncCallback<Void> watchCallback = new AsyncCallback<Void>() {
-    @Override public void onFailure(Throwable caught) {
+  private final MethodCallback<Void> watchCallback = new MethodCallback<Void>() {
+    @Override public void onFailure(Method method, Throwable caught) {
       log.severe("watchRegistryPath failed. path=" + place.getPathString() + ", error=" + caught.getMessage());
     }
-    @Override public void onSuccess(Void result) {
+    @Override public void onSuccess(Method method, Void result) {
       log.info("watchRegistryPath. path=" + place.getPathString() + ", watchId=" + watchId);
     }
   };
 
-  private final AsyncCallback<Void> unwatchCallback = new AsyncCallback<Void>() {
-    @Override public void onFailure(Throwable caught) {
+  private final MethodCallback<Void> unwatchCallback = new MethodCallback<Void>() {
+    @Override public void onFailure(Method method, Throwable caught) {
       log.severe("unwatchRegistryPath failed. path=" + place.getPathString() + ", error=" + caught.getMessage());
     }
-    @Override public void onSuccess(Void result) {
+    @Override public void onSuccess(Method method, Void result) {
       log.info("unwatchRegistryPath. path=" + place.getPathString());
     }
   };
@@ -55,7 +57,7 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
   public RegistryActivity(
       @Assisted RegistryPlace place,
       RemoteEventBus remoteEventBus,
-      RegistryServiceAsync registryService,
+      RegistryService registryService,
       ViewFactory viewFactory,
       PlaceController placeController,
       PlaceRedirector redirector) {
@@ -99,11 +101,11 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
       }
     });
 
-    registryService.getListing(place.getPathArray(), new AsyncCallback<RegistryListing>() {
-      public void onFailure(Throwable caught) {
+    registryService.getListing(place.getPath(), new MethodCallback<RegistryListing>() {
+      public void onFailure(Method method, Throwable caught) {
         container.setWidget(viewFactory.createDisconnectedView(place, caught));
       }
-      public void onSuccess(RegistryListing result) {
+      public void onSuccess(Method method, RegistryListing result) {
         container.setWidget(viewFactory.createRegistryView(place.getPath(), result, RegistryActivity.this, eventBus));
       }
     });

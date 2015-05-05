@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.fusesource.restygwt.client.Method;
+import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.BrowserImages;
 import org.labrad.browser.client.event.NodeServerEvent;
 import org.labrad.browser.client.event.NodeStatusEvent;
@@ -18,7 +20,6 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.shared.EventBus;
 import com.google.gwt.place.shared.PlaceController;
-import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Grid;
 import com.google.gwt.user.client.ui.HasHorizontalAlignment;
 import com.google.gwt.user.client.ui.HasVerticalAlignment;
@@ -38,7 +39,7 @@ public class ControlPanel extends VerticalPanel
   private Grid table = null;
   private final EventBus eventBus;
   private final PlaceController placeController;
-  private final NodeServiceAsync nodeService;
+  private final NodeService nodeService;
   private final BrowserImages images;
 
   private final List<String> nodes = new ArrayList<String>();
@@ -50,7 +51,7 @@ public class ControlPanel extends VerticalPanel
    * Create a new control panel
    */
   @Inject
-  public ControlPanel(EventBus eventBus, PlaceController placeController, NodeServiceAsync nodeService, BrowserImages images) {
+  public ControlPanel(EventBus eventBus, PlaceController placeController, NodeService nodeService, BrowserImages images) {
     this.eventBus = eventBus;
     this.placeController = placeController;
     this.nodeService = nodeService;
@@ -67,8 +68,8 @@ public class ControlPanel extends VerticalPanel
   }
 
   public void onServerDisconnect(ServerDisconnectEvent e) {
-    if (nodeExists(e.msg.getServer())) {
-      removeNode(e.msg.getServer());
+    if (nodeExists(e.msg.server)) {
+      removeNode(e.msg.server);
     }
   }
 
@@ -76,12 +77,12 @@ public class ControlPanel extends VerticalPanel
    * Fetch the current status of all running nodes.
    */
   public void updateStatus() {
-    nodeService.getNodeInfo(new AsyncCallback<NodeStatusMessage[]>() {
-      public void onFailure(Throwable caught) {
+    nodeService.getNodeInfo(new MethodCallback<List<NodeStatusMessage>>() {
+      public void onFailure(Method method, Throwable caught) {
         log.severe("getNodeInfo: " + caught.getMessage());
       }
 
-      public void onSuccess(NodeStatusMessage[] result) {
+      public void onSuccess(Method method, List<NodeStatusMessage> result) {
         nodes.clear();
         globalServers.clear();
         localServers.clear();
@@ -120,14 +121,14 @@ public class ControlPanel extends VerticalPanel
    * @param globalServers
    */
   private void updateNodeStatus(NodeStatusMessage nodeInfo) {
-    String node = nodeInfo.getName();
+    String node = nodeInfo.name;
     // insert node name into node list in sorted order
     if (!nodeExists(node)) {
       insertSorted(node, nodes);
     }
     clearControllers(node);
     controllers.put(node, new HashMap<String, InstanceController>());
-    for (NodeServerStatus serverInfo : nodeInfo.getServers()) {
+    for (NodeServerStatus serverInfo : nodeInfo.servers) {
       updateServerInfo(node, serverInfo);
     }
   }
@@ -156,10 +157,10 @@ public class ControlPanel extends VerticalPanel
    * @param info
    */
   private void updateServerInfo(String node, NodeServerStatus info) {
-    String server = info.getName();
+    String server = info.name;
     // insert server name into appropriate server list in sorted order
     if (!serverExists(server)) {
-      if (info.getEnvironmentVars().length == 0) {
+      if (info.environmentVars.length == 0) {
         insertSorted(server, globalServers);
       } else {
         insertSorted(server, localServers);
@@ -168,8 +169,8 @@ public class ControlPanel extends VerticalPanel
     // create a new instance controller
     InstanceController ic = new InstanceController(
         eventBus, placeController, this,
-        node, server, info.getInstanceName(), info.getVersion(),
-        info.getInstances(), info.getEnvironmentVars());
+        node, server, info.instanceName, info.version,
+        info.instances, info.environmentVars);
     controllers.get(node).put(server, ic);
   }
 
@@ -324,13 +325,13 @@ public class ControlPanel extends VerticalPanel
     b.addClickHandler(new ClickHandler() {
       public void onClick(ClickEvent event) {
         b.setEnabled(false);
-        nodeService.refreshServers(nodeName, new AsyncCallback<String>() {
-          public void onFailure(Throwable caught) {
+        nodeService.refreshServers(nodeName, new MethodCallback<String>() {
+          public void onFailure(Method method, Throwable caught) {
             log.severe("refreshServers: " + caught);
             b.setEnabled(true);
           }
 
-          public void onSuccess(String result) {
+          public void onSuccess(Method method, String result) {
             b.setEnabled(true);
           }
 

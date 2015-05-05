@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.fusesource.restygwt.client.Method;
+import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.BrowserImages;
 import org.labrad.browser.client.event.NodeServerEvent;
 import org.labrad.browser.client.server.ServerPlace;
@@ -18,7 +20,6 @@ import com.google.gwt.event.dom.client.MouseOverHandler;
 import com.google.gwt.event.shared.EventBus;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.place.shared.PlaceController;
-import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.DeckPanel;
 import com.google.gwt.user.client.ui.HasHorizontalAlignment;
 import com.google.gwt.user.client.ui.HorizontalPanel;
@@ -28,10 +29,10 @@ import com.google.gwt.user.client.ui.PushButton;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
 public class InstanceController extends HorizontalPanel
-    implements ClickHandler, AsyncCallback<String>, NodeServerEvent.Handler {
+    implements ClickHandler, MethodCallback<String>, NodeServerEvent.Handler {
 
   private static final Logger log = Logger.getLogger("InstanceController");
-  private static NodeServiceAsync nodeService = GWT.create(NodeService.class);
+  private static NodeService nodeService = GWT.create(NodeService.class);
   private static BrowserImages images = GWT.create(BrowserImages.class);
 
   private final EventBus eventBus;
@@ -177,12 +178,12 @@ public class InstanceController extends HorizontalPanel
    * @param status
    */
   public void onNodeServerEvent(NodeServerEvent e) {
-    if (e.msg.getServer().equals(server)) {
-      boolean here = e.msg.getNode().equals(node);
-      if (here && e.msg.getInstance() != null) {
-        instance = e.msg.getInstance();
+    if (e.msg.server.equals(server)) {
+      boolean here = e.msg.node.equals(node);
+      if (here && e.msg.instance != null) {
+        instance = e.msg.instance;
       }
-      setStatus(e.msg.getStatus(), here);
+      setStatus(e.msg.status, here);
     }
   }
 
@@ -224,21 +225,14 @@ public class InstanceController extends HorizontalPanel
   /**
    * Log a failure when a request to start/stop/restart a server fails
    */
-  public void onFailure(Throwable caught) {
-    if (caught instanceof NodeRequestError) {
-      NodeRequestError e = (NodeRequestError)caught;
-      log.severe("failed to " + e.getAction() + " " +
-          "server '" + e.getServer() + "' " +
-          "on node '" + e.getNode() + "': " + e.getDetails());
-    } else {
-      log.severe("error: " + caught);
-    }
+  public void onFailure(Method method, Throwable caught) {
+    log.severe("error: " + caught);
   }
 
   /**
    * Start/stop/restart requests return the server instance name
    */
-  public void onSuccess(String result) {}
+  public void onSuccess(Method method, String result) {}
 
   /**
    * Set the widget status in response to state changes

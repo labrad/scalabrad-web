@@ -18,16 +18,16 @@ lazy val client = project.in(file("client"))
     name := "scalabrad-web-client",
 
     libraryDependencies ++= Seq(
-      "com.google.inject" % "guice" % "3.0" exclude("asm", "asm"),
-      "com.google.inject.extensions" % "guice-servlet" % "3.0",
       "com.google.gwt" % "gwt-codeserver" % gwtVersion,
       "com.google.gwt" % "gwt-dev" % gwtVersion,
       "com.google.gwt" % "gwt-elemental" % gwtVersion,
       "com.google.gwt" % "gwt-servlet" % gwtVersion,
       "com.google.gwt" % "gwt-user" % gwtVersion,
       "com.google.gwt.inject" % "gin" % "2.1.2",
+      "com.google.inject" % "guice" % "3.0" exclude("asm", "asm"),
       "com.googlecode.gflot" % "gflot" % "3.3.0",
       "com.sksamuel.gwt" % "gwt-websockets" % "1.0.4",
+      "javax.ws.rs" % "javax.ws.rs-api" % "2.0.1",
       "org.fusesource.restygwt" % "restygwt" % "2.0.2"
     ),
 
@@ -100,16 +100,12 @@ lazy val server = project.in(file("server"))
       "org.eclipse.jetty" % "jetty-util" % jettyVersion,
       "org.eclipse.jetty.websocket" % "websocket-servlet" % jettyVersion,
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.5.0",
-      "com.google.inject" % "guice" % "3.0" exclude("asm", "asm"),
-      "com.google.inject.extensions" % "guice-servlet" % "3.0",
-      "com.google.gwt" % "gwt-codeserver" % gwtVersion,
-      "com.google.gwt" % "gwt-dev" % gwtVersion,
-      "com.google.gwt" % "gwt-elemental" % gwtVersion,
-      "com.google.gwt" % "gwt-servlet" % gwtVersion,
-      "com.google.gwt" % "gwt-user" % gwtVersion,
+      "org.glassfish.jersey.core" % "jersey-server" % "2.17",
+      "org.glassfish.jersey.containers" % "jersey-container-servlet-core" % "2.17",
+      "org.glassfish.jersey.containers" % "jersey-container-jetty-http" % "2.17",
+      "org.glassfish.jersey.media" % "jersey-media-json-jackson" % "2.17",
       "net.maffoo" %% "jsonquote-core" % "0.2.1",
-      "org.fusesource.restygwt" % "restygwt" % "2.0.2",
-      "org.labrad" %% "scalabrad" % "0.2.0-M4"
+      "org.labrad" %% "scalabrad" % "0.2.0-M6"
     ),
 
     jetty(port = 8080), // add jetty settings for xsbt-web-plugin

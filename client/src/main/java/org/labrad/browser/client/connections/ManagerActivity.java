@@ -1,8 +1,11 @@
 package org.labrad.browser.client.connections;
 
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.fusesource.restygwt.client.Method;
+import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.ViewFactory;
 import org.labrad.browser.client.ui.RedirectPlace;
 
@@ -21,9 +24,9 @@ import com.google.inject.assistedinject.AssistedInject;
 public class ManagerActivity
     extends AbstractActivity
     implements ManagerView.Presenter,
-               AsyncCallback<ConnectionInfo[]> {
+               MethodCallback<List<ConnectionInfo>> {
   private final ManagerPlace place;
-  private final ManagerServiceAsync managerService;
+  private final ManagerService managerService;
   private final ViewFactory viewFactory;
   private final PlaceController placeController;
   private final PlaceHistoryMapper placeMapper;
@@ -36,7 +39,7 @@ public class ManagerActivity
   @AssistedInject
   public ManagerActivity(
       @Assisted ManagerPlace place,
-      ManagerServiceAsync managerService,
+      ManagerService managerService,
       ViewFactory viewFactory,
       PlaceController placeController,
       PlaceHistoryMapper placeMapper) {
@@ -49,30 +52,30 @@ public class ManagerActivity
 
   public void start(final AcceptsOneWidget container, final EventBus eventBus) {
     Window.setTitle("LabRAD - Manager");
-    managerService.getConnectionInfo(new AsyncCallback<ConnectionInfo[]>() {
+    managerService.getConnectionInfo(new MethodCallback<List<ConnectionInfo>>() {
 
       @Override
-      public void onFailure(Throwable caught) {
+      public void onFailure(Method method, Throwable caught) {
         container.setWidget(viewFactory.createDisconnectedView(place, caught));
       }
 
       @Override
-      public void onSuccess(ConnectionInfo[] result) {
+      public void onSuccess(Method method, List<ConnectionInfo> result) {
         view = viewFactory.createManagerView(ManagerActivity.this, eventBus, placeMapper);
         container.setWidget(view);
-        ManagerActivity.this.onSuccess(result);
+        ManagerActivity.this.onSuccess(method, result);
       }
     });
   }
 
-  public void onFailure(Throwable caught) {
+  public void onFailure(Method method, Throwable caught) {
     log.log(Level.WARNING, "Error while getting connection info", caught);
     placeController.goTo(new RedirectPlace(placeMapper.getToken(place)));
     pingLater();
   }
 
-  public void onSuccess(ConnectionInfo[] result) {
-    view.setData(result);
+  public void onSuccess(Method method, List<ConnectionInfo> result) {
+    view.setData(result.toArray(new ConnectionInfo[] {}));
     pingLater();
   }
 
@@ -96,12 +99,12 @@ public class ManagerActivity
   }
 
   public void closeConnection(final long id) {
-    managerService.closeConnection(id, new AsyncCallback<Void>() {
-      @Override public void onFailure(Throwable caught) {
+    managerService.closeConnection(id, new MethodCallback<Void>() {
+      @Override public void onFailure(Method method, Throwable caught) {
         log.severe("error while closing connection: id=" + id + ", error=" + caught.getMessage());
       }
 
-      @Override public void onSuccess(Void result) {
+      @Override public void onSuccess(Method method, Void result) {
         log.info("connection closed:" + id);
       }
     });
