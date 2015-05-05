@@ -208,24 +208,24 @@ public class RegistryViewImpl extends Composite implements RegistryView {
           if (key == null || key.isEmpty()) {
             boolean confirmed = Window.confirm("copy directory " + src + dir + "/ to " + dst + "?");
             if (confirmed) {
-              registryService.copyDir(srcPlace.getPath(), dir, place.getPath(), dir, defaultCallback);
+              registryService.copyDir(new RegistryService.CopyDir(srcPlace.getPath(), dir, place.getPath(), dir), defaultCallback);
             }
           } else {
             boolean confirmed = Window.confirm("copy key " + src + key + " to " + dst + "?");
             if (confirmed) {
-              registryService.copy(srcPlace.getPath(), key, place.getPath(), key, defaultCallback);
+              registryService.copy(new RegistryService.Copy(srcPlace.getPath(), key, place.getPath(), key), defaultCallback);
             }
           }
         } else { // move
           if (key == null || key.isEmpty()) {
             boolean confirmed = Window.confirm("move directory " + src + dir + "/ to " + dst + "?");
             if (confirmed) {
-              registryService.moveDir(srcPlace.getPath(), dir, place.getPath(), dir, defaultCallback);
+              registryService.moveDir(new RegistryService.MoveDir(srcPlace.getPath(), dir, place.getPath(), dir), defaultCallback);
             }
           } else {
             boolean confirmed = Window.confirm("move key " + src + key + " to " + dst + "?");
             if (confirmed) {
-              registryService.move(srcPlace.getPath(), key, place.getPath(), key, defaultCallback);
+              registryService.move(new RegistryService.Move(srcPlace.getPath(), key, place.getPath(), key), defaultCallback);
             }
           }
         }
@@ -245,7 +245,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
         String dir = Window.prompt("Enter directory name", "");
         if (dir == null) return;
 
-        registryService.mkdir(place.getPath(), dir, defaultCallback);
+        registryService.mkdir(new RegistryService.MkDir(place.getPath(), dir), defaultCallback);
       }
     });
     Button newKey = new Button("new key", new ClickHandler() {
@@ -257,7 +257,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
         String value = Window.prompt("Enter data value", "");
         if (value == null) return;
 
-        registryService.set(place.getPath(), key, value, defaultCallback);
+        registryService.set(new RegistryService.Set(place.getPath(),  key,  value), defaultCallback);
       }
     });
 
@@ -298,7 +298,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
         String dir = object.getName();
         String newDir = Window.prompt("New directory name", dir);
         if (newDir != null && !newDir.equals(dir)) {
-          registryService.renameDir(place.getPath(), dir, newDir, defaultCallback);
+          registryService.renameDir(new RegistryService.RenameDir(place.getPath(), dir, newDir), defaultCallback);
         }
       }
     });
@@ -315,7 +315,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
         String dir = object.getName();
         String newDir = Window.prompt("New directory name", dir);
         if (newDir != null && !newDir.equals(dir)) {
-          registryService.copyDir(place.getPath(), dir, place.getPath(), newDir, defaultCallback);
+          registryService.copyDir(new RegistryService.CopyDir(place.getPath(), dir, place.getPath(), newDir), defaultCallback);
         }
       }
     });
@@ -332,7 +332,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
         String dir = object.getName();
         boolean confirmed = Window.confirm("Delete directory " + dir + "?");
         if (confirmed) {
-          registryService.rmdir(place.getPath(), dir, defaultCallback);
+          registryService.rmdir(new RegistryService.RmDir(place.getPath(), dir), defaultCallback);
         }
       }
     });
@@ -360,7 +360,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
     };
     valueColumn.setFieldUpdater(new FieldUpdater<KeyTableRow, String>() {
       public void update(int index, KeyTableRow object, String value) {
-        registryService.set(place.getPath(), object.getKey(), value, defaultCallback);
+        registryService.set(new RegistryService.Set(place.getPath(), object.getKey(), value), defaultCallback);
       }
     });
     keyTable.addColumn(valueColumn);
@@ -375,7 +375,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
         String key = object.getKey();
         String newKey = Window.prompt("New key name", key);
         if (newKey != null && !newKey.equals(key)) {
-          registryService.rename(place.getPath(), key, newKey, defaultCallback);
+          registryService.rename(new RegistryService.Rename(place.getPath(), key, newKey), defaultCallback);
         }
       }
     });
@@ -392,7 +392,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
         String key = object.getKey();
         String newKey = Window.prompt("New key name", key);
         if (newKey != null && !newKey.equals(key)) {
-          registryService.copy(place.getPath(), key, place.getPath(), newKey, defaultCallback);
+          registryService.copy(new RegistryService.Copy(place.getPath(), key, place.getPath(), newKey), defaultCallback);
         }
       }
     });
@@ -408,7 +408,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
       public void update(int index, KeyTableRow object, ImageResource value) {
         boolean confirmed = Window.confirm("Delete key " + object.getKey() + "?");
         if (confirmed) {
-          registryService.del(place.getPath(), object.getKey(), defaultCallback);
+          registryService.del(new RegistryService.Del(place.getPath(), object.getKey()), defaultCallback);
         }
       }
     });
@@ -463,7 +463,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
   }
 
   public void refresh() {
-    registryService.getListing(place.getPath(), new MethodCallback<RegistryListing>() {
+    registryService.dir(place.getPath(), new MethodCallback<RegistryListing>() {
       public void onFailure(Method method, Throwable caught) {
         log.severe("error while refreshing registry listing: " + caught.getMessage());
       }

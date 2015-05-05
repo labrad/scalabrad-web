@@ -98,28 +98,30 @@ lazy val server = project.in(file("server"))
       "org.eclipse.jetty" % "jetty-continuation" % jettyVersion,
       "org.eclipse.jetty" % "jetty-server" % jettyVersion,
       "org.eclipse.jetty" % "jetty-util" % jettyVersion,
-      "org.eclipse.jetty.websocket" % "websocket-servlet" % jettyVersion,
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.5.0",
-      "org.glassfish.jersey.core" % "jersey-server" % "2.17",
-      "org.glassfish.jersey.containers" % "jersey-container-servlet-core" % "2.17",
-      "org.glassfish.jersey.containers" % "jersey-container-jetty-http" % "2.17",
-      "org.glassfish.jersey.media" % "jersey-media-json-jackson" % "2.17",
+      "org.scala-lang.modules" %% "scala-async" % "0.9.2",
       "net.maffoo" %% "jsonquote-core" % "0.2.1",
       "org.labrad" %% "scalabrad" % "0.2.0-M6"
     ),
 
+    routesGenerator := InjectedRoutesGenerator,
+
     jetty(port = 8080), // add jetty settings for xsbt-web-plugin
 
-    postProcess := { webAppDir =>
-      val gwtDir = (target in client).value / "war"
-      val gwtFiles = gwtDir ** "*"
+    compile in Compile := {
+      val dstDir = (resourceDirectory in Assets).value
+      val srcDir = (target in client).value / "war"
+      val srcFiles = srcDir ** "*"
 
       for {
-        src <- gwtFiles.get if src.isFile
-        rel <- IO.relativizeFile(gwtDir, src)
-        dst = IO.resolve(webAppDir, rel)
+        src <- srcFiles.get if src.isFile
+        rel <- IO.relativizeFile(srcDir, src)
+        dst = IO.resolve(dstDir, rel)
       } {
         IO.copyFile(src, dst, preserveLastModified = true)
       }
+
+      (compile in Compile).value
     }
-  )
+  ).enablePlugins(PlayScala)
+   .disablePlugins(PlayLayoutPlugin)

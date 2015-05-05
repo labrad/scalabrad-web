@@ -11,11 +11,11 @@ import org.fusesource.restygwt.client.MethodCallback;
 import org.fusesource.restygwt.client.RestService;
 
 public interface ManagerService extends RestService {
-  @Path("/api/manager/connections")
+  @Path("/manager/connections")
   @GET
   void getConnectionInfo(MethodCallback<List<ConnectionInfo>> callback);
 
-  @Path("/api/manager/connections/{id}")
+  @Path("/manager/connections/{id}")
   @DELETE
   void closeConnection(@PathParam("id") Long id, MethodCallback<Void> callback);
 }

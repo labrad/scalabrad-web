@@ -1,61 +1,43 @@
 package org.labrad.browser.server
 
 import java.util.{Timer, TimerTask}
+import javax.inject._
 import javax.servlet.{ServletContext, ServletContextEvent, ServletContextListener}
-
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-
 import org.labrad._
+import org.labrad.browser.{Msg, NodeController}
 import org.labrad.browser.client.message.{Message => _, _}
 import org.labrad.browser.client.nodes.InstanceStatus
 import org.labrad.data._
 import org.labrad.events.{ConnectionEvent, ConnectionListener, MessageEvent, MessageListener}
-
 import org.slf4j.LoggerFactory
-
-class LabradConnectionListener extends ServletContextListener {
-  private val log = LoggerFactory.getLogger(classOf[LabradConnection])
-
-  private var cxn: LabradConnection = _
-
-  def contextInitialized(sce: ServletContextEvent) {
-    log.info("context initialized: establishing labrad connection...")
-    cxn = new LabradConnection(socketOpt = None)
-    sce.getServletContext.setAttribute(classOf[LabradConnection].getName, cxn)
-  }
-
-  def contextDestroyed(sce: ServletContextEvent) {
-    log.info("context destroyed: shutting down labrad connection...")
-    if (cxn != null) {
-      cxn.close()
-      cxn = null
-    }
-  }
-}
+import play.api.inject.ApplicationLifecycle
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 object LabradConnection {
-  private def get(implicit context: ServletContext) =
-    context.getAttribute(classOf[LabradConnection].getName).asInstanceOf[LabradConnection].get
+  private def cxn(implicit context: ServletContext) =
+    context.getAttribute(classOf[LabradConnection].getName).asInstanceOf[LabradConnection]
 
-  def to(server: String)(implicit context: ServletContext): GenericProxy = {
-    val cxn = get
-    new GenericProxy(cxn, server, context = cxn.newContext)
-  }
+  def to(server: String)(implicit context: ServletContext): GenericProxy = cxn.to(server)
 
-  def getManager(implicit context: ServletContext): ManagerServerProxy = {
-    new ManagerServerProxy(get)
-  }
+  def getManager(implicit context: ServletContext): ManagerServerProxy = cxn.manager
 
-  def getRegistry(implicit context: ServletContext): RegistryServerProxy = {
-    new RegistryServerProxy(get)
-  }
+  def getRegistry(implicit context: ServletContext): RegistryServerProxy = cxn.registry
 
   val timer = new Timer(true)
 }
 
-class LabradConnection(socketOpt: Option[LabradSocket]) {
+@Singleton
+class LabradConnectionHolder @Inject() (lifecycle: ApplicationLifecycle) {
+  val cxn = new LabradConnection(sinkOpt = None)
+  lifecycle.addStopHook { () =>
+    Future.successful(cxn.close())
+  }
+}
+
+class LabradConnection(sinkOpt: Option[Msg[_] => Unit]) {
   private val RECONNECT_TIMEOUT = 10.seconds
   private val log = LoggerFactory.getLogger(classOf[LabradConnection])
 
@@ -71,6 +53,10 @@ class LabradConnection(socketOpt: Option[LabradSocket]) {
   def get: Connection = {
     cxnOpt.getOrElse { sys.error("not connected") }
   }
+
+  def to(server: String): GenericProxy = new GenericProxy(get, server, context = get.newContext)
+  def manager = new ManagerServerProxy(get)
+  def registry = new RegistryServerProxy(get)
 
   def close(): Unit = {
     live = false
@@ -90,12 +76,12 @@ class LabradConnection(socketOpt: Option[LabradSocket]) {
         log.info("connected")
         setupConnection(cxn)
         this.cxnOpt = Some(cxn)
-        for (socket <- socketOpt) socket.send(new LabradConnectMessage(cxn.host))
+        for (sink <- sinkOpt) sink(Msg.wrap(new LabradConnectMessage(cxn.host)))
 
       case false =>
         log.info("disconnected.  will reconnect in 10 seconds")
         this.cxnOpt = None
-        for (socket <- socketOpt) socket.send(new LabradDisconnectMessage(cxn.host))
+        for (sink <- sinkOpt) sink(Msg.wrap(new LabradDisconnectMessage(cxn.host)))
 
         if (live) {
           // reconnect after some delay
@@ -182,7 +168,7 @@ class LabradConnection(socketOpt: Option[LabradSocket]) {
   private def subscribeToServerConnectMessages(mgr: ManagerServer) {
     addSubscription(mgr, "Server Connect") {
       case Message(_, _, _, Cluster(_, Str(server))) =>
-        for (socket <- socketOpt) socket.send(new ServerConnectMessage(server))
+        for (sink <- sinkOpt) sink(Msg.wrap(new ServerConnectMessage(server)))
     }
   }
 
@@ -193,7 +179,7 @@ class LabradConnection(socketOpt: Option[LabradSocket]) {
   private def subscribeToServerDisconnectMessages(mgr: ManagerServer) {
     addSubscription(mgr, "Server Disconnect") {
       case Message(_, _, _, Cluster(_, Str(server))) =>
-        for (socket <- socketOpt) socket.send(new ServerDisconnectMessage(server))
+        for (sink <- sinkOpt) sink(Msg.wrap(new ServerDisconnectMessage(server)))
     }
   }
 
@@ -204,7 +190,7 @@ class LabradConnection(socketOpt: Option[LabradSocket]) {
         val node = map("node").get[String]
         val server = map("server").get[String]
         val instance = map("instance").get[String]
-        for (socket <- socketOpt) socket.send(new NodeServerMessage(node, server, instance, status))
+        for (sink <- sinkOpt) sink(Msg.wrap(new NodeServerMessage(node, server, instance, status)))
     }
   }
 
@@ -218,8 +204,8 @@ class LabradConnection(socketOpt: Option[LabradSocket]) {
         val map = parseNodeMessage(data)
         val node = map("node").get[String]
         val serversData = map("servers")
-        val statuses = NodeServiceImpl.getServerStatuses(serversData)
-        for (socket <- socketOpt) socket.send(new NodeStatusMessage(node, statuses))
+        val statuses = NodeController.getServerStatuses(serversData).map { _.toJava }.toArray
+        for (sink <- sinkOpt) sink(Msg.wrap(new NodeStatusMessage(node, statuses)))
     }
   }
 

@@ -8,7 +8,7 @@ import org.fusesource.restygwt.client.MethodCallback;
 import org.fusesource.restygwt.client.RestService;
 
 public interface InfoService extends RestService {
-  @Path("/api/servers/{name}")
+  @Path("/servers/{name}")
   @GET
   void getServerInfo(@PathParam("name") String name, MethodCallback<ServerInfo> callback);
 }

@@ -1,5 +1,6 @@
 package org.labrad.browser.client;
 
+import org.fusesource.restygwt.client.Defaults;
 import org.labrad.browser.client.connections.ManagerPlace;
 import org.labrad.browser.client.connections.ManagerView;
 import org.labrad.browser.client.connections.ManagerViewImpl;
@@ -83,6 +84,9 @@ public class LabradBrowser implements EntryPoint {
   private SimplePanel appWidget = new SimplePanel();
 
   public void onModuleLoad() {
+    // prefix root for rest urls
+    Defaults.setServiceRoot("/api");
+
     ClientInjector injector = GWT.create(ClientInjector.class);
     com.google.web.bindery.event.shared.EventBus eventBus = injector.getEventBus();
     PlaceController placeController = injector.getPlaceController();

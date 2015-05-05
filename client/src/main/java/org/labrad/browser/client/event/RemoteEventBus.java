@@ -43,7 +43,7 @@ public class RemoteEventBus {
   private final Timer pollTimer;
   private final Timer pingTimer;
 
-  private final String location = GWT.getHostPageBaseURL().replace("http", "ws") + "ws/api";
+  private final String location = GWT.getHostPageBaseURL().replace("http", "ws") + "api/socket";
   private final Websocket socket = new Websocket(location);
 
   @JsType
