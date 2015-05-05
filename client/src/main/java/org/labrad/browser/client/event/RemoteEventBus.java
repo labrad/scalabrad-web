@@ -4,15 +4,15 @@ import java.util.logging.Logger;
 
 import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.message.Codecs;
-import org.labrad.browser.client.message.LabradConnectMessage;
-import org.labrad.browser.client.message.LabradDisconnectMessage;
-import org.labrad.browser.client.message.NodeServerMessage;
-import org.labrad.browser.client.message.NodeStatusMessage;
-import org.labrad.browser.client.message.RegistryDirMessage;
-import org.labrad.browser.client.message.RegistryKeyMessage;
-import org.labrad.browser.client.message.ServerConnectMessage;
-import org.labrad.browser.client.message.ServerDisconnectMessage;
 import org.labrad.browser.client.util.Util;
+import org.labrad.browser.common.message.LabradConnectMessage;
+import org.labrad.browser.common.message.LabradDisconnectMessage;
+import org.labrad.browser.common.message.NodeServerMessage;
+import org.labrad.browser.common.message.NodeStatusMessage;
+import org.labrad.browser.common.message.RegistryDirMessage;
+import org.labrad.browser.common.message.RegistryKeyMessage;
+import org.labrad.browser.common.message.ServerConnectMessage;
+import org.labrad.browser.common.message.ServerDisconnectMessage;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;

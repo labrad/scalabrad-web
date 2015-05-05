@@ -8,8 +8,8 @@ import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.ViewFactory;
 import org.labrad.browser.client.event.RemoteEventBus;
 import org.labrad.browser.client.event.RemoteEventBusDisconnectEvent;
-import org.labrad.browser.client.message.NodeStatusMessage;
 import org.labrad.browser.client.ui.PlaceRedirector;
+import org.labrad.browser.common.message.NodeStatusMessage;
 
 import com.google.gwt.activity.shared.AbstractActivity;
 import com.google.gwt.event.shared.EventBus;

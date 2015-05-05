@@ -1,5 +1,5 @@
 lazy val gwtModules = taskKey[Seq[String]]("the list of gwt modules to compile")
-lazy val gwtCompile = taskKey[Unit]("invoke the gwt compiler")
+lazy val gwtClasspath = taskKey[Seq[File]]("the classpath for gwt compilation, including source")
 lazy val gwtCodeServer = taskKey[Unit]("invoke gwt code server")
 
 lazy val gwtVersion = "2.7.0"
@@ -12,7 +12,14 @@ lazy val commonSettings = Seq(
   resolvers += "bintray-maffoo" at "http://dl.bintray.com/maffoo/maven"
 )
 
+lazy val shared = project.in(file("shared"))
+  .settings(commonSettings)
+  .settings(
+    name := "scalabrad-web-common"
+  )
+
 lazy val client = project.in(file("client"))
+  .dependsOn(shared)
   .settings(commonSettings)
   .settings(
     name := "scalabrad-web-client",
@@ -33,15 +40,18 @@ lazy val client = project.in(file("client"))
 
     gwtModules := Seq("org.labrad.browser.LabradBrowser"),
 
+    gwtClasspath := {
+      val srcs = (sourceDirectories in Compile).value ++
+                 (sourceDirectories in shared in Compile).value
+      val classes = (fullClasspath in Compile).value.map(_.data)
+      srcs ++ classes
+    },
+
     compile := {
       // run standard compile task
       val result = compile.in(Compile).value
 
       // now run gwt compilation
-      val srcs = (sourceDirectories in Compile).value
-      val classes = (fullClasspath in Compile).value.map(_.data)
-      val cp = srcs ++ classes
-
       val warDir = target.value / "war"
       val args: Array[String] = Array(
         "-XjsInteropMode", "JS",
@@ -59,16 +69,12 @@ lazy val client = project.in(file("client"))
         envVars = envVars.value
       )
       val scalaRun = new ForkRun(forkOptions)
-      scalaRun.run("com.google.gwt.dev.Compiler", cp, args, streams.value.log)
+      scalaRun.run("com.google.gwt.dev.Compiler", gwtClasspath.value, args, streams.value.log)
 
       result
     },
 
     gwtCodeServer := {
-      val srcs = (sourceDirectories in Compile).value
-      val classes = (fullClasspath in Compile).value.map(_.data)
-      val cp = srcs ++ classes
-
       val args: Array[String] = Array(
         "-XjsInteropMode", "JS",
         "-port", "9876"
@@ -84,20 +90,17 @@ lazy val client = project.in(file("client"))
         envVars = envVars.value
       )
       val scalaRun = new ForkRun(forkOptions)
-      scalaRun.run("com.google.gwt.dev.codeserver.CodeServer", cp, args, streams.value.log)
+      scalaRun.run("com.google.gwt.dev.codeserver.CodeServer", gwtClasspath.value, args, streams.value.log)
     }
   )
 
 lazy val server = project.in(file("server"))
-  .dependsOn(client)
+  .dependsOn(shared)
   .settings(commonSettings)
   .settings(
     name := "scalabrad-web-server",
 
     libraryDependencies ++= Seq(
-      "org.eclipse.jetty" % "jetty-continuation" % jettyVersion,
-      "org.eclipse.jetty" % "jetty-server" % jettyVersion,
-      "org.eclipse.jetty" % "jetty-util" % jettyVersion,
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.5.0",
       "org.scala-lang.modules" %% "scala-async" % "0.9.2",
       "net.maffoo" %% "jsonquote-core" % "0.2.1",

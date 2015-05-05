@@ -9,7 +9,7 @@ import javax.ws.rs.PathParam;
 
 import org.fusesource.restygwt.client.MethodCallback;
 import org.fusesource.restygwt.client.RestService;
-import org.labrad.browser.client.message.NodeStatusMessage;
+import org.labrad.browser.common.message.NodeStatusMessage;
 
 public interface NodeService extends RestService {
 

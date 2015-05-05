@@ -1,4 +1,4 @@
-package org.labrad.browser.client.message;
+package org.labrad.browser.common.message;
 
 class PingMessage implements Message {
   public String msg = "PING";

@@ -4,8 +4,7 @@ import akka.actor.{Actor, ActorRef, Props}
 import com.fasterxml.jackson.databind.ObjectMapper
 import javax.inject._
 import net.maffoo.jsonquote.literal._
-import org.labrad.browser.client.message.Message
-import org.labrad.browser.server.LabradConnection
+import org.labrad.browser.common.message.Message
 import org.labrad.util.Logging
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -35,7 +34,6 @@ class LabradSocketActor(out: ActorRef) extends Actor {
 
   override def preStart(): Unit = {
     cxn = new LabradConnection(sinkOpt = Some(send))
-    LabradSockets.register(self)
   }
 
   override def postStop(): Unit = {
@@ -43,7 +41,6 @@ class LabradSocketActor(out: ActorRef) extends Actor {
       cxn.close()
       cxn = null
     }
-    LabradSockets.unregister(self)
   }
 
   def receive = {
@@ -60,23 +57,6 @@ class LabradSocketActor(out: ActorRef) extends Actor {
       payload: $payload
     }"""
     out ! message.toString
-  }
-}
-
-object LabradSockets {
-  private val lock = new Object
-  private val sockets = mutable.Set.empty[ActorRef]
-
-  def all: Set[ActorRef] = {
-    lock.synchronized { sockets.toSet }
-  }
-
-  def register(socket: ActorRef): Unit = {
-    lock.synchronized { sockets += socket }
-  }
-
-  def unregister(socket: ActorRef): Unit = {
-    lock.synchronized { sockets -= socket }
   }
 }
 

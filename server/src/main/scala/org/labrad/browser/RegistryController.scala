@@ -1,7 +1,6 @@
 package org.labrad.browser
 
 import javax.inject._
-import org.labrad.browser.server.LabradConnectionHolder
 import org.labrad.data._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._

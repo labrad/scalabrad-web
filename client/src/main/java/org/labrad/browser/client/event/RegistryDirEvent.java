@@ -1,6 +1,6 @@
 package org.labrad.browser.client.event;
 
-import org.labrad.browser.client.message.RegistryDirMessage;
+import org.labrad.browser.common.message.RegistryDirMessage;
 
 import com.google.gwt.event.shared.EventHandler;
 import com.google.gwt.event.shared.GwtEvent;

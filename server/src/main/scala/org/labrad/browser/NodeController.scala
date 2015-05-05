@@ -1,8 +1,7 @@
 package org.labrad.browser
 
 import javax.inject._
-import org.labrad.browser.client.message.NodeServerStatus
-import org.labrad.browser.server.LabradConnectionHolder
+import org.labrad.browser.common.message.NodeServerStatus
 import org.labrad.data._
 import org.labrad.util.Logging
 import play.api.libs.concurrent.Execution.Implicits.defaultContext

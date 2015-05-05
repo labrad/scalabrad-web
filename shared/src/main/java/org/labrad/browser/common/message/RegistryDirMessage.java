@@ -1,7 +1,6 @@
-package org.labrad.browser.client.message;
+package org.labrad.browser.common.message;
 
 public class RegistryDirMessage implements Message {
-
   public String path;
   public String name;
   public boolean addOrChange;

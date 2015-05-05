@@ -9,6 +9,7 @@ import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.BrowserImages;
 import org.labrad.browser.client.event.NodeServerEvent;
 import org.labrad.browser.client.server.ServerPlace;
+import org.labrad.browser.common.message.InstanceStatus;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;

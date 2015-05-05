@@ -1,7 +1,6 @@
-package org.labrad.browser.client.message;
+package org.labrad.browser.common.message;
 
 public class LabradConnectMessage implements Message {
-
   public String host;
 
   protected LabradConnectMessage() {}

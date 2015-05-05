@@ -12,9 +12,10 @@ import org.labrad.browser.client.BrowserImages;
 import org.labrad.browser.client.event.NodeServerEvent;
 import org.labrad.browser.client.event.NodeStatusEvent;
 import org.labrad.browser.client.event.ServerDisconnectEvent;
-import org.labrad.browser.client.message.NodeServerMessage;
-import org.labrad.browser.client.message.NodeServerStatus;
-import org.labrad.browser.client.message.NodeStatusMessage;
+import org.labrad.browser.common.message.InstanceStatus;
+import org.labrad.browser.common.message.NodeServerMessage;
+import org.labrad.browser.common.message.NodeServerStatus;
+import org.labrad.browser.common.message.NodeStatusMessage;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;

@@ -1,9 +1,6 @@
-package org.labrad.browser.client.message;
-
-import org.labrad.browser.client.nodes.InstanceStatus;
+package org.labrad.browser.common.message;
 
 public class NodeServerMessage implements Message {
-
   public String node;
   public String server;
   public String instance;

@@ -1,9 +1,6 @@
-package org.labrad.browser.client.message;
+package org.labrad.browser.common.message;
 
-import com.google.gwt.user.client.rpc.IsSerializable;
-
-public class NodeStatusMessage implements Message, IsSerializable {
-
+public class NodeStatusMessage implements Message {
   public String name;
   public NodeServerStatus[] servers;
 

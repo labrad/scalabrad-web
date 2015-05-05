@@ -1,4 +1,4 @@
-package org.labrad.browser.client.message;
+package org.labrad.browser.common.message;
 
 class PongMessage implements Message {
   public String msg = "PONG";

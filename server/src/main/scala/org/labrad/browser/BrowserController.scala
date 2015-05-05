@@ -1,7 +1,6 @@
 package org.labrad.browser
 
 import javax.inject._
-import org.labrad.browser.server.LabradConnectionHolder
 import org.labrad.data._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
@@ -13,7 +12,8 @@ case class ConnectionInfo(
   id: Long, name: String, server: Boolean, active: Boolean,
   serverReqCount: Long, serverRespCount: Long,
   clientReqCount: Long, clientRespCount: Long,
-  msgSendCount: Long, msgRecvCount: Long)
+  msgSendCount: Long, msgRecvCount: Long
+)
 
 object ConnectionInfo {
   implicit val format = Json.format[ConnectionInfo]

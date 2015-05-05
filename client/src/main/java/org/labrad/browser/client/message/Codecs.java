@@ -1,6 +1,14 @@
 package org.labrad.browser.client.message;
 
 import org.fusesource.restygwt.client.JsonEncoderDecoder;
+import org.labrad.browser.common.message.LabradConnectMessage;
+import org.labrad.browser.common.message.LabradDisconnectMessage;
+import org.labrad.browser.common.message.NodeServerMessage;
+import org.labrad.browser.common.message.NodeStatusMessage;
+import org.labrad.browser.common.message.RegistryDirMessage;
+import org.labrad.browser.common.message.RegistryKeyMessage;
+import org.labrad.browser.common.message.ServerConnectMessage;
+import org.labrad.browser.common.message.ServerDisconnectMessage;
 
 import com.google.gwt.core.client.GWT;
 
@@ -8,8 +16,8 @@ public class Codecs {
   public static interface LabradConnectCodec extends JsonEncoderDecoder<LabradConnectMessage> {}
   public static final LabradConnectCodec labradConnect = GWT.create(LabradConnectCodec.class);
 
-  public static interface LabradDisonnectCodec extends JsonEncoderDecoder<LabradDisconnectMessage> {}
-  public static final LabradDisonnectCodec labradDisconnect = GWT.create(LabradDisonnectCodec.class);
+  public static interface LabradDisconnectCodec extends JsonEncoderDecoder<LabradDisconnectMessage> {}
+  public static final LabradDisconnectCodec labradDisconnect = GWT.create(LabradDisconnectCodec.class);
 
   public static interface NodeServerCodec extends JsonEncoderDecoder<NodeServerMessage> {}
   public static final NodeServerCodec nodeServer = GWT.create(NodeServerCodec.class);

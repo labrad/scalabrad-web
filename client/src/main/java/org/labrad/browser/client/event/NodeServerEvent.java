@@ -1,6 +1,6 @@
 package org.labrad.browser.client.event;
 
-import org.labrad.browser.client.message.NodeServerMessage;
+import org.labrad.browser.common.message.NodeServerMessage;
 
 import com.google.gwt.event.shared.EventHandler;
 import com.google.gwt.event.shared.GwtEvent;

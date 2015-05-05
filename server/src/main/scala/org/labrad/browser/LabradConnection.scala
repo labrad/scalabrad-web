@@ -1,15 +1,14 @@
-package org.labrad.browser.server
+package org.labrad.browser
 
 import java.util.{Timer, TimerTask}
 import javax.inject._
-import javax.servlet.{ServletContext, ServletContextEvent, ServletContextListener}
+
 import org.labrad._
-import org.labrad.browser.{Msg, NodeController}
-import org.labrad.browser.client.message.{Message => _, _}
-import org.labrad.browser.client.nodes.InstanceStatus
+import org.labrad.browser.common.message.{Message => _, _}
 import org.labrad.data._
 import org.labrad.events.{ConnectionEvent, ConnectionListener, MessageEvent, MessageListener}
 import org.slf4j.LoggerFactory
+
 import play.api.inject.ApplicationLifecycle
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -17,15 +16,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object LabradConnection {
-  private def cxn(implicit context: ServletContext) =
-    context.getAttribute(classOf[LabradConnection].getName).asInstanceOf[LabradConnection]
-
-  def to(server: String)(implicit context: ServletContext): GenericProxy = cxn.to(server)
-
-  def getManager(implicit context: ServletContext): ManagerServerProxy = cxn.manager
-
-  def getRegistry(implicit context: ServletContext): RegistryServerProxy = cxn.registry
-
   val timer = new Timer(true)
 }
 
