@@ -1,6 +1,7 @@
 package org.labrad.browser.client.iplist;
 
 import org.labrad.browser.client.BrowserImages;
+import org.labrad.browser.client.MiscBundle;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -12,6 +13,12 @@ import com.google.gwt.user.client.ui.PushButton;
 
 public class IpEntry extends HorizontalPanel {
   private static final BrowserImages images = GWT.create(BrowserImages.class);
+  private static final MiscBundle bundle = GWT.create(MiscBundle.class);
+  private static final MiscBundle.Css css = bundle.css();
+
+  static {
+    css.ensureInjected();
+  }
 
   public IpEntry(final IpListControl parent, final String address, final boolean allowed) {
     Image img = new Image(allowed ? images.ipAllowed() : images.ipDisallowed());
@@ -28,7 +35,7 @@ public class IpEntry extends HorizontalPanel {
     });
     add(button);
     Label lbl = new Label(address);
-    lbl.addStyleDependentName("padded");
+    lbl.addStyleName(css.paddedLabelClass());
     add(lbl);
   }
 }

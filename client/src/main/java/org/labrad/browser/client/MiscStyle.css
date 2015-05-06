@@ -1,0 +1,62 @@
+/* global styles - TODO: fix these */
+body {
+  margin: 0px;
+  font-family: sans-serif;
+}
+
+table {
+  font-size: 10pt;
+}
+
+/* top-bar page menu */
+.page-menu {
+  background-color: #CCCCCC;
+  width: 100%;
+  padding: 12px;
+}
+.page-menu div {
+  display: inline;
+  padding: 12px;
+}
+.page-menu .selected {
+  background-color: #AAAAAA;
+}
+.page-menu a {
+  text-decoration: none;
+}
+
+
+/* breadcrumbs navigation ui */
+.breadcrumbs {
+  padding: 10px;
+  background-color: #E4E4E4;
+  font-weight: bold;
+}
+.breadcrumbs .gwt-Hyperlink {
+  padding-right: 6px;
+}
+.breadcrumbs .gwt-Label {
+  padding-right: 6px;
+}
+
+
+/* node controller */
+.label-status { color: #888888; width: 60px; }
+.label-red { color: #AA0000; }
+.label-green { color: #00AA00; }
+
+
+/* ip list */
+.padded-label { padding-left: 5px; }
+
+/* miscellaneous styles */
+.centered-cell { text-align: center; }
+.padded-cell { padding-right: 15px; padding-left: 15px; }
+.server-group { padding-right: 5px; padding-left: 5px; font-weight: bold; }
+.server-name { padding-right: 5px; padding-left: 5px; }
+.odd-row { background-color: #E4E4E4; }
+.version-conflict { background-color: #ffff55; }
+
+.highlight { background-color: #ccccff; }
+
+

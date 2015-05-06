@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 import org.fusesource.restygwt.client.Method;
 import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.BrowserImages;
+import org.labrad.browser.client.MiscBundle;
 import org.labrad.browser.client.event.NodeServerEvent;
 import org.labrad.browser.client.event.NodeStatusEvent;
 import org.labrad.browser.client.event.ServerDisconnectEvent;
@@ -17,6 +18,7 @@ import org.labrad.browser.common.message.NodeServerMessage;
 import org.labrad.browser.common.message.NodeServerStatus;
 import org.labrad.browser.common.message.NodeStatusMessage;
 
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.shared.EventBus;
@@ -36,6 +38,13 @@ public class ControlPanel extends VerticalPanel
                           implements NodeStatusEvent.Handler,
                                      ServerDisconnectEvent.Handler {
   private static Logger log = Logger.getLogger(ControlPanel.class.getName());
+
+  private static MiscBundle bundle = GWT.create(MiscBundle.class);
+  private static MiscBundle.Css css = bundle.css();
+
+  static {
+    css.ensureInjected();
+  }
 
   private Grid table = null;
   private final EventBus eventBus;
@@ -211,8 +220,8 @@ public class ControlPanel extends VerticalPanel
     } else {
       table.setText(globalHeaderRow(), 0, "Global Servers");
       table.setText(localHeaderRow(), 0, "Local Servers");
-      table.getCellFormatter().addStyleName(globalHeaderRow(), 0, "server-group");
-      table.getCellFormatter().addStyleName(localHeaderRow(), 0, "server-group");
+      table.getCellFormatter().addStyleName(globalHeaderRow(), 0, css.serverGroupClass());
+      table.getCellFormatter().addStyleName(localHeaderRow(), 0, css.serverGroupClass());
     }
 
     // create node controls in the column headers
@@ -222,17 +231,17 @@ public class ControlPanel extends VerticalPanel
       table.getCellFormatter().setAlignment(0, serverCol(col),
           HasHorizontalAlignment.ALIGN_CENTER,
           HasVerticalAlignment.ALIGN_MIDDLE);
-      table.getCellFormatter().addStyleName(0, serverCol(col), "padded-cell");
+      table.getCellFormatter().addStyleName(0, serverCol(col), css.paddedCellClass());
     }
 
     // add server names for the row headers
     for (int i = 0; i < globalServers.size(); i++) {
       table.setText(globalRow(i), 0, globalServers.get(i));
-      table.getCellFormatter().addStyleName(globalRow(i), 0, "server-name");
+      table.getCellFormatter().addStyleName(globalRow(i), 0, css.serverNameClass());
     }
     for (int i = 0; i < localServers.size(); i++) {
       table.setText(localRow(i), 0, localServers.get(i));
-      table.getCellFormatter().addStyleName(localRow(i), 0, "server-name");
+      table.getCellFormatter().addStyleName(localRow(i), 0, css.serverNameClass());
     }
 
 
@@ -247,7 +256,7 @@ public class ControlPanel extends VerticalPanel
         if (controllers.get(node).containsKey(server)) {
           InstanceController ic = controllers.get(node).get(server);
           table.setWidget(row, serverCol(col), ic);
-          table.getCellFormatter().addStyleName(row, serverCol(col), "padded-cell");
+          table.getCellFormatter().addStyleName(row, serverCol(col), css.paddedCellClass());
           if (version == null) {
             version = ic.getVersion();
           } else if (!ic.getVersion().equals(version)) {
@@ -255,14 +264,14 @@ public class ControlPanel extends VerticalPanel
           }
         }
       }
-      if (i % 2 == 0) table.getRowFormatter().addStyleName(row, "odd-row");
+      if (i % 2 == 0) table.getRowFormatter().addStyleName(row, css.oddRowClass());
       if (versionConflict) {
-        table.getRowFormatter().addStyleName(row, "version-conflict");
+        table.getRowFormatter().addStyleName(row, css.versionConflictClass());
         table.setText(row, 1, "version conflict");
       } else {
         table.setText(row, 1, version);
       }
-      table.getCellFormatter().addStyleName(row, 1, "server-name");
+      table.getCellFormatter().addStyleName(row, 1, css.serverNameClass());
     }
     for (int i = 0; i < localServers.size(); i++) {
       String server = localServers.get(i);
@@ -274,7 +283,7 @@ public class ControlPanel extends VerticalPanel
         if (controllers.get(node).containsKey(server)) {
           InstanceController ic = controllers.get(node).get(server);
           table.setWidget(row, serverCol(col), ic);
-          table.getCellFormatter().addStyleName(row, serverCol(col), "padded-cell");
+          table.getCellFormatter().addStyleName(row, serverCol(col), css.paddedCellClass());
           if (version == null) {
             version = ic.getVersion();
           } else if (!ic.getVersion().equals(version)) {
@@ -282,14 +291,14 @@ public class ControlPanel extends VerticalPanel
           }
         }
       }
-      if (i % 2 == 0) table.getRowFormatter().addStyleName(row, "odd-row");
+      if (i % 2 == 0) table.getRowFormatter().addStyleName(row, css.oddRowClass());
       if (versionConflict) {
-        table.getRowFormatter().addStyleName(row, "version-conflict");
+        table.getRowFormatter().addStyleName(row, css.versionConflictClass());
         table.setText(row, 1, "version conflict");
       } else {
         table.setText(row, 1, version);
       }
-      table.getCellFormatter().addStyleName(row, 1, "server-name");
+      table.getCellFormatter().addStyleName(row, 1, css.serverNameClass());
     }
 
     // for all singleton servers, tell all instance controllers that
@@ -352,8 +361,8 @@ public class ControlPanel extends VerticalPanel
   public void highlight(String server) {
     int i = globalServers.indexOf(server);
     int j = localServers.indexOf(server);
-    if (i >= 0) table.getRowFormatter().addStyleName(globalRow(i), "highlight");
-    if (j >= 0) table.getRowFormatter().addStyleName(localRow(j), "highlight");
+    if (i >= 0) table.getRowFormatter().addStyleName(globalRow(i), css.highlightClass());
+    if (j >= 0) table.getRowFormatter().addStyleName(localRow(j), css.highlightClass());
   }
 
   /**
@@ -363,8 +372,8 @@ public class ControlPanel extends VerticalPanel
   public void unhighlight(String server) {
     int i = globalServers.indexOf(server);
     int j = localServers.indexOf(server);
-    if (i >= 0) table.getRowFormatter().removeStyleName(globalRow(i), "highlight");
-    if (j >= 0) table.getRowFormatter().removeStyleName(localRow(j), "highlight");
+    if (i >= 0) table.getRowFormatter().removeStyleName(globalRow(i), css.highlightClass());
+    if (j >= 0) table.getRowFormatter().removeStyleName(localRow(j), css.highlightClass());
   }
 
 

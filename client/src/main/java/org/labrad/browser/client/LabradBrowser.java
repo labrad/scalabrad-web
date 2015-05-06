@@ -80,6 +80,13 @@ public class LabradBrowser implements EntryPoint {
     }
   }
 
+  private static MiscBundle bundle = GWT.create(MiscBundle.class);
+  private static MiscBundle.Css css = bundle.css();
+
+  static {
+    css.ensureInjected();
+  }
+
   private Place defaultPlace = new NodesPlace();
   private SimplePanel appWidget = new SimplePanel();
 
@@ -118,10 +125,10 @@ public class LabradBrowser implements EntryPoint {
     menu.add(nodesLink);
     menu.add(registryLink);
     //menu.add(dataLink);
-    menu.addStyleName("page-menu");
+    menu.addStyleName(css.pageMenuClass());
 
     VerticalPanel page = new VerticalPanel();
-    page.addStyleName("full-page");
+    page.setWidth("100%");
     page.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_LEFT);
     page.add(menu);
     page.add(appWidget);

@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import org.fusesource.restygwt.client.Method;
 import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.BrowserImages;
+import org.labrad.browser.client.MiscBundle;
 import org.labrad.browser.client.event.NodeServerEvent;
 import org.labrad.browser.client.server.ServerPlace;
 import org.labrad.browser.common.message.InstanceStatus;
@@ -35,6 +36,13 @@ public class InstanceController extends HorizontalPanel
   private static final Logger log = Logger.getLogger("InstanceController");
   private static NodeService nodeService = GWT.create(NodeService.class);
   private static BrowserImages images = GWT.create(BrowserImages.class);
+
+  private static MiscBundle bundle = GWT.create(MiscBundle.class);
+  private static MiscBundle.Css css = bundle.css();
+
+  static {
+    css.ensureInjected();
+  }
 
   private final EventBus eventBus;
   private final PlaceController placeController;
@@ -81,7 +89,7 @@ public class InstanceController extends HorizontalPanel
 
     // build widget
     statusLabel = new Label();
-    statusLabel.addStyleDependentName("status");
+    statusLabel.addStyleName(css.labelStatusClass());
 
     // build info button
     info = new PushButton(new Image(images.serverInfoIcon()));
@@ -277,14 +285,14 @@ public class InstanceController extends HorizontalPanel
 
     // remove old color style
     switch (color) {
-      case GREEN: statusLabel.removeStyleDependentName("green"); break;
-      case RED: statusLabel.removeStyleDependentName("red"); break;
+      case GREEN: statusLabel.removeStyleName(css.labelGreenClass()); break;
+      case RED: statusLabel.removeStyleName(css.labelRedClass()); break;
       default: break;
     }
     // add new color style
     switch (newColor) {
-      case GREEN: statusLabel.addStyleDependentName("green"); break;
-      case RED: statusLabel.addStyleDependentName("red"); break;
+      case GREEN: statusLabel.addStyleName(css.labelGreenClass()); break;
+      case RED: statusLabel.addStyleName(css.labelRedClass()); break;
       default: break;
     }
     color = newColor;
