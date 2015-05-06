@@ -5,7 +5,6 @@ import java.util.logging.Logger;
 
 import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.message.Codecs;
-import org.labrad.browser.client.util.Util;
 import org.labrad.browser.common.message.LabradConnectMessage;
 import org.labrad.browser.common.message.LabradDisconnectMessage;
 import org.labrad.browser.common.message.NodeServerMessage;
@@ -32,15 +31,12 @@ import elemental.json.impl.JsonUtil;
 
 public class RemoteEventBus {
   // how long to wait before retrying when we lose our connection
-  private static final int ERROR_DELAY = 5000;
-  private static final int INITIAL_POLL_DELAY = 1000;
-  private static final int MINIMUM_POLL_DELAY = 100;
+  private static final int POLL_DELAY = 5000;
   private static final int PING_DELAY = 30000;
   private static final Logger log = Logger.getLogger("RemoteEventBus");
 
   private boolean running = false;
   private boolean connected = false;
-  private int nextRequest = 1;
 
   private final Timer pollTimer;
   private final Timer pingTimer;
@@ -54,14 +50,6 @@ public class RemoteEventBus {
     @JsProperty <T> T payload();
   }
 
-  public interface Request {
-
-  }
-
-  public interface Response {
-
-  }
-
   @Inject
   public RemoteEventBus(final EventBus eventBus) {
 
@@ -69,8 +57,10 @@ public class RemoteEventBus {
 
       @Override
       public void onOpen() {
-        log.info("web socket sending: Hello!!");
+        log.info("web socket connected");
+        connected = true;
         ping();
+        eventBus.fireEvent(new RemoteEventBusConnectEvent(RemoteEventBus.this));
       }
 
       @Override
@@ -124,9 +114,10 @@ public class RemoteEventBus {
       @Override
       public void onClose() {
         log.info("web socket closed.");
+        connected = false;
+        eventBus.fireEvent(new RemoteEventBusDisconnectEvent(RemoteEventBus.this));
       }
     });
-    socket.open();
 
     pingTimer = new Timer() {
       public void run() { ping(); }
@@ -145,6 +136,7 @@ public class RemoteEventBus {
   public void start() {
     if (!running) {
       running = true;
+      socket.open();
       poll();
     }
   }
@@ -158,14 +150,10 @@ public class RemoteEventBus {
    * or if already connected, tries to fetch available events.
    */
   private void poll() {
-    if (running) {
-      if (!connected) {
-        //eventService.connect(connectionId, connectCallback);
-      } else {
-        log.info("getEvents");
-        //eventService.getEvents(connectionId, getEventCallback);
-      }
+    if (running && !connected) {
+      socket.open();
     }
+    pollLater(POLL_DELAY);
   }
 
   /**
@@ -173,7 +161,7 @@ public class RemoteEventBus {
    * @param delayMillis
    */
   private void pollLater(int delayMillis) {
-    if (running) {
+    if (running && !pollTimer.isRunning()) {
       pollTimer.schedule(delayMillis);
     }
   }
@@ -187,7 +175,7 @@ public class RemoteEventBus {
   }
 
   private void pingLater(int delayMillis) {
-    if (running) {
+    if (running && !pingTimer.isRunning()) {
       pingTimer.schedule(delayMillis);
     }
   }
@@ -200,10 +188,6 @@ public class RemoteEventBus {
     if (connected) {
       socket.close();
     }
-  }
-
-  public void call(Request request, MethodCallback<Response> callback) {
-    int id = nextRequest++;
   }
 
   public void registryWatch(List<String> path) {
