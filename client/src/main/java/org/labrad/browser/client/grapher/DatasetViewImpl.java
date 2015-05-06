@@ -5,8 +5,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.fusesource.restygwt.client.Method;
+import org.fusesource.restygwt.client.MethodCallback;
+
 import com.google.gwt.event.shared.EventBus;
-import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.DisclosurePanel;
 import com.google.gwt.user.client.ui.Grid;
@@ -22,7 +24,7 @@ public class DatasetViewImpl extends Composite implements DatasetView {
   private int num;
   private DatasetInfo info;
   private final VerticalPanel panel = new VerticalPanel();
-  private final VaultServiceAsync service;
+  private final VaultService service;
 
   @AssistedInject
   public DatasetViewImpl(
@@ -30,7 +32,7 @@ public class DatasetViewImpl extends Composite implements DatasetView {
       @Assisted int num,
       @Assisted Presenter presenter,
       @Assisted EventBus eventBus,
-      VaultServiceAsync service) {
+      VaultService service) {
     initWidget(panel);
 
     this.path = path;
@@ -42,13 +44,13 @@ public class DatasetViewImpl extends Composite implements DatasetView {
   }
 
   private void getData() {
-    service.getDatasetInfo(path.toArray(new String[] {}), num, new AsyncCallback<DatasetInfo>() {
-      public void onFailure(Throwable caught) {
+    service.getDatasetInfo(new VaultService.NumberedDataset(path, num), new MethodCallback<DatasetInfo>() {
+      public void onFailure(Method method, Throwable caught) {
         panel.clear();
         panel.add(new Label("Error occurred while getting dataset info:\n\n" + caught.toString()));
       }
 
-      public void onSuccess(DatasetInfo result) {
+      public void onSuccess(Method method, DatasetInfo result) {
         handleDatasetInfo(result);
       }
     });
