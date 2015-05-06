@@ -27,7 +27,7 @@ class LabradConnectionHolder @Inject() (lifecycle: ApplicationLifecycle) {
   }
 }
 
-class LabradConnection(sinkOpt: Option[Msg[_] => Unit]) {
+class LabradConnection(sinkOpt: Option[Msg => Unit]) {
   private val RECONNECT_TIMEOUT = 10.seconds
   private val log = LoggerFactory.getLogger(classOf[LabradConnection])
 

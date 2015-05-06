@@ -144,30 +144,6 @@ public interface RegistryService extends RestService {
     }
   }
 
-  static class Watch {
-    public String id;
-    public String watchId;
-    public String path;
-
-    protected Watch() {}
-    public Watch(String id, String watchId, String path) {
-      this.id = id;
-      this.watchId = watchId;
-      this.path = path;
-    }
-  }
-
-  static class Unwatch {
-    public String id;
-    public String watchId;
-
-    protected Unwatch() {}
-    public Unwatch(String id, String watchId) {
-      this.id = id;
-      this.watchId = watchId;
-    }
-  }
-
   @POST @Path("/registry/dir") @Consumes("application/json") @Produces("application/json")
   void dir(List<String> path, MethodCallback<RegistryListing> callback);
 
@@ -200,10 +176,4 @@ public interface RegistryService extends RestService {
 
   @POST @Path("/registry/moveDir") @Consumes("application/json") @Produces("application/json")
   void moveDir(MoveDir req, MethodCallback<RegistryListing> callback);
-
-  @POST @Path("/registry/watch") @Consumes("application/json") @Produces("application/json")
-  void watchRegistryPath(Watch req, MethodCallback<String> callback);
-
-  @POST @Path("/registry/unwatch") @Consumes("application/json") @Produces("application/json")
-  void unwatchRegistryPath(Unwatch req, MethodCallback<String> callback);
 }

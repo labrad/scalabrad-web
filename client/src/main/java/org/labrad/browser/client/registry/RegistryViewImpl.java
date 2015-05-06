@@ -430,7 +430,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
     eventBus.addHandler(RegistryDirEvent.TYPE, new RegistryDirEvent.Handler() {
       @Override
       public void onRegistryDirChanged(RegistryDirEvent event) {
-        if (event.msg.path.equals(place.getPathString())) {
+        if (pathMatch(event.msg.path)) {
           refresh();
         }
       }
@@ -439,11 +439,23 @@ public class RegistryViewImpl extends Composite implements RegistryView {
     eventBus.addHandler(RegistryKeyEvent.TYPE, new RegistryKeyEvent.Handler() {
       @Override
       public void onRegistryKeyChanged(RegistryKeyEvent event) {
-        if (event.msg.path.equals(place.getPathString())) {
+        if (pathMatch(event.msg.path)) {
           refresh();
         }
       }
     });
+  }
+
+  private boolean pathMatch(List<String> path) {
+    if (path.size() != place.getPath().size()) {
+      return false;
+    }
+    for (int i = 0; i < path.size(); i++) {
+      if (!place.getPath().get(i).equals(path.get(i))) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public void setListing(RegistryListing result) {

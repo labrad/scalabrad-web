@@ -1,5 +1,6 @@
 package org.labrad.browser.client.event;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.fusesource.restygwt.client.MethodCallback;
@@ -19,7 +20,9 @@ import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.js.JsProperty;
 import com.google.gwt.core.client.js.JsType;
 import com.google.gwt.event.shared.EventBus;
+import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONObject;
+import com.google.gwt.json.client.JSONString;
 import com.google.gwt.user.client.Timer;
 import com.google.inject.Inject;
 import com.sksamuel.gwt.websockets.Websocket;
@@ -38,7 +41,6 @@ public class RemoteEventBus {
   private boolean running = false;
   private boolean connected = false;
   private int nextRequest = 1;
-  private final String connectionId = Util.randomId();
 
   private final Timer pollTimer;
   private final Timer pingTimer;
@@ -194,23 +196,41 @@ public class RemoteEventBus {
     return connected;
   }
 
-  public String getId() {
-    return connectionId;
-  }
-
   public void disconnect() {
     if (connected) {
-      // add a dummy callback, even though we can't really respond to
-      // either failure or success since the window is closing
-//      eventService.disconnect(connectionId, new AsyncCallback<Void>() {
-//        public void onFailure(Throwable caught) {}
-//        public void onSuccess(Void result) {}
-//      });
+      socket.close();
     }
   }
 
   public void call(Request request, MethodCallback<Response> callback) {
     int id = nextRequest++;
+  }
 
+  public void registryWatch(List<String> path) {
+    if (!connected) return;
+    JSONArray pth = new JSONArray();
+    for (int i = 0; i < path.size(); i++) {
+      pth.set(i, new JSONString(path.get(i)));
+    }
+    JSONObject payload = new JSONObject();
+    payload.put("path", pth);
+    JSONObject obj = new JSONObject();
+    obj.put("type", new JSONString("watch"));
+    obj.put("payload", payload);
+    socket.send(obj.toString());
+  }
+
+  public void registryUnwatch(List<String> path) {
+    if (!connected) return;
+    JSONArray pth = new JSONArray();
+    for (int i = 0; i < path.size(); i++) {
+      pth.set(i, new JSONString(path.get(i)));
+    }
+    JSONObject payload = new JSONObject();
+    payload.put("path", pth);
+    JSONObject obj = new JSONObject();
+    obj.put("type", new JSONString("unwatch"));
+    obj.put("payload", payload);
+    socket.send(obj.toString());
   }
 }

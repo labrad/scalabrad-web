@@ -11,7 +11,6 @@ import org.labrad.browser.client.event.RemoteEventBus;
 import org.labrad.browser.client.event.RemoteEventBusConnectEvent;
 import org.labrad.browser.client.event.RemoteEventBusDisconnectEvent;
 import org.labrad.browser.client.ui.PlaceRedirector;
-import org.labrad.browser.client.util.Util;
 
 import com.google.gwt.activity.shared.AbstractActivity;
 import com.google.gwt.event.shared.EventBus;
@@ -31,7 +30,6 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
   private final ViewFactory viewFactory;
   private final PlaceController placeController;
   private final PlaceRedirector redirector;
-  private final String watchId = Util.randomId();
 
 
   private final MethodCallback<String> watchCallback = new MethodCallback<String>() {
@@ -39,7 +37,7 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
       log.severe("watchRegistryPath failed. path=" + place.getPathString() + ", error=" + caught.getMessage());
     }
     @Override public void onSuccess(Method method, String result) {
-      log.info("watchRegistryPath. path=" + place.getPathString() + ", watchId=" + watchId);
+      log.info("watchRegistryPath. path=" + place.getPathString());
     }
   };
 
@@ -76,13 +74,13 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
     eventBus.addHandler(RemoteEventBusConnectEvent.TYPE, new RemoteEventBusConnectEvent.Handler() {
       @Override public void onConnect(RemoteEventBusConnectEvent event) {
         log.info("remote event bus connected. watching registry path " + place.getPathString());
-        registryService.watchRegistryPath(new RegistryService.Watch(remoteEventBus.getId(), watchId, place.getPathString()), watchCallback);
+        remoteEventBus.registryWatch(place.getPath());
       }
     });
     eventBus.addHandler(RemoteEventBusDisconnectEvent.TYPE, new RemoteEventBusDisconnectEvent.Handler() {
       @Override public void onDisconnect(RemoteEventBusDisconnectEvent event) {
         log.info("remote event bus disconnected. unwatching registry path " + place.getPathString());
-        registryService.unwatchRegistryPath(new RegistryService.Unwatch(remoteEventBus.getId(), watchId), unwatchCallback);
+        remoteEventBus.registryUnwatch(place.getPath());
         redirector.reload(place);
       }
     });
@@ -90,7 +88,7 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
     eventBus.addHandler(LabradConnectEvent.TYPE, new LabradConnectEvent.Handler() {
       @Override public void onLabradConnect(LabradConnectEvent event) {
         log.info("connected to labrad. watching registry path " + place.getPathString());
-        registryService.watchRegistryPath(new RegistryService.Watch(remoteEventBus.getId(), watchId, place.getPathString()), watchCallback);
+        remoteEventBus.registryWatch(place.getPath());
       }
     });
     eventBus.addHandler(LabradDisconnectEvent.TYPE, new LabradDisconnectEvent.Handler() {
@@ -100,6 +98,7 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
       }
     });
 
+    remoteEventBus.registryWatch(place.getPath());
     registryService.dir(place.getPath(), new MethodCallback<RegistryListing>() {
       public void onFailure(Method method, Throwable caught) {
         container.setWidget(viewFactory.createDisconnectedView(place, caught));
@@ -116,11 +115,11 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
 
   @Override
   public void onCancel() {
-    registryService.unwatchRegistryPath(new RegistryService.Unwatch(remoteEventBus.getId(), watchId), unwatchCallback);
+    remoteEventBus.registryUnwatch(place.getPath());
   }
 
   @Override
   public void onStop() {
-    registryService.unwatchRegistryPath(new RegistryService.Unwatch(remoteEventBus.getId(), watchId), unwatchCallback);
+    remoteEventBus.registryUnwatch(place.getPath());
   }
 }
