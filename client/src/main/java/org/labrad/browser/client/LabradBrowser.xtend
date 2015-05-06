@@ -42,73 +42,69 @@ import com.google.inject.Singleton;
 
 public class LabradBrowser implements EntryPoint {
   public static class Module extends AbstractGinModule {
-    protected void configure() {
-      bind(EventBus.class).to(SimpleEventBus.class).in(Singleton.class);
-      bind(RemoteEventBus.class).in(Singleton.class);
+    protected override def configure() {
+      bind(EventBus).to(SimpleEventBus).in(Singleton)
+      bind(RemoteEventBus).in(Singleton)
 
-      bind(ActivityMapper.class).to(BrowserActivityMapper.class);
-      bind(PlaceHistoryMapper.class).to(BrowserPlaceHistoryMapper.class);
+      bind(ActivityMapper).to(BrowserActivityMapper)
+      bind(PlaceHistoryMapper).to(BrowserPlaceHistoryMapper)
 
       install(new GinFactoryModuleBuilder()
-        .implement(DataView.class, DataViewImpl.class)
-        .implement(DatasetView.class, DatasetViewImpl.class)
-        .implement(ManagerView.class, ManagerViewImpl.class)
-        .implement(NodesView.class, NodesViewImpl.class)
-        .implement(RegistryView.class, RegistryViewImpl.class)
-        .implement(ServerView.class, ServerViewImpl.class)
-        .build(ViewFactory.class));
+        .implement(DataView, DataViewImpl)
+        .implement(DatasetView, DatasetViewImpl)
+        .implement(ManagerView, ManagerViewImpl)
+        .implement(NodesView, NodesViewImpl)
+        .implement(RegistryView, RegistryViewImpl)
+        .implement(ServerView, ServerViewImpl)
+        .build(ViewFactory))
     }
 
     @Provides @Singleton
-    com.google.web.bindery.event.shared.EventBus provideBinderyEventBus(EventBus eventBus) {
-      return eventBus;
+    def com.google.web.bindery.event.shared.EventBus provideBinderyEventBus(EventBus eventBus) {
+      return eventBus
     }
 
     @Provides @Singleton
-    PlaceController providePlaceController(com.google.web.bindery.event.shared.EventBus eventBus) {
-      return new PlaceController(eventBus);
+    def PlaceController providePlaceController(com.google.web.bindery.event.shared.EventBus eventBus) {
+      return new PlaceController(eventBus)
     }
 
     @Provides @Singleton
-    PlaceHistoryHandler providePlaceHistoryHandler(PlaceHistoryMapper mapper) {
-      return new PlaceHistoryHandler(mapper);
+    def PlaceHistoryHandler providePlaceHistoryHandler(PlaceHistoryMapper mapper) {
+      return new PlaceHistoryHandler(mapper)
     }
 
     @Provides @Singleton
-    ActivityManager provideActivityManager(ActivityMapper activityMapper, EventBus eventBus) {
-      return new ActivityManager(activityMapper, eventBus);
+    def ActivityManager provideActivityManager(ActivityMapper activityMapper, EventBus eventBus) {
+      return new ActivityManager(activityMapper, eventBus)
     }
   }
 
-  private static MiscBundle bundle = GWT.create(MiscBundle.class);
-  private static MiscBundle.Css css = bundle.css();
+  private static MiscBundle bundle = GWT.create(MiscBundle)
+  private static MiscBundle.Css css = bundle.css() => [ ensureInjected ]
 
-  static {
-    css.ensureInjected();
-  }
+  private Place defaultPlace = new NodesPlace()
+  private SimplePanel appWidget = new SimplePanel()
 
-  private Place defaultPlace = new NodesPlace();
-  private SimplePanel appWidget = new SimplePanel();
-
-  public void onModuleLoad() {
+  public override def onModuleLoad() {
     // prefix root for rest urls
-    Defaults.setServiceRoot("/api");
+    Defaults.setServiceRoot("/api")
 
-    ClientInjector injector = GWT.create(ClientInjector.class);
-    com.google.web.bindery.event.shared.EventBus eventBus = injector.getEventBus();
-    PlaceController placeController = injector.getPlaceController();
-    PlaceHistoryHandler historyHandler = injector.getPlaceHistoryHandler();
-    historyHandler.register(placeController, eventBus, defaultPlace);
+    val injector = GWT.create(ClientInjector) as ClientInjector
+    val eventBus = injector.getEventBus()
+    val placeController = injector.getPlaceController()
+    val historyHandler = injector.getPlaceHistoryHandler()
+    historyHandler.register(placeController, eventBus, defaultPlace)
 
-    PlaceHistoryMapper historyMapper = injector.getPlaceHistoryMapper();
-    final Hyperlink managerLink = new Hyperlink("manager", historyMapper.getToken(new ManagerPlace()));
-    final Hyperlink nodesLink = new Hyperlink("nodes", historyMapper.getToken(new NodesPlace()));
-    final Hyperlink registryLink = new Hyperlink("registry", historyMapper.getToken(new RegistryPlace()));
+    val historyMapper = injector.getPlaceHistoryMapper()
+    val managerLink = new Hyperlink("manager", historyMapper.getToken(new ManagerPlace()))
+    val nodesLink = new Hyperlink("nodes", historyMapper.getToken(new NodesPlace()))
+    val registryLink = new Hyperlink("registry", historyMapper.getToken(new RegistryPlace()))
     //final Hyperlink dataLink = new Hyperlink("data", historyMapper.getToken(new DataPlace()));
 
     eventBus.addHandler(PlaceChangeEvent.TYPE, new PlaceChangeEvent.Handler() {
-      public void onPlaceChange(PlaceChangeEvent event) {
-        Place place = event.getNewPlace();
+      public override def onPlaceChange(PlaceChangeEvent event) {
+        val place = event.getNewPlace();
         managerLink.removeStyleName("selected");
         nodesLink.removeStyleName("selected");
         registryLink.removeStyleName("selected");
@@ -120,21 +116,21 @@ public class LabradBrowser implements EntryPoint {
       }
     });
 
-    FlowPanel menu = new FlowPanel();
+    val menu = new FlowPanel();
     menu.add(managerLink);
     menu.add(nodesLink);
     menu.add(registryLink);
     //menu.add(dataLink);
     menu.addStyleName(css.pageMenuClass());
 
-    VerticalPanel page = new VerticalPanel();
+    val page = new VerticalPanel();
     page.setWidth("100%");
     page.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_LEFT);
     page.add(menu);
     page.add(appWidget);
     RootPanel.get().add(page);
 
-    ActivityManager activityManager = injector.getActivityManager();
+    val activityManager = injector.getActivityManager();
     activityManager.setDisplay(appWidget);
 
     historyHandler.handleCurrentHistory();

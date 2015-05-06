@@ -13,6 +13,7 @@
   <inherits name="com.google.gwt.logging.Logging"/>
   <inherits name="com.sksamuel.gwt.GwtWebsockets"/>
   <inherits name="elemental.Elemental"/>
+  <inherits name='org.eclipse.xtext.xbase.lib.Lib'/>
   <inherits name="org.fusesource.restygwt.RestyGWT"/>
   <inherits name="org.labrad.browser.common.LabradBrowserCommon"/>
 
