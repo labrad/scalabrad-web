@@ -21,9 +21,8 @@ class WebSocketController @Inject() extends Controller with Logging {
   }
 }
 
-case class Msg private (msg: Object, tag: ClassTag[_])
-object Msg {
-  def wrap[M <: ClientMessage](msg: M)(implicit tag: ClassTag[M]) = new Msg(msg, tag)
+trait Sink {
+  def send[M <: ClientMessage](msg: M)(implicit tag: ClassTag[M]): Unit
 }
 
 object LabradSocketActor {
@@ -41,7 +40,11 @@ class LabradSocketActor(out: ActorRef) extends Actor with Logging {
   private val watches = mutable.Map.empty[Seq[String], Watch]
 
   override def preStart(): Unit = {
-    cxn = new LabradConnection(sinkOpt = Some(send))
+    cxn = new LabradConnection(sinkOpt = Some(new Sink {
+      def send[M <: ClientMessage](msg: M)(implicit tag: ClassTag[M]): Unit = {
+        LabradSocketActor.this.send(msg)
+      }
+    }))
   }
 
   override def postStop(): Unit = {
@@ -60,21 +63,19 @@ class LabradSocketActor(out: ActorRef) extends Actor with Logging {
       (json \ "type").as[String] match {
         case "watch" =>
           val path = (json \ "payload" \ "path").as[Seq[String]]
-          println(s"watching: $path")
           watch(path)
 
         case "unwatch" =>
           val path = (json \ "payload" \ "path").as[Seq[String]]
-          println(s"unwatching: $path")
           unwatch(path)
       }
 
   }
 
-  private def send(m: Msg): Unit = {
+  private def send[M <: ClientMessage](msg: M)(implicit tag: ClassTag[M]): Unit = {
     import net.maffoo.jsonquote.literal._
-    val className = m.tag.runtimeClass.getName
-    val payload = Json(mapper.writeValueAsString(m.msg))
+    val className = tag.runtimeClass.getName
+    val payload = Json(mapper.writeValueAsString(msg))
     val message = json"""{
       type: $className,
       payload: $payload
@@ -94,9 +95,9 @@ class LabradSocketActor(out: ActorRef) extends Actor with Logging {
           val listener: Listener = {
             case msg @ Message(src, `ctx`, `msgId`, Cluster(Str(name), Bool(isDir), Bool(addOrChange))) =>
               if (isDir) {
-                send(Msg.wrap(new RegistryDirMessage(path.asJava, name, addOrChange)))
+                send(new RegistryDirMessage(path.asJava, name, addOrChange))
               } else {
-                send(Msg.wrap(new RegistryKeyMessage(path.asJava, name, addOrChange)))
+                send(new RegistryKeyMessage(path.asJava, name, addOrChange))
               }
           }
           cxn.addMessageListener(listener)

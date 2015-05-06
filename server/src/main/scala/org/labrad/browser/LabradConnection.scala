@@ -27,7 +27,7 @@ class LabradConnectionHolder @Inject() (lifecycle: ApplicationLifecycle) {
   }
 }
 
-class LabradConnection(sinkOpt: Option[Msg => Unit]) {
+class LabradConnection(sinkOpt: Option[Sink]) {
   private val RECONNECT_TIMEOUT = 10.seconds
   private val log = LoggerFactory.getLogger(classOf[LabradConnection])
 
@@ -66,12 +66,12 @@ class LabradConnection(sinkOpt: Option[Msg => Unit]) {
         log.info("connected")
         setupConnection(cxn)
         this.cxnOpt = Some(cxn)
-        for (sink <- sinkOpt) sink(Msg.wrap(new LabradConnectMessage(cxn.host)))
+        for (sink <- sinkOpt) sink.send(new LabradConnectMessage(cxn.host))
 
       case false =>
         log.info("disconnected.  will reconnect in 10 seconds")
         this.cxnOpt = None
-        for (sink <- sinkOpt) sink(Msg.wrap(new LabradDisconnectMessage(cxn.host)))
+        for (sink <- sinkOpt) sink.send(new LabradDisconnectMessage(cxn.host))
 
         if (live) {
           // reconnect after some delay
@@ -158,7 +158,7 @@ class LabradConnection(sinkOpt: Option[Msg => Unit]) {
   private def subscribeToServerConnectMessages(mgr: ManagerServer) {
     addSubscription(mgr, "Server Connect") {
       case Message(_, _, _, Cluster(_, Str(server))) =>
-        for (sink <- sinkOpt) sink(Msg.wrap(new ServerConnectMessage(server)))
+        for (sink <- sinkOpt) sink.send(new ServerConnectMessage(server))
     }
   }
 
@@ -169,7 +169,7 @@ class LabradConnection(sinkOpt: Option[Msg => Unit]) {
   private def subscribeToServerDisconnectMessages(mgr: ManagerServer) {
     addSubscription(mgr, "Server Disconnect") {
       case Message(_, _, _, Cluster(_, Str(server))) =>
-        for (sink <- sinkOpt) sink(Msg.wrap(new ServerDisconnectMessage(server)))
+        for (sink <- sinkOpt) sink.send(new ServerDisconnectMessage(server))
     }
   }
 
@@ -180,7 +180,7 @@ class LabradConnection(sinkOpt: Option[Msg => Unit]) {
         val node = map("node").get[String]
         val server = map("server").get[String]
         val instance = map("instance").get[String]
-        for (sink <- sinkOpt) sink(Msg.wrap(new NodeServerMessage(node, server, instance, status)))
+        for (sink <- sinkOpt) sink.send(new NodeServerMessage(node, server, instance, status))
     }
   }
 
@@ -195,7 +195,7 @@ class LabradConnection(sinkOpt: Option[Msg => Unit]) {
         val node = map("node").get[String]
         val serversData = map("servers")
         val statuses = NodeController.getServerStatuses(serversData).map { _.toJava }.toArray
-        for (sink <- sinkOpt) sink(Msg.wrap(new NodeStatusMessage(node, statuses)))
+        for (sink <- sinkOpt) sink.send(new NodeStatusMessage(node, statuses))
     }
   }
 
