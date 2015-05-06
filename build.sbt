@@ -52,10 +52,9 @@ lazy val client = project.in(file("client"))
       val result = compile.in(Compile).value
 
       // now run gwt compilation
-      val warDir = target.value / "war"
       val args: Array[String] = Array(
         "-XjsInteropMode", "JS",
-        "-war", warDir.getAbsolutePath,
+        "-war", (target.value / "gwt").getAbsolutePath,
         "-gen", (target.value / "gwt-gen").getAbsolutePath
       ) ++ gwtModules.value
 
@@ -94,8 +93,35 @@ lazy val client = project.in(file("client"))
     }
   )
 
+lazy val clientPkg = project.in(file("client-pkg"))
+  .dependsOn(client)
+  .enablePlugins(SbtWeb)
+  .settings(commonSettings)
+  .settings(
+    name := "scalabrad-web-client-pkg",
+
+    // add a source generator that copies compiled files from the client project
+    sourceGenerators in Assets <+= Def.task {
+      val dstDir = (resourceManaged in Assets).value
+      val srcDir = (target in client).value / "gwt" / "labradbrowser"
+      val srcFiles = srcDir ** "*"
+
+      val files = for {
+        src <- srcFiles.get if src.isFile
+        rel <- IO.relativizeFile(srcDir, src)
+        dst = IO.resolve(dstDir, rel)
+      } yield {
+        IO.copyFile(src, dst, preserveLastModified = true)
+        dst
+      }
+
+      files
+    }
+  )
+
 lazy val server = project.in(file("server"))
   .dependsOn(shared)
+  .dependsOn(clientPkg)
   .settings(commonSettings)
   .settings(
     name := "scalabrad-web-server",
@@ -107,24 +133,7 @@ lazy val server = project.in(file("server"))
       "org.labrad" %% "scalabrad" % "0.2.0-M6"
     ),
 
-    routesGenerator := InjectedRoutesGenerator,
+    routesGenerator := InjectedRoutesGenerator
 
-    jetty(port = 8080), // add jetty settings for xsbt-web-plugin
-
-    compile in Compile := {
-      val dstDir = (resourceDirectory in Assets).value
-      val srcDir = (target in client).value / "war"
-      val srcFiles = srcDir ** "*"
-
-      for {
-        src <- srcFiles.get if src.isFile
-        rel <- IO.relativizeFile(srcDir, src)
-        dst = IO.resolve(dstDir, rel)
-      } {
-        IO.copyFile(src, dst, preserveLastModified = true)
-      }
-
-      (compile in Compile).value
-    }
   ).enablePlugins(PlayScala)
    .disablePlugins(PlayLayoutPlugin)
