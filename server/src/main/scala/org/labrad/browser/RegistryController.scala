@@ -9,7 +9,23 @@ import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
 
+object RegistryController {
+  /**
+   * Convert a path to an absolute path, by prepending an empty segment, if needed
+   */
+  def absPath(path: Seq[String]) = {
+    path match {
+      case Seq() => Seq("")
+      case Seq("", rest @ _*) => path
+      case path => "" +: path
+    }
+  }
+}
+
+
 class RegistryController @Inject() (cxnHolder: LabradConnectionHolder) extends Controller {
+
+  import RegistryController._
 
   // json request/response types
   case class RegistryListing(path: Seq[String], dirs: Seq[String], keys: Seq[String], vals: Seq[String])
@@ -53,14 +69,6 @@ class RegistryController @Inject() (cxnHolder: LabradConnectionHolder) extends C
 
 
   // registry utility functions
-
-  private def absPath(path: Seq[String]) = {
-    path match {
-      case Seq() => Seq("")
-      case Seq("", rest @ _*) => path
-      case path => "" +: path
-    }
-  }
 
   private def startPacket(path: Seq[String], create: Boolean = false) = {
     val pkt = cxnHolder.cxn.registry.packet()

@@ -104,7 +104,7 @@ class LabradSocketActor(out: ActorRef) extends Actor with Logging {
 
           val reg = this.cxn.registry
           val pkt = reg.packet(ctx)
-          pkt.cd(path)
+          pkt.cd(RegistryController.absPath(path))
           pkt.notifyOnChange(msgId, true)
           Await.result(pkt.send(), 10.seconds)
 
