@@ -3,7 +3,6 @@ package org.labrad.browser.client.event;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.fusesource.restygwt.client.MethodCallback;
 import org.labrad.browser.client.message.Codecs;
 import org.labrad.browser.common.message.LabradConnectMessage;
 import org.labrad.browser.common.message.LabradDisconnectMessage;

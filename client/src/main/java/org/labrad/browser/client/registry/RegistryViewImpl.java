@@ -254,7 +254,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
         String key = Window.prompt("Enter key name", "");
         if (key == null) return;
 
-        String value = Window.prompt("Enter data value", "");
+        String value = Window.prompt("Enter value for key " + key, "");
         if (value == null) return;
 
         registryService.set(new RegistryService.Set(place.getPath(),  key,  value), defaultCallback);
@@ -296,7 +296,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
     renameDirColumn.setFieldUpdater(new FieldUpdater<DirectoryTableRow, ImageResource>() {
       public void update(int index, DirectoryTableRow object, ImageResource value) {
         String dir = object.getName();
-        String newDir = Window.prompt("New directory name", dir);
+        String newDir = Window.prompt("Rename directory to:", dir);
         if (newDir != null && !newDir.equals(dir)) {
           registryService.renameDir(new RegistryService.RenameDir(place.getPath(), dir, newDir), defaultCallback);
         }
@@ -313,7 +313,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
     copyDirColumn.setFieldUpdater(new FieldUpdater<DirectoryTableRow, ImageResource>() {
       public void update(int index, DirectoryTableRow object, ImageResource value) {
         String dir = object.getName();
-        String newDir = Window.prompt("New directory name", dir);
+        String newDir = Window.prompt("Copy directory to:", dir);
         if (newDir != null && !newDir.equals(dir)) {
           registryService.copyDir(new RegistryService.CopyDir(place.getPath(), dir, place.getPath(), newDir), defaultCallback);
         }
@@ -373,7 +373,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
     renameKeyColumn.setFieldUpdater(new FieldUpdater<KeyTableRow, ImageResource>() {
       public void update(int index, KeyTableRow object, ImageResource value) {
         String key = object.getKey();
-        String newKey = Window.prompt("New key name", key);
+        String newKey = Window.prompt("Rename key to:", key);
         if (newKey != null && !newKey.equals(key)) {
           registryService.rename(new RegistryService.Rename(place.getPath(), key, newKey), defaultCallback);
         }
@@ -390,7 +390,7 @@ public class RegistryViewImpl extends Composite implements RegistryView {
     copyKeyColumn.setFieldUpdater(new FieldUpdater<KeyTableRow, ImageResource>() {
       public void update(int index, KeyTableRow object, ImageResource value) {
         String key = object.getKey();
-        String newKey = Window.prompt("New key name", key);
+        String newKey = Window.prompt("Copy key to:", key);
         if (newKey != null && !newKey.equals(key)) {
           registryService.copy(new RegistryService.Copy(place.getPath(), key, place.getPath(), newKey), defaultCallback);
         }
