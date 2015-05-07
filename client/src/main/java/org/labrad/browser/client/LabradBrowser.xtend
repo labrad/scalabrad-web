@@ -40,6 +40,22 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 
+import com.google.gwt.inject.client.GinModules;
+import com.google.gwt.inject.client.Ginjector;
+
+@GinModules(LabradBrowser.Module)
+public interface ClientInjector extends Ginjector {
+  def EventBus getEventBus()
+  def PlaceController getPlaceController()
+  def ActivityMapper getActivityMapper()
+  def ActivityManager getActivityManager()
+  def PlaceHistoryMapper getPlaceHistoryMapper()
+  def PlaceHistoryHandler getPlaceHistoryHandler()
+
+  def RemoteEventBus getRemoteEventManager()
+}
+
+
 public class LabradBrowser implements EntryPoint {
   public static class Module extends AbstractGinModule {
     protected override def configure() {
@@ -80,8 +96,8 @@ public class LabradBrowser implements EntryPoint {
     }
   }
 
-  private static MiscBundle bundle = GWT.create(MiscBundle)
-  private static MiscBundle.Css css = bundle.css() => [ ensureInjected ]
+  private static val MiscBundle bundle = GWT::create(MiscBundle)
+  private static val css = bundle.css() => [ ensureInjected ]
 
   private Place defaultPlace = new NodesPlace()
   private SimplePanel appWidget = new SimplePanel()
@@ -90,11 +106,11 @@ public class LabradBrowser implements EntryPoint {
     // prefix root for rest urls
     Defaults.setServiceRoot("/api")
 
-    val injector = GWT.create(ClientInjector) as ClientInjector
+    val ClientInjector injector = GWT::create(ClientInjector)
     val eventBus = injector.getEventBus()
     val placeController = injector.getPlaceController()
     val historyHandler = injector.getPlaceHistoryHandler()
-    historyHandler.register(placeController, eventBus, defaultPlace)
+    historyHandler.register(placeController, eventBus as com.google.web.bindery.event.shared.EventBus, defaultPlace)
 
     val historyMapper = injector.getPlaceHistoryMapper()
     val managerLink = new Hyperlink("manager", historyMapper.getToken(new ManagerPlace()))

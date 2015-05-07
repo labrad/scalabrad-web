@@ -104,7 +104,7 @@ public class RegistryActivity extends AbstractActivity implements RegistryView.P
         container.setWidget(viewFactory.createDisconnectedView(place, caught));
       }
       public void onSuccess(Method method, RegistryListing result) {
-        container.setWidget(viewFactory.createRegistryView(place.getPath(), result, RegistryActivity.this, eventBus));
+        container.setWidget(viewFactory.createRegistryView(place, result, RegistryActivity.this, eventBus));
       }
     });
   }

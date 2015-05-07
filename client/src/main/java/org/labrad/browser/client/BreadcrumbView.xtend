@@ -11,7 +11,7 @@ import com.google.gwt.user.client.ui.Label
 
 public class BreadcrumbView extends Composite {
 
-  private static val bundle = GWT.create(MiscBundle) as MiscBundle
+  private static val MiscBundle bundle = GWT::create(MiscBundle)
   private static val css = bundle.css() => [ ensureInjected ]
 
   new(

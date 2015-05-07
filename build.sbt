@@ -36,6 +36,8 @@ lazy val client = project.in(file("client"))
       "com.google.gwt.inject" % "gin" % "2.1.2",
       "com.google.inject" % "guice" % "3.0" exclude("asm", "asm"),
       "com.googlecode.gflot" % "gflot" % "3.3.0",
+      "com.google.guava" % "guava" % "18.0",
+      "com.google.guava" % "guava-gwt" % "18.0",
       "com.sksamuel.gwt" % "gwt-websockets" % "1.0.4",
       "org.eclipse.xtend" % "org.eclipse.xtend.core" % "2.8.1" withSources(),
       "org.eclipse.xtend" % "org.eclipse.xtend.lib" % "2.8.1" withSources(),

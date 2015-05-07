@@ -41,7 +41,7 @@ public interface ViewFactory {
   ManagerView createManagerView(ManagerView.Presenter presenter, EventBus eventBus, PlaceHistoryMapper placeMapper);
 
   RegistryActivity createRegistryActivity(RegistryPlace place);
-  RegistryView createRegistryView(List<String> path, RegistryListing listing, RegistryView.Presenter presenter, EventBus eventBus);
+  RegistryView createRegistryView(RegistryPlace place, RegistryListing listing, RegistryView.Presenter presenter, EventBus eventBus);
 
   NodesActivity createNodesActivity(NodesPlace place);
   NodesView createNodesView(NodesView.Presenter presenter, EventBus eventBus);
