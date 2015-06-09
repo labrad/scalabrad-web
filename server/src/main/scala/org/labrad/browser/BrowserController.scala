@@ -46,6 +46,26 @@ class BrowserController @Inject() (cxnHolder: LabradConnectionHolder) extends Co
     Ok(html.index())
   }
 
+  // CORS preflight requests
+  def preflight(path: String) = Action { request =>
+    val originOpt = request.headers.get("Origin")
+    val headersOpt = request.headers.get("Access-Control-Request-Headers")
+    val methodOpt = request.headers.get("Access-Control-Request-Method")
+    originOpt match {
+      case None => BadRequest
+      case Some(origin) =>
+        val headers = Seq.newBuilder[(String, String)]
+        headers += "Access-Control-Allow-Origin" -> origin
+        for (reqHeaders <- headersOpt) {
+          headers += "Access-Control-Allow-Headers" -> reqHeaders
+        }
+        for (method <- methodOpt) {
+          headers += "Access-Control-Allow-Methods" -> method
+        }
+        Ok.withHeaders(headers.result: _*)
+    }
+  }
+
   // Manager Service
   def connections() = Action.async {
     cxnHolder.cxn.manager.connectionInfo().map { infos =>

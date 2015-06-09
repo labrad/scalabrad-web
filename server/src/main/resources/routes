@@ -1,5 +1,7 @@
 GET    /     org.labrad.browser.BrowserController.index
 
+OPTIONS /api/*path                    org.labrad.browser.BrowserController.preflight(path)
+
 GET    /api/manager/connections      org.labrad.browser.BrowserController.connections
 DELETE /api/manager/connections/:id  org.labrad.browser.BrowserController.connectionClose(id: Long)
 

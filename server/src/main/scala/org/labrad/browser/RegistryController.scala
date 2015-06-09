@@ -81,7 +81,10 @@ class RegistryController @Inject() (cxnHolder: LabradConnectionHolder) extends C
     val pkt = startPacket(path)
     val dirF = pkt.dir()
     pkt.send()
-    dirF.flatMap { case (dirs, keys) =>
+    dirF.flatMap { case (dirsRaw, keysRaw) =>
+
+      val dirs = dirsRaw.sorted
+      val keys = keysRaw.sorted
 
       val valsF = if (keys.size == 0) {
         Future.successful(Seq.empty[String])
@@ -184,8 +187,15 @@ class RegistryController @Inject() (cxnHolder: LabradConnectionHolder) extends C
   // json rpc
 
   private def rpc[A: Reads, B: Writes](f: A => Future[B]) = Action.async(BodyParsers.parse.json) { request =>
+    val originOpt = request.headers.get("Origin")
     val a = request.body.as[A]
-    f(a).map { b => Ok(Json.toJson(b)) }
+    f(a).map { b =>
+      val headers = Seq.newBuilder[(String, String)]
+      for (origin <- originOpt) {
+        headers += "Access-Control-Allow-Origin" -> origin
+      }
+      Ok(Json.toJson(b)).withHeaders(headers.result: _*)
+    }
   }
 
   def dir = rpc[Seq[String], RegistryListing] { path =>
