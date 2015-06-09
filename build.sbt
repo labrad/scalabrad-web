@@ -108,6 +108,9 @@ lazy val server = project.in(file("server"))
 
     routesGenerator := InjectedRoutesGenerator,
 
+    // make sure the eclipse project includes generated source files
+    EclipseKeys.createSrc := EclipseCreateSrc.Default + EclipseCreateSrc.Managed,
+
     // add a source generator that copies compiled files from the client project
     sourceGenerators in Assets <+= Def.task {
       val srcDir = (target in client).value / "gwt" / "labradbrowser"
