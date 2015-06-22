@@ -1,0 +1,33 @@
+<dom-module id="labrad-grapher-dataset">
+  <style>
+    :host {
+      display: block;
+    }
+  </style>
+  <template>
+    <ul>
+      <template is="dom-repeat" items="{{items}}">
+        <li><span class="paper-font-body1">{{item}}</span></li>
+      </template>
+    </ul>
+  </template>
+</dom-module>
+
+<script>
+(function () {
+  Polymer({
+    is: 'labrad-grapher-dataset',
+    properties: {
+      items: {
+        type: Array,
+        notify: true,
+      }
+    },
+    ready: function() {
+      this.items = [
+        'A single dataset'
+      ];
+    }
+  });
+})();
+</script>

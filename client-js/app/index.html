@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LabRAD</title>
+
+  <!-- Chrome for Android theme color -->
+  <meta name="theme-color" content="#303F9F">
+
+  <!-- Web Application Manifest -->
+  <link rel="manifest" href="/manifest.json">
+
+  <!-- Tile color for Win8 -->
+  <meta name="msapplication-TileColor" content="#3372DF">
+
+  <!-- Add to homescreen for Chrome on Android -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="LabRAD">
+  <link rel="icon" sizes="192x192" href="/images/touch/chrome-touch-icon-192x192.png">
+
+  <!-- Add to homescreen for Safari on iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="LabRAD">
+  <link rel="apple-touch-icon" href="/images/touch/apple-touch-icon.png">
+
+  <!-- Tile icon for Win8 (144x144) -->
+  <meta name="msapplication-TileImage" content="/images/touch/ms-touch-icon-144x144-precomposed.png">
+
+  <link rel="stylesheet" href="/styles/main.css">
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="/elements/elements.html">
+</head>
+
+<body unresolved class="fullbleed layout vertical">
+  <template is="dom-bind" id="app">
+
+    <paper-drawer-panel id="paperDrawerPanel" forceNarrow>
+      <div drawer>
+        <!-- Drawer Toolbar -->
+        <paper-toolbar id="drawerToolbar">
+          <span>LabRAD</span>
+        </paper-toolbar>
+
+        <!-- Drawer Content -->
+        <paper-menu class="list" attr-for-selected="data-route" selected="{{route}}" on-iron-select="onMenuSelect">
+          <a data-route="manager" href="/">
+            <iron-icon icon="home"></iron-icon>
+            <span>Manager</span>
+          </a>
+
+          <a data-route="nodes" href="/nodes">
+            <iron-icon icon="hardware:device-hub"></iron-icon>
+            <span>Nodes</span>
+          </a>
+
+          <a data-route="registry" href="/registry">
+            <iron-icon icon="description"></iron-icon>
+            <span>Registry</span>
+          </a>
+
+          <a data-route="grapher" href="/grapher">
+            <iron-icon icon="editor:insert-chart"></iron-icon>
+            <span>Grapher</span>
+          </a>
+        </paper-menu>
+      </div>
+
+      <paper-header-panel main mode="standard">
+        <!-- Main Toolbar -->
+        <paper-toolbar id="mainToolbar">
+          <button tabindex="1" id="paperToggle" paper-drawer-toggle>
+            <iron-icon icon="menu" paper-drawer-toggle></iron-icon>
+          </button>
+          <span class="flex"></span>
+
+          <!-- Application name -->
+          <div class="appname bottom paper-font-display2">LabRAD - <span>{{route}}</span></div>
+
+          <!--<paper-tabs attr-for-selected="data-route" selected="{{route}}">
+            <paper-tab data-route="manager">Manager</paper-tab>
+            <paper-tab data-route="nodes">Nodes</paper-tab>
+            <paper-tab data-route="registry">Registry</paper-tab>
+            <paper-tab data-route="grapher">Grapher</paper-tab>
+          </paper-tabs>-->
+        </paper-toolbar>
+
+
+        <!-- Main Content -->
+        <iron-pages attr-for-selected="data-route" selected="{{route}}">
+
+          <section data-route="manager">
+            <paper-material elevation="0">
+              <h1>Manager!!</h1>
+            </paper-material>
+          </section>
+
+          <section data-route="nodes">
+            <paper-material elevation="0">
+              <h1>Nodes!!</h1>
+            </paper-material>
+          </section>
+
+          <section data-route="registry">
+            <paper-material elevation="0">
+              <labrad-breadcrumbs breadcrumbs={{breadcrumbs}}></labrad-breadcrumbs>
+              <labrad-registry
+                  path={{path}}
+                  dirs={{registryDirs}}
+                  keys={{registryKeys}}>
+              </labrad-registry>
+            </paper-material>
+          </section>
+
+          <section data-route="grapher">
+            <paper-material elevation="0">
+              <labrad-breadcrumbs breadcrumbs={{breadcrumbs}}></labrad-breadcrumbs>
+              <labrad-grapher
+                  path={{app.path}}
+                  dirs={{datavaultDirs}}
+                  datasets={{datavaultDatasets}}>
+              </labrad-grapher>
+            </paper-material>
+          </section>
+
+          <section data-route="dataset">
+            <paper-material elevation="0">
+              <div>
+                <p>Path: <span>{{path}}</span>
+                <p>Dataset: <span>{{dataset}}</span>
+              </div>
+            </paper-material>
+          </section>
+
+        </iron-pages>
+      </paper-header-panel>
+    </paper-drawer-panel>
+  </template>
+  <script src="/scripts/app.js"></script>
+</body>
+</html>

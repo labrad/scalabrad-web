@@ -1,0 +1,18 @@
+<script>
+(function () {
+  Polymer({
+    is: 'app-link',
+    
+    extends: 'a',
+    
+    listeners: {
+      'click': 'onClick'
+    },
+
+    onClick: function(e) {
+      this.fire('app-link-click', {path: this.path});
+      e.preventDefault();
+    }
+  });
+})();
+</script>

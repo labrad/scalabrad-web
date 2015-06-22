@@ -1,0 +1,55 @@
+<link rel="import" href="app-link.html">
+
+<dom-module id="labrad-grapher">
+  <style>
+    :host {
+      display: block;
+    }
+  </style>
+  <template>
+    <table>
+      <template is="dom-repeat" items="{{dirs}}">
+        <tr>
+          <td>
+            <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+              <span class="paper-font-body1">{{item.name}}</span>
+            </a>
+          </td>
+          <td></td>
+        </tr>
+      </template>
+      <template is="dom-repeat" items="{{datasets}}">
+        <tr>
+          <td>
+            <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+              <span class="paper-font-body1">{{item.name}}</span>
+            </a>
+          </td>
+          <td></td>
+        </tr>
+      </template>
+    </table>
+  </template>
+</dom-module>
+
+<script>
+(function () {
+  Polymer({
+    is: 'labrad-grapher',
+    properties: {
+      dirs: {
+        type: Array,
+        notify: true
+      },
+      datasets: {
+        type: Array,
+        notify: true
+      },
+      path: {
+        type: Array,
+        notify: true
+      }
+    }
+  });
+})();
+</script>

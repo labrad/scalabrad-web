@@ -1,0 +1,51 @@
+<link rel="import" href="app-link.html">
+
+<dom-module id="labrad-registry">
+  <style>
+    :host {
+      display: block;
+    }
+  </style>
+  <template>
+    <table>
+      <template is="dom-repeat" items="{{dirs}}">
+        <tr>
+          <td>
+            <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+              <span class="paper-font-body1">{{item.name}}</span>
+            </a>
+          </td>
+          <td></td>
+        </tr>
+      </template>
+      <template is="dom-repeat" items="{{keys}}">
+        <tr>
+          <td><span class="paper-font-body1">{{item.name}}</span></td>
+          <td><span class="paper-font-body1">{{item.value}}</span></td>
+        </tr>
+      </template>
+    </table>
+  </template>
+</dom-module>
+
+<script>
+(function () {
+  Polymer({
+    is: 'labrad-registry',
+    properties: {
+      dirs: {
+        type: Array,
+        notify: true
+      },
+      keys: {
+        type: Array,
+        notify: true
+      },
+      path: {
+        type: Array,
+        notify: true
+      }
+    }
+  });
+})();
+</script>
