@@ -1,44 +1,102 @@
-//package org.labrad.browser.server
-//
-//import java.util.HashMap
-//import javax.inject.Singleton
-//import javax.servlet.ServletContext
-//import scala.concurrent.Await
-//import scala.concurrent.ExecutionContext.Implicits.global
-//import scala.concurrent.duration._
-//
-//import org.labrad.browser.client.grapher.{DatasetInfo, DirectoryListing, VaultException, VaultService}
-//import org.labrad.data._
-//
-//@Singleton
-//class VaultServiceImpl {
-//
-//  private def sanitizePath(path: Array[String]) = {
-//    if (path.size == 0 || path(0) != "") {
-//      "" +: path
-//    } else {
-//      path
-//    }
-//  }
-//
-//  private val catcher: PartialFunction[Throwable, Nothing] = {
-//    case e: Exception =>
-//      throw new VaultException(e.toString)
-//  }
-//
-//  def getListing(path: Array[String]) = {
-//    val pkt = LabradConnection.to("Data Vault").packet()
-//    pkt.call("cd", Arr(sanitizePath(path)))
-//    val dir = pkt.call("dir")
-//    pkt.send
-//    try {
-//      val answer = Await.result(dir, 10.seconds)
-//      val dirs = answer(0).get[Array[String]]
-//      val datasets = answer(1).get[Array[String]]
-//      new DirectoryListing(dirs, datasets)
-//    } catch catcher
-//  }
-//
+package org.labrad.browser
+
+import javax.inject.Inject
+import org.labrad._
+import org.labrad.data._
+import play.api.libs.json._
+import play.api.mvc._
+import scala.async.Async.{async, await}
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+
+
+trait VaultServer extends Requester {
+  def dir(): Future[(Seq[String], Seq[String])] =
+    call("dir").map { _.get[(Seq[String], Seq[String])] }
+
+  def cd(dir: String): Future[Seq[String]] = call("cd", Str(dir)).map { _.get[Seq[String]] }
+  def cd(dir: Seq[String]): Future[Seq[String]] = call("cd", Arr(dir.map(Str(_)))).map { _.get[Seq[String]] }
+}
+
+class VaultServerProxy(cxn: Connection, name: String = "Data Vault", context: Context = Context(0, 0))
+extends ServerProxy(cxn, name, context) with VaultServer {
+  def packet(ctx: Context = context) = new VaultServerPacket(this, ctx)
+}
+
+class VaultServerPacket(server: ServerProxy, ctx: Context)
+extends PacketProxy(server, ctx) with VaultServer
+
+
+object VaultController {
+  /**
+   * Convert a path to an absolute path, by prepending an empty segment, if needed
+   */
+  def absPath(path: Seq[String]) = {
+    path match {
+      case Seq() => Seq("")
+      case Seq("", rest @ _*) => path
+      case path => "" +: path
+    }
+  }
+}
+
+
+class VaultController @Inject() (cxnHolder: LabradConnectionHolder) extends Controller {
+
+  import VaultController._
+
+  // json request/response types
+  case class VaultListing(path: Seq[String], dirs: Seq[String], datasets: Seq[String])
+  object VaultListing { implicit val format = Json.format[VaultListing] }
+
+
+  // vault utility functions
+
+  private def startPacket(path: Seq[String]) = {
+    val dv = new VaultServerProxy(cxnHolder.cxn.get)
+    val pkt = dv.packet()
+    pkt.cd(absPath(path))
+    pkt
+  }
+
+  private def dvDir(path: Seq[String]): Future[VaultListing] = {
+    // get directory listing
+    val pkt = startPacket(path)
+    val dirF = pkt.dir()
+    pkt.send()
+    dirF.map { case (dirsRaw, datasetsRaw) =>
+
+      val dirs = dirsRaw.sorted
+      val datasets = datasetsRaw.sorted
+
+      VaultListing(path, dirs, datasets)
+    }
+  }
+
+
+  // json rpc
+
+  private def rpc[A: Reads, B: Writes](f: A => Future[B]) = Action.async(BodyParsers.parse.json) { request =>
+    val originOpt = request.headers.get("Origin")
+    val a = request.body.as[A]
+    f(a).map { b =>
+      val headers = Seq.newBuilder[(String, String)]
+      for (origin <- originOpt) {
+        headers += "Access-Control-Allow-Origin" -> origin
+      }
+      Ok(Json.toJson(b)).withHeaders(headers.result: _*)
+    }
+  }
+
+  def dir = rpc[Seq[String], VaultListing] { path =>
+    println(path)
+    dvDir(path).map { result =>
+      println(result)
+      result
+    }
+  }
+
 //  def getDatasetInfo(path: Array[String], dataset: String): DatasetInfo =
 //    getDatasetInfo(path, Str(dataset))
 //
@@ -98,4 +156,4 @@
 //    val Array(rows, cols) = answer.arrayShape
 //    Array.tabulate[Double](rows, cols) { answer(_, _).getValue }
 //  }
-//}
+}

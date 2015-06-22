@@ -6,7 +6,7 @@ import javax.inject._
 import org.labrad.browser.common.message.{Message => ClientMessage, _}
 import org.labrad.data._
 import org.labrad.util.Logging
-import play.api.Play.current
+import play.api.Application
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 import scala.collection.JavaConverters._
@@ -15,7 +15,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-class WebSocketController @Inject() extends Controller with Logging {
+class WebSocketController @Inject() (implicit app: Application) extends Controller with Logging {
   def socket = WebSocket.acceptWithActor[String, String] { request => out =>
     LabradSocketActor.props(out)
   }
