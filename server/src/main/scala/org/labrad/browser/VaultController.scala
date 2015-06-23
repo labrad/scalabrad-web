@@ -1,6 +1,7 @@
 package org.labrad.browser
 
 import javax.inject.Inject
+import org.joda.time.DateTime
 import org.labrad._
 import org.labrad.data._
 import play.api.libs.json._
@@ -12,11 +13,51 @@ import scala.concurrent.duration._
 
 
 trait VaultServer extends Requester {
-  def dir(): Future[(Seq[String], Seq[String])] =
-    call("dir").map { _.get[(Seq[String], Seq[String])] }
+  private def strSeq(strs: Seq[String]): Data = Arr(strs.map(Str(_)))
 
-  def cd(dir: String): Future[Seq[String]] = call("cd", Str(dir)).map { _.get[Seq[String]] }
-  def cd(dir: Seq[String]): Future[Seq[String]] = call("cd", Arr(dir.map(Str(_)))).map { _.get[Seq[String]] }
+  def dir(tagFilters: Seq[String] = Seq("-trash")): Future[(Seq[String], Seq[String])] =
+    call[(Seq[String], Seq[String])]("dir", strSeq(tagFilters))
+  def dirWithTags(tagFilters: Seq[String] = Seq("-trash")): Future[(Seq[(String, Seq[String])], Seq[(String, Seq[String])])] =
+    call[(Seq[(String, Seq[String])], Seq[(String, Seq[String])])]("dir", strSeq(tagFilters), Bool(false))
+
+  def cd(dir: String): Future[Seq[String]] = call[Seq[String]]("cd", Str(dir))
+  def cd(dir: Seq[String]): Future[Seq[String]] = call[Seq[String]]("cd", strSeq(dir))
+
+  def open(name: String): Future[(Seq[String], String)] = call[(Seq[String], String)]("open", Str(name))
+  def open(num: Int): Future[(Seq[String], String)] = call[(Seq[String], String)]("open", UInt(num))
+
+  def get(): Future[Array[Array[Double]]] = call[Array[Array[Double]]]("get")
+  def get(limit: Int, startOver: Boolean = false): Future[Array[Array[Double]]] =
+    call[Array[Array[Double]]]("get", UInt(limit), Bool(startOver))
+
+  def variables(): Future[(Seq[(String, String)], Seq[(String, String, String)])] =
+    call[(Seq[(String, String)], Seq[(String, String, String)])]("variables")
+
+  def getName(): Future[String] = call[String]("get name")
+
+  def parameters(): Future[Seq[String]] = call[Seq[String]]("parameters")
+
+  def getParameter(name: String, caseSensitive: Boolean = true): Future[Data] = call("get parameter", Str(name), Bool(caseSensitive))
+  def getParameters(): Future[Map[String, Data]] = call("get parameters").map { result =>
+    if (result.isNone) {
+      Map.empty
+    } else {
+      result.clusterIterator.map { _.get[(String, Data)] }.toMap
+    }
+  }
+
+  implicit val dateTimeGetter = new Getter[DateTime] {
+    def get(data: Data): DateTime = data.getTime.toDateTime
+  }
+
+  def getComments(limit: Int, startOver: Boolean = false): Future[Seq[(DateTime, String, String)]] =
+    call[Seq[(DateTime, String, String)]]("get comments")
+
+  def getTags(dirs: Seq[String] = Nil, datasets: Seq[String] = Nil): Future[(Seq[(String, Seq[String])], Seq[(String, Seq[String])])] =
+    call[(Seq[(String, Seq[String])], Seq[(String, Seq[String])])]("get tags", strSeq(dirs), strSeq(datasets))
+
+  def updateTags(tags: Seq[String], dirs: Seq[String] = Nil, datasets: Seq[String] = Nil): Future[Unit] =
+    callUnit("update tags", strSeq(tags), strSeq(dirs), strSeq(datasets))
 }
 
 class VaultServerProxy(cxn: Connection, name: String = "Data Vault", context: Context = Context(0, 0))
@@ -42,7 +83,7 @@ object VaultController {
 }
 
 
-class VaultController @Inject() (cxnHolder: LabradConnectionHolder) extends Controller {
+class VaultController @Inject() (cxnHolder: LabradConnectionHolder) extends Controller with JsonRpc {
 
   import VaultController._
 
@@ -75,19 +116,7 @@ class VaultController @Inject() (cxnHolder: LabradConnectionHolder) extends Cont
   }
 
 
-  // json rpc
-
-  private def rpc[A: Reads, B: Writes](f: A => Future[B]) = Action.async(BodyParsers.parse.json) { request =>
-    val originOpt = request.headers.get("Origin")
-    val a = request.body.as[A]
-    f(a).map { b =>
-      val headers = Seq.newBuilder[(String, String)]
-      for (origin <- originOpt) {
-        headers += "Access-Control-Allow-Origin" -> origin
-      }
-      Ok(Json.toJson(b)).withHeaders(headers.result: _*)
-    }
-  }
+  // callable RPCs
 
   def dir = rpc[Seq[String], VaultListing] { path =>
     println(path)

@@ -23,7 +23,7 @@ object RegistryController {
 }
 
 
-class RegistryController @Inject() (cxnHolder: LabradConnectionHolder) extends Controller {
+class RegistryController @Inject() (cxnHolder: LabradConnectionHolder) extends Controller with JsonRpc {
 
   import RegistryController._
 
@@ -184,19 +184,7 @@ class RegistryController @Inject() (cxnHolder: LabradConnectionHolder) extends C
 
 
 
-  // json rpc
-
-  private def rpc[A: Reads, B: Writes](f: A => Future[B]) = Action.async(BodyParsers.parse.json) { request =>
-    val originOpt = request.headers.get("Origin")
-    val a = request.body.as[A]
-    f(a).map { b =>
-      val headers = Seq.newBuilder[(String, String)]
-      for (origin <- originOpt) {
-        headers += "Access-Control-Allow-Origin" -> origin
-      }
-      Ok(Json.toJson(b)).withHeaders(headers.result: _*)
-    }
-  }
+  // callable RPCs
 
   def dir = rpc[Seq[String], RegistryListing] { path =>
     regDir(path)

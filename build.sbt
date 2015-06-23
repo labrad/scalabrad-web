@@ -104,7 +104,7 @@ lazy val server = project.in(file("server"))
       "org.scala-lang.modules" %% "scala-async" % "0.9.2",
       "net.maffoo" %% "jsonquote-core" % "0.3.0",
       "net.maffoo" %% "jsonquote-play" % "0.3.0",
-      "org.labrad" %% "scalabrad" % "0.2.0-M6"
+      "org.labrad" %% "scalabrad" % "0.2.0-M9"
     ),
 
     routesGenerator := InjectedRoutesGenerator,
