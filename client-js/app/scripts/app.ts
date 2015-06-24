@@ -23,7 +23,10 @@ window.addEventListener('WebComponentsReady', function() {
     page(e.detail.path);
   });
 
-  var reg = new registry.RegistryService('http://localhost:9000');
+  var socket = new registry.JsonRpcSocket('ws://localhost:9000/api/socket2');
+  var reg = new registry.RegistryServiceJsonRpc(socket);
+
+  //var reg = new registry.RegistryService('http://localhost:9000');
   var dv = new datavault.DataVaultService('http://localhost:9000');
 
   function pathStr(path: Array<string>, dir?: string): string {
@@ -39,7 +42,7 @@ window.addEventListener('WebComponentsReady', function() {
 
   function loadRegistry(path: Array<string>) {
     console.log('loading registry:', path);
-    reg.dir(path).then((listing) => {
+    reg.dir({path: path}).then((listing) => {
       console.log(listing);
 
       var breadcrumbs = [];

@@ -30,5 +30,6 @@ GET     /api/servers/:name           org.labrad.browser.BrowserController.server
 POST    /api/vault/dir               org.labrad.browser.VaultController.dir
 
 GET     /api/socket                  org.labrad.browser.WebSocketController.socket
+GET     /api/socket2                 org.labrad.browser.JsonRpcController.socket
 
 GET     /assets/*file         controllers.Assets.at(path="/public", file)

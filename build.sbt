@@ -93,8 +93,23 @@ lazy val client = project.in(file("client"))
     }
   )
 
+lazy val jsonrpc = project.in(file("jsonrpc"))
+  .settings(commonSettings)
+  .settings(
+    name := "scalabrad-web-jsonrpc",
+
+    resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
+
+    libraryDependencies ++= Seq(
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "com.typesafe.akka" %% "akka-actor" % "2.3.11",
+      "com.typesafe.play" %% "play-json" % "2.4.0",
+      "net.maffoo" %% "jsonquote-play" % "0.3.0"
+    )
+  )
+
 lazy val server = project.in(file("server"))
-  .dependsOn(shared)
+  .dependsOn(shared, jsonrpc)
   .settings(commonSettings)
   .settings(
     name := "scalabrad-web-server",
@@ -102,7 +117,6 @@ lazy val server = project.in(file("server"))
     libraryDependencies ++= Seq(
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.5.0",
       "org.scala-lang.modules" %% "scala-async" % "0.9.2",
-      "net.maffoo" %% "jsonquote-core" % "0.3.0",
       "net.maffoo" %% "jsonquote-play" % "0.3.0",
       "org.labrad" %% "scalabrad" % "0.2.0-M9"
     ),

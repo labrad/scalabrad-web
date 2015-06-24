@@ -1,6 +1,7 @@
 package org.labrad.browser
 
 import javax.inject._
+import org.labrad.browser.jsonrpc.{Notify, Call}
 import org.labrad.data._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
@@ -260,4 +261,223 @@ class RegistryController @Inject() (cxnHolder: LabradConnectionHolder) extends C
   def unwatch = rpc[Unwatch, String] { case Unwatch(id, watchId) =>
     ???
   }
+}
+
+
+case class RegistryListing(path: Seq[String], dirs: Seq[String], keys: Seq[String], vals: Seq[String])
+object RegistryListing { implicit val format = Json.format[RegistryListing] }
+
+class RegistryApi @Inject() (cxnHolder: LabradConnectionHolder) {
+
+  import RegistryController._
+
+
+  // registry utility functions
+
+  private def startPacket(path: Seq[String], create: Boolean = false) = {
+    val pkt = cxnHolder.cxn.registry.packet()
+    pkt.cd(absPath(path), create = create)
+    pkt
+  }
+
+  private def regDir(path: Seq[String]): Future[RegistryListing] = {
+    // get directory listing
+    val pkt = startPacket(path)
+    val dirF = pkt.dir()
+    pkt.send()
+    dirF.flatMap { case (dirsRaw, keysRaw) =>
+
+      val dirs = dirsRaw.sorted
+      val keys = keysRaw.sorted
+
+      val valsF = if (keys.size == 0) {
+        Future.successful(Seq.empty[String])
+      } else {
+        // get the values of all keys
+        val pkt = startPacket(path)
+        val fs = keys.map(key => pkt.get(key))
+        pkt.send()
+        Future.sequence(fs)
+      }
+
+      valsF.map { vals =>
+        RegistryListing(path, dirs, keys, vals.map(_.toString))
+      }
+    }
+  }
+
+  private def regDel(path: Seq[String], key: String): Future[Unit] = async {
+    val pkt = startPacket(path)
+    pkt.del(key)
+    await { pkt.send() }
+  }
+
+  private def regRmdir(path: Seq[String], dir: String): Future[Unit] = async {
+     // remove all subdirectories
+    val subPath = path :+ dir
+    val ls = await { regDir(subPath) }
+    val subDirs = ls.dirs.map { subDir => regRmdir(subPath, subDir) }
+    await { Future.sequence(subDirs) }
+
+    // remove all keys
+    if (ls.keys.size > 0) {
+      val pkt = startPacket(subPath)
+      for (key <- ls.keys)
+        pkt.call("del", Str(key))
+      await { pkt.send() }
+    }
+
+    // remove the directory itself
+    val pkt = startPacket(path)
+    pkt.rmDir(dir)
+    await { pkt.send() }
+  }
+
+  private def regCopy(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[Unit] = async {
+    val p1 = startPacket(path)
+    val dataF = p1.get(key)
+    p1.send()
+    val value = await { dataF }
+
+    val p2 = startPacket(newPath)
+    p2.set(newKey, value)
+    await { p2.send() }
+  }
+
+  private def regCopyDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[Unit] = async {
+    // if newDir does not exist, create it
+    val listing = await { regDir(newPath) }
+    if (!listing.dirs.contains(newDir)) {
+      val pkt = startPacket(path)
+      pkt.mkDir(newDir)
+      await { pkt.send() }
+    }
+
+    val subpath = path :+ dir
+    val newSubpath = newPath :+ newDir
+    val subListing = await { regDir(subpath) }
+
+    // recursively copy all subdirectories
+    val dirCopies = subListing.dirs.map { subdir =>
+      regCopyDir(subpath, subdir, newSubpath, subdir)
+    }
+    await { Future.sequence(dirCopies) }
+
+    // copy all keys
+    val keyCopies = subListing.keys.map { key =>
+      regCopy(subpath, key, newSubpath, key)
+    }
+    await { Future.sequence(keyCopies) }
+  }
+
+  private def regMove(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[RegistryListing] = async {
+    if (absPath(path) != absPath(newPath) || newKey != key) {
+      await { regCopy(path, key, newPath, newKey) }
+      await { regDel(path, key) }
+    }
+    await { regDir(newPath) }
+  }
+
+  private def regMoveDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[RegistryListing] = async {
+    if (absPath(path) != absPath(newPath) || newDir != dir) {
+      await { regCopyDir(path, dir, newPath, newDir) }
+      await { regRmdir(path, dir) }
+    }
+    await { regDir(newPath) }
+  }
+
+  // callable RPCs
+
+  @Call("org.labrad.registry.dir")
+  def dir(path: Seq[String]): Future[RegistryListing] = {
+    regDir(path)
+  }
+
+  @Call("org.labrad.registry.set")
+  def set(path: Seq[String], key: String, value: String): Future[RegistryListing] = {
+    val data = Data.parse(value)
+    val pkt = startPacket(path)
+    pkt.set(key, data)
+    async {
+      await { pkt.send() }
+      await { regDir(path) }
+    }
+  }
+
+  @Call("org.labrad.registry.del")
+  def del(path: Seq[String], key: String): Future[RegistryListing] = {
+    async {
+      await { regDel(path, key) }
+      await { regDir(path) }
+    }
+  }
+
+  @Call("org.labrad.registry.mkdir")
+  def mkDir(path: Seq[String], dir: String): Future[RegistryListing] = {
+    val pkt = startPacket(path)
+    pkt.mkDir(dir)
+    async {
+      await { pkt.send() }
+      await { regDir(path) }
+    }
+  }
+
+  @Call("org.labrad.registry.rmdir")
+  def rmDir(path: Seq[String], dir: String): Future[RegistryListing] = {
+    async {
+      await { regRmdir(path, dir) }
+      await { regDir(path) }
+    }
+  }
+
+  @Call("org.labrad.registry.copy")
+  def copy(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[RegistryListing] = {
+    async {
+      await { regCopy(path, key, newPath, newKey) }
+      await { regDir(newPath) }
+    }
+  }
+
+  @Call("org.labrad.registry.copyDir")
+  def copyDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[RegistryListing] = {
+    async {
+      await { regCopyDir(path, dir, newPath, newDir) }
+      await { regDir(newPath) }
+    }
+  }
+
+  @Call("org.labrad.registry.rename")
+  def rename(path: Seq[String], key: String, newKey: String): Future[RegistryListing] = {
+    regMove(path, key, path, newKey)
+  }
+
+  @Call("org.labrad.registry.renameDir")
+  def renameDir(path: Seq[String], dir: String, newDir: String): Future[RegistryListing] = {
+    regMoveDir(path, dir, path, newDir)
+  }
+
+  @Call("org.labrad.registry.move")
+  def move(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[RegistryListing] = {
+    regMove(path, key, newPath, newKey)
+  }
+
+  @Call("org.labrad.registry.moveDir")
+  def moveDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[RegistryListing] = {
+    regMoveDir(path, dir, newPath, newDir)
+  }
+
+  @Call("org.labrad.registry.watch")
+  def watch(id: String, watchId: String, path: String): Future[RegistryListing] = {
+    Future(???)
+  }
+
+  @Call("org.labrad.registry.unwatch")
+  def unwatch(id: String, watchId: String): Future[RegistryListing] = {
+    Future(???)
+  }
+}
+
+trait RegistryClientApi {
+  @Notify("org.labrad.registry.keyChanged")
+  def keyChanged(path: Seq[String], key: String): Unit
 }

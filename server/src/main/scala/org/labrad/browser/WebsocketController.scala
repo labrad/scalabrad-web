@@ -3,17 +3,57 @@ package org.labrad.browser
 import akka.actor.{Actor, ActorRef, Props}
 import com.fasterxml.jackson.databind.ObjectMapper
 import javax.inject._
+import net.maffoo.jsonquote.play._
 import org.labrad.browser.common.message.{Message => ClientMessage, _}
+import org.labrad.browser.jsonrpc.{Message => JsonRpcMessage, _}
 import org.labrad.data._
 import org.labrad.util.Logging
 import play.api.Application
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import play.api.libs.json.{Json, JsValue}
 import play.api.mvc._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+
+
+class JsonRpcController @Inject() (cxnHolder: LabradConnectionHolder)(implicit app: Application) extends Controller {
+
+  def socket = WebSocket.acceptWithActor[String, String] { request => out =>
+    val backend = new Backend {
+      var client: Endpoint = null
+      var registryClientApi: RegistryClientApi = null
+
+      val registryApi = new RegistryApi(cxnHolder)
+      val handlers = JsonRpc.makeHandlers(registryApi)
+
+      def connect(endpoint: Endpoint): Unit = {
+        client = endpoint
+        registryClientApi = JsonRpc.makeProxy(classOf[RegistryClientApi], client)
+      }
+
+      def disconnect(endpoint: Endpoint): Unit = {
+        client = null
+        registryClientApi = null
+      }
+
+      override def call(src: Endpoint, method: String, params: Option[Params]): Future[JsValue] = {
+        handlers.get(method) match {
+          case None => Future.failed(JsonRpcError.methodNotFound(json"""{ method: $method }"""))
+          case Some(handler) => handler.call(params.getOrElse(Left(Nil)))
+        }
+      }
+
+      override def notify(src: Endpoint, method: String, params: Option[Params]): Unit = {
+        call(src, method, params)
+      }
+    }
+    JsonRpcTransport.props(out, backend)
+  }
+}
+
 
 class WebSocketController @Inject() (implicit app: Application) extends Controller with Logging {
   def socket = WebSocket.acceptWithActor[String, String] { request => out =>
@@ -73,9 +113,8 @@ class LabradSocketActor(out: ActorRef) extends Actor with Logging {
   }
 
   private def send[M <: ClientMessage](msg: M)(implicit tag: ClassTag[M]): Unit = {
-    import net.maffoo.jsonquote.literal._
     val className = tag.runtimeClass.getName
-    val payload = Json(mapper.writeValueAsString(msg))
+    val payload = Json.parse(mapper.writeValueAsString(msg))
     val message = json"""{
       type: $className,
       payload: $payload
