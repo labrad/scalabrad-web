@@ -1,7 +1,7 @@
 First, make sure you have global libraries installed:
 
 ```
-$ npm install -g bower typescript-compiler tsd webpack
+$ npm install -g bower typescript-compiler tsd webpack gulp
 $ npm install
 $ bower install
 $ tsd reinstall --save

@@ -6,4 +6,5 @@ project/boot/
 .project
 .gwt
 .settings
+.log
 server/logs/
