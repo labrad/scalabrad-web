@@ -43,18 +43,22 @@ the API implementation on the server.
 ### Some notes about code organization
 
 ```
-client-js/   # the new javascript client code; alpha, not yet complete; built with node.js et al.
-  
+client-js/   # the new javascript client code; alpha, not yet complete; built with
+             # node.js et al.
 client/      # the old GWT-based client code; deprecated
 jsonrpc/     # scala support code for the server-side JSON-RPC implementation
-project/     # sbt project definition stuff (see the sbt docs for info about sbt project structure)
+project/     # sbt project definition stuff (see the sbt docs for info about sbt
+             # project structure)
 server/      # scala API server code; uses scalabrad to actually talk to labrad
-  src/main/resources/routes       # defines mapping from URLs to scala functions that handle them
+  src/main/resources/routes       # defines mapping from URLs to scala functions
+                                  # that handle them
   src/main/scala/                 # server code is in here
     org/labrad/browser/
-      RegistryController.scala    # the RegistryApi class is an example of exposing methods
-                                  # to be callable via JSON-RPC
-      WebsocketController.scala   # handles the actual request to open a websocket and sets up server-side state
-shared/      # code shared between server and GWT client; will go away when GWT client does
+      RegistryController.scala    # the RegistryApi class is an example of exposing
+                                  # methods to be callable via JSON-RPC
+      WebsocketController.scala   # handles the actual request to open a websocket
+                                  # and sets up server-side state
+shared/      # code shared between server and GWT client; will go away when GWT
+             # client does
 build.sbt    # sbt build definition
 ```
