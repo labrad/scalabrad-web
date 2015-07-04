@@ -48,6 +48,7 @@ class LabradConnection(sinkOpt: Option[Sink]) {
   def manager = new ManagerServerProxy(get)
   def registry = new RegistryServerProxy(get)
 
+
   def close(): Unit = {
     live = false
     try cxnOpt.foreach(_.close()) catch { case e: Throwable => }

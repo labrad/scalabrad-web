@@ -25,6 +25,7 @@ window.addEventListener('WebComponentsReady', function() {
 
   var socket = new registry.JsonRpcSocket('ws://localhost:9000/api/socket2');
   var reg = new registry.RegistryServiceJsonRpc(socket);
+  var dumb = new registry.DumbServiceJsonRpc(socket);
 
   //var reg = new registry.RegistryService('http://localhost:9000');
   var dv = new datavault.DataVaultService('http://localhost:9000');
@@ -42,6 +43,7 @@ window.addEventListener('WebComponentsReady', function() {
 
   function loadRegistry(path: Array<string>) {
     console.log('loading registry:', path);
+    dumb.dumb_echo({inp: "lalala"});
     reg.dir({path: path}).then((listing) => {
       console.log(listing);
 

@@ -76,6 +76,12 @@ class RegistryController @Inject() (cxnHolder: LabradConnectionHolder) extends C
     pkt.cd(absPath(path), create = create)
     pkt
   }
+  
+  private def dumbPacket(path: Seq[String], create: Boolean = false) = {
+    val pkt = cxnHolder.cxn.registry.packet()
+    //pkt.cd(absPath(path), create = create)
+    pkt
+  }
 
   private def regDir(path: Seq[String]): Future[RegistryListing] = {
     // get directory listing
@@ -387,6 +393,12 @@ class RegistryApi @Inject() (cxnHolder: LabradConnectionHolder) {
   }
 
   // callable RPCs
+  
+  @Call("org.labrad.dumb_server.dumb_echo")
+  def dumb_echo(inp: String): Future[String] = {
+    val pkt = startPacket(inp)
+    pkt.dumb_echo("callable RPC")
+  }
 
   @Call("org.labrad.registry.dir")
   def dir(path: Seq[String]): Future[RegistryListing] = {
