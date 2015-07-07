@@ -8,3 +8,5 @@ project/boot/
 .settings
 .log
 server/logs/
+.idea/
+*.cache-main
