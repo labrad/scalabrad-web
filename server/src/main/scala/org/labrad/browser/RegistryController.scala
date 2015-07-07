@@ -396,8 +396,7 @@ class RegistryApi @Inject() (cxnHolder: LabradConnectionHolder) {
   
   @Call("org.labrad.dumb_server.dumb_echo")
   def dumb_echo(inp: String): Future[String] = {
-    val pkt = startPacket(inp)
-    pkt.dumb_echo("callable RPC")
+    cxnHolder.cxn.get.send("dumb_server", ("dumb_echo", Str(inp))).map { results => results(0).get[String] }
   }
 
   @Call("org.labrad.registry.dir")
