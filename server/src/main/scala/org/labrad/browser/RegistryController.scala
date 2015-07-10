@@ -395,7 +395,7 @@ class RegistryApi @Inject() (cxnHolder: LabradConnectionHolder) {
   // callable RPCs
   
   @Call("org.labrad.manager.echo")
-  def dumb_echo(inp: String): Future[String] = {
+  def dumbEcho(inp: String): Future[String] = {
     cxnHolder.cxn.get.send("manager", ("echo", Str(inp))).map { results => results(0).get[String] }
   }
 
