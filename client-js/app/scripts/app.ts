@@ -4,8 +4,8 @@ import page = require("page");
 
 import registry = require("./registry");
 import datavault = require("./datavault");
-import dumb_server = require("./dumb_server");
-import client_rpc = require("./client_rpc");
+import echoServer = require("./echo-server");
+import clientRpc = require("./rpc");
 
 // autobinding template which is the main ui container
 var app: any = document.querySelector('#app');
@@ -25,11 +25,11 @@ window.addEventListener('WebComponentsReady', function() {
     page(e.detail.path);
   });
 
-  var socket = new client_rpc.JsonRpcSocket('ws://localhost:9000/api/socket2');
+  var socket = new clientRpc.JsonRpcSocket('ws://localhost:9000/api/socket2');
+  socket.prefix = "org.labrad."
   var reg = new registry.RegistryServiceJsonRpc(socket);
-  var dumb = new dumb_server.DumbServiceJsonRpc(socket);
+  var echo = new echoServer.EchoServiceJsonRpc(socket);
 
-  //var reg = new registry.RegistryService('http://localhost:9000');
   var dv = new datavault.DataVaultService('http://localhost:9000');
 
   function pathStr(path: Array<string>, dir?: string): string {
@@ -45,7 +45,7 @@ window.addEventListener('WebComponentsReady', function() {
 
   function loadRegistry(path: Array<string>) {
     console.log('loading registry:', path);
-    dumb.dumb_echo({inp: "message_2045"});
+    echo.echo({inp: "message_2045"});
     reg.dir({path: path}).then((listing) => {
       console.log(listing);
 
@@ -210,3 +210,4 @@ window.addEventListener('WebComponentsReady', function() {
   var drawerPanel: any = document.querySelector('#paperDrawerPanel');
   drawerPanel.forceNarrow = true;
 });
+
