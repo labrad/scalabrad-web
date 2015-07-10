@@ -1,6 +1,6 @@
 import promise = require('es6-promise');
 
-import client_rpc = require("./client_rpc");
+import clientRpc = require("./rpc");
 
 var Promise = promise.Promise;
 
@@ -11,10 +11,27 @@ export interface RegistryListing {
   vals: Array<string>;
 }
 
-export class RegistryServiceJsonRpc {
-  socket: client_rpc.JsonRpcSocket;
+export interface RegistryApi {
+  dir(params: {path: Array<string>}): Promise<RegistryListing>;
+  set(params: {path: Array<string>; key: string; value: string}): Promise<RegistryListing>;
+  del(params: {path: Array<string>; key: string}): Promise<RegistryListing>;
 
-  constructor(socket: client_rpc.JsonRpcSocket) {
+  mkDir(params: {path: Array<string>; dir: string}): Promise<RegistryListing>;
+  rmDir(params: {path: Array<string>; dir: string}): Promise<RegistryListing>;
+
+  rename(params: {path: Array<string>; key: string; newKey: string}): Promise<RegistryListing>;
+  copy(params: {path: Array<string>; key: string; newPath: Array<string>; newKey: string}): Promise<RegistryListing>;
+  move(params: {path: Array<string>; key: string; newPath: Array<string>; newKey: string}): Promise<RegistryListing>;
+
+  renameDir(params: {path: Array<string>; dir: string; newDir: string}): Promise<RegistryListing>;
+  copyDir(params: {path: Array<string>; dir: string; newPath: Array<string>; newDir: string}): Promise<RegistryListing>;
+  moveDir(params: {path: Array<string>; dir: string; newPath: Array<string>; newDir: string}): Promise<RegistryListing>;
+}
+
+export class RegistryServiceJsonRpc implements RegistryApi{
+  socket: clientRpc.JsonRpcSocket;
+
+  constructor(socket: clientRpc.JsonRpcSocket) {
     this.socket = socket;
   }
 
@@ -61,3 +78,4 @@ export class RegistryServiceJsonRpc {
                       .then((result) => <RegistryListing>result);
   }
 }
+

@@ -2,24 +2,24 @@ import promise = require('es6-promise');
 
 var Promise = promise.Promise;
 
-export function sendRequest(method: string, params: Object, socket, server: string): Promise<string> {
-        console.log("sending dumb RPC named: "+ method+" argument: "+ JSON.stringify(params));
-        return socket.call("org.labrad."+server+"." + method, params)
-                      .then((result) => <string>result);
-}
 
 export class JsonRpcSocket {
   url: string;
   calls: { [id: number]: { reject: (any) => void; resolve: (error?: any) => void } };
   nextId: number;
   socket: WebSocket;
+  prefix: string;
 
   openPromise: Promise<void>;
   // A promise that will be resolved as soon as the socket is connected.
   // We chain call promises off this promise so that the user can immediately
   // make calls but we don't actually send any messages to the server until the
   // socket is ready.
-
+  sendRequest(method: string, params: Object, socket, server: string): Promise<string> {
+  console.log("sending dumb RPC named: "+ method+" argument: "+ JSON.stringify(params));
+  return socket.call(this.prefix+server+"." + method, params)
+    .then((result) => <string>result);
+}
   constructor(url: string) {
     this.url = url;
     this.calls = {};
