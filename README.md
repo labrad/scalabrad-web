@@ -66,4 +66,5 @@ build.sbt    # sbt build definition
 
 ## Contributing
 
-For instructions on how to contribute to pylabrad, see [contributing.md](https://github.com/labrad/labrad/blob/master/contributing.md).
+For instructions on how to contribute to scalabrad-web, see [contributing.md](https://github.com/labrad/labrad/blob/master/contributing.md).
+
