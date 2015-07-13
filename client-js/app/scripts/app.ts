@@ -26,7 +26,6 @@ window.addEventListener('WebComponentsReady', function() {
   });
 
   var socket = new clientRpc.JsonRpcSocket('ws://localhost:9000/api/socket2');
-  socket.prefix = "org.labrad."
   var reg = new registry.RegistryServiceJsonRpc(socket);
   var echo = new echoServer.EchoServiceJsonRpc(socket);
 
@@ -45,7 +44,7 @@ window.addEventListener('WebComponentsReady', function() {
 
   function loadRegistry(path: Array<string>) {
     console.log('loading registry:', path);
-    echo.echo({inp: "message_2045"});
+    echo.echo("message_2045");
     reg.dir({path: path}).then((listing) => {
       console.log(listing);
 
