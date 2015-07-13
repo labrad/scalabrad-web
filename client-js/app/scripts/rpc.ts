@@ -15,11 +15,7 @@ export class JsonRpcSocket {
   // We chain call promises off this promise so that the user can immediately
   // make calls but we don't actually send any messages to the server until the
   // socket is ready.
-  sendRequest(method: string, params: Object, socket, server: string): Promise<string> {
-  console.log("sending dumb RPC named: "+ method+" argument: "+ JSON.stringify(params));
-  return socket.call(this.prefix+server+"." + method, params)
-    .then((result) => <string>result);
-}
+
   constructor(url: string) {
     this.url = url;
     this.calls = {};
@@ -90,5 +86,18 @@ export class JsonRpcSocket {
       this.socket.send(JSON.stringify(message));
     });
   }
+}
 
+export class RpcService {
+  socket: JsonRpcSocket;
+  prefix: string;
+
+  constructor(socket: JsonRpcSocket, prefix: string) {
+    this.socket = socket;
+    this.prefix = prefix;
+  }
+
+  call<A>(method: string, params: Array<string> | Object): Promise<A> {
+    return <Promise<A>> this.socket.call(this.prefix + method, params);
+  }
 }
