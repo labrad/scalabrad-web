@@ -1,0 +1,36 @@
+<link rel="import" href="labrad-setting.html">
+
+<dom-module id="labrad-server">
+  <style>
+    :host {
+      display: block;
+    }
+  </style>
+  <template>
+    <div>
+      <h1><span>{{info.id}}</span>: <span>{{info.name}}</span></h1>
+      <div>{{info.version}}</div>
+      <div>{{info.description}}</div>
+      <div>
+        <template is="dom-repeat" items="{{info.settings}}">
+          <labrad-setting info={{item}}></labrad-setting>
+        </template>
+      </div>
+    </div>
+  </template>
+</dom-module>
+
+
+<script>
+(function () {
+  Polymer({
+    is: 'labrad-server',
+    properties: {
+      info: {
+        type: Object,
+        notify: true
+      }
+    }
+  });
+})();
+</script>

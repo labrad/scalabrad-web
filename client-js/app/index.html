@@ -94,7 +94,15 @@
 
           <section data-route="manager">
             <paper-material elevation="0">
-              <h1>Manager!!</h1>
+              <labrad-manager connections={{connections}}>
+              </labrad-manager>
+            </paper-material>
+          </section>
+
+          <section data-route="server">
+            <paper-material elevation="0">
+              <labrad-server info={{serverInfo}}>
+              </labrad-server>
             </paper-material>
           </section>
 
@@ -119,7 +127,7 @@
             <paper-material elevation="0">
               <labrad-breadcrumbs breadcrumbs={{breadcrumbs}}></labrad-breadcrumbs>
               <labrad-grapher
-                  path={{app.path}}
+                  path={{path}}
                   dirs={{datavaultDirs}}
                   datasets={{datavaultDatasets}}>
               </labrad-grapher>

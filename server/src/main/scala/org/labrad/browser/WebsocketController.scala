@@ -26,8 +26,10 @@ class JsonRpcController @Inject() (cxnHolder: LabradConnectionHolder)(implicit a
       var client: Endpoint = null
       var registryClientApi: RegistryClientApi = null
 
+      val managerApi = new ManagerApi(cxnHolder)
       val registryApi = new RegistryApi(cxnHolder)
-      val handlers = JsonRpc.makeHandlers(registryApi)
+      val handlers = JsonRpc.makeHandlers(managerApi) ++
+                     JsonRpc.makeHandlers(registryApi)
 
       def connect(endpoint: Endpoint): Unit = {
         client = endpoint

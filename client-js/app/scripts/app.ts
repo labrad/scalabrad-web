@@ -2,10 +2,10 @@
 
 import page = require("page");
 
+import manager = require("./manager");
 import registry = require("./registry");
 import datavault = require("./datavault");
-import echoServer = require("./echo-server");
-import clientRpc = require("./rpc");
+import rpc = require("./rpc");
 
 // autobinding template which is the main ui container
 var app: any = document.querySelector('#app');
@@ -25,9 +25,9 @@ window.addEventListener('WebComponentsReady', function() {
     page(e.detail.path);
   });
 
-  var socket = new clientRpc.JsonRpcSocket('ws://localhost:9000/api/socket2');
+  var socket = new rpc.JsonRpcSocket('ws://localhost:9000/api/socket2');
+  var mgr = new manager.ManagerServiceJsonRpc(socket);
   var reg = new registry.RegistryServiceJsonRpc(socket);
-  var echo = new echoServer.EchoServiceJsonRpc(socket);
 
   var dv = new datavault.DataVaultService('http://localhost:9000');
 
@@ -44,7 +44,6 @@ window.addEventListener('WebComponentsReady', function() {
 
   function loadRegistry(path: Array<string>) {
     console.log('loading registry:', path);
-    echo.echo("message_2045");
     reg.dir({path: path}).then((listing) => {
       console.log(listing);
 
@@ -132,15 +131,32 @@ window.addEventListener('WebComponentsReady', function() {
   }
 
   // Set up page routing
-  page('/', function () {
-    app.route = 'manager';
+  page('/', () => {
+    mgr.connections().then((conns) => {
+      var connsWithUrl = conns.map((c) => {
+        var x = <any> c;
+        if (c.server) {
+          x['url'] = `/server/${encodeURIComponent(c.name)}`;
+        }
+        return x;
+      });
+      app.route = 'manager';
+      app.connections = connsWithUrl;
+    });
   });
 
-  page('/nodes', function () {
+  page('/server/:name', (ctx, next) => {
+    mgr.serverInfo(ctx.params['name']).then((info) => {
+      app.route = 'server';
+      app.serverInfo = info;
+    });
+  });
+
+  page('/nodes', () => {
     app.route = 'nodes';
   });
 
-  page('/registry', function () {
+  page('/registry', () => {
     loadRegistry([]);
   });
 

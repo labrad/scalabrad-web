@@ -1,0 +1,72 @@
+<link rel="import" href="app-link.html">
+
+<dom-module id="labrad-manager">
+  <style>
+    :host {
+      display: block;
+    }
+  </style>
+  <template>
+    <table>
+      <thead>
+        <tr>
+          <th>Id</th>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Server Reqs</th>
+          <th>Server Reps</th>
+          <th>Client Reqs</th>
+          <th>Client Reps</th>
+          <th>Messages Sent</th>
+          <th>Messages Recv</th>
+        </tr>
+      </thead>
+      <tbody>
+        <template is="dom-repeat" items="{{connections}}">
+          <tr>
+            <td><span>{{item.id}}</span></td>
+            <td>
+              <template is="dom-if" if="{{item.server}}">
+                <span>server</span>
+              </template>
+              <template is="dom-if" if="{{!item.server}}">
+                <span>client</span>
+              </template>
+            </td>
+            <td>
+              <template is="dom-if" if="{{item.server}}">
+                <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+                  <span class="paper-font-body1">{{item.name}}</span>
+                </a>
+              </template>
+              <template is="dom-if" if="{{!item.server}}">
+                <span class="paper-font-body1">{{item.name}}</span>
+              </template>
+            </td>
+            <td><span>{{item.serverReqCount}}</span></td><!-- TODO: only if server, else '-' -->
+            <td><span>{{item.serverRespCount}}</span></td>
+            <td><span>{{item.clientReqCount}}</span></td><!-- TODO: only if active, else '-' -->
+            <td><span>{{item.clientRespCount}}</span></td>
+            <td><span>{{item.msgSendCount}}</span></td>
+            <td><span>{{item.msgRecvCount}}</span></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </template>
+</dom-module>
+
+
+<script>
+(function () {
+  Polymer({
+    is: 'labrad-manager',
+    properties: {
+      connections: {
+        type: Array,
+        notify: true
+      }
+    }
+  });
+})();
+</script>
