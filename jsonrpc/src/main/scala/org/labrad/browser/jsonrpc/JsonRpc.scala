@@ -71,14 +71,14 @@ class AsyncMethodHandler[B](
 
 class EndpointInvocationHandler(
   endpoint: Endpoint,
-  calls: Map[String, (String, Seq[(String, Writes[_])], Reads[_])],
-  notifys: Map[String, (String, Seq[(String, Writes[_])])]
+  calls: Map[String, (String, Seq[(String, Any => JsValue)], Reads[_])],
+  notifys: Map[String, (String, Seq[(String, Any => JsValue)])]
 ) extends InvocationHandler {
   def invoke(proxy: Object, method: Method, args: Array[Object]): Object = {
     for ((rpcMethod, paramDefs, reader) <- calls.get(method.getName)) {
       val params = Map.newBuilder[String, JsValue]
       for (((paramName, writer), arg) <- paramDefs zip args) {
-        params += paramName -> writer.writes(arg.asInstanceOf[Nothing])
+        params += paramName -> writer(arg)
       }
       implicit val ec = args.last.asInstanceOf[ExecutionContext]
       val f = endpoint.call(src = null, method = rpcMethod, params = Some(Right(params.result)))
@@ -88,7 +88,7 @@ class EndpointInvocationHandler(
     for ((rpcMethod, paramDefs) <- notifys.get(method.getName)) {
       val params = Map.newBuilder[String, JsValue]
       for (((paramName, writer), arg) <- paramDefs zip args) {
-        params += paramName -> writer.writes(arg.asInstanceOf[Nothing])
+        params += paramName -> writer(arg)
       }
       endpoint.notify(src = null, method = rpcMethod, params = Some(Right(params.result)))
     }
@@ -125,6 +125,7 @@ object JsonRpc {
     val seq = q"_root_.scala.Seq"
     val paramsT = tq"_root_.org.labrad.browser.jsonrpc.Params"
     val ex = q"_root_.org.labrad.browser.jsonrpc.JsonRpc.extractArg"
+    val unitWriter = q"_root_.org.labrad.browser.jsonrpc.JsonRpc.unitWriter"
 
     // extract information from an optional @Call annotation on a symbol
     implicit class RichAnnotation(a: Annotation) {
@@ -194,10 +195,14 @@ object JsonRpc {
 
       // get return value writer, and determine whether the method is async
       val (resultWriter, async) = returnType.dealias match {
+        case t if t <:< c.typeOf[Future[Unit]] =>
+          (unitWriter, true)
+
         case t if t <:< c.typeOf[Future[Any]] =>
           val resultTpe = typeParams(lub(t :: c.typeOf[Future[Nothing]] :: Nil))(0)
           (inferWriter(m.pos, resultTpe), true)
 
+        case t if t <:< c.typeOf[Unit] => (unitWriter, false)
         case t => (inferWriter(m.pos, t), false)
       }
 
@@ -342,7 +347,7 @@ object JsonRpc {
         case NullaryMethodType(ret) => ret
       }
 
-      // get return value writer, and determine whether the method is async
+      // get return value writer
       returnType.dealias match {
         case t if t <:< c.typeOf[Future[Any]] =>
           val resultTpe = typeParams(lub(t :: c.typeOf[Future[Nothing]] :: Nil))(0)
@@ -390,10 +395,11 @@ object JsonRpc {
     // locate an implicit Writes[T] for the given type
     def inferWriter(pos: Position, t: Type): Tree = {
       val writerTpe = appliedType(c.typeOf[Writes[_]], List(t))
-      c.inferImplicitValue(writerTpe) match {
+      val writer = c.inferImplicitValue(writerTpe) match {
         case EmptyTree => c.abort(pos, s"could not find implicit value of type Writes[$t]")
         case tree => tree
       }
+      q"""_root_.org.labrad.browser.jsonrpc.JsonRpc.anyWriter[$t](_root_.scala.reflect.classTag[$t], $writer)"""
     }
 
     val t = weakTypeOf[T]
@@ -424,5 +430,28 @@ object JsonRpc {
         new EndpointInvocationHandler($endpoint, $map(..$calls), $map(..$notifys))
       ).asInstanceOf[$t]
     """)
+  }
+
+  val unitWriter = new Writes[Unit] {
+    def writes(u: Unit): JsValue = JsNull
+  }
+
+  /**
+   * Create a function to convert scala values to json using a Writes.
+   *
+   * This is needed in our implementation of invocation on a remote endpoint,
+   * since we use a proxy and so have lost type information by the time we go
+   * to convert all the method parameters to json. We check that the given
+   * value is of the expected type before calling the writes method, which
+   * keeps the compiler happy even though we know that the type check will
+   * always pass.
+   */
+  def anyWriter[B](implicit tag: ClassTag[B], writer: Writes[B]): Any => JsValue = {
+    (x: Any) => {
+      x match {
+        case b: B => writer.writes(b)
+        case _ => sys.error(s"expected $tag but got ${x.getClass}")
+      }
+    }
   }
 }
