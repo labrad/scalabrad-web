@@ -2,13 +2,26 @@ import promise = require('es6-promise');
 
 var Promise = promise.Promise;
 
-
+/**
+ * Implements the JSON-RPC 2.0 protocol over websockets.
+ *
+ * JSON-RPC is a symmetric bidirectional protocol that provides both
+ * remote procedure calls and fire-and-forget notifications (messages).
+ *
+ * The protocol specification is here: http://www.jsonrpc.org/specification
+ */
 export class JsonRpcSocket {
   url: string;
   calls: { [id: number]: { reject: (any) => void; resolve: (error?: any) => void } };
   nextId: number;
   socket: WebSocket;
   prefix: string;
+
+  callables: { [method: string]: (Object) => Promise<any> };
+  // local functions that are remotely-callable
+
+  notifiables: { [method: string]: (Object) => void };
+  // local functions that are remotely-notifiable
 
   openPromise: Promise<void>;
   // A promise that will be resolved as soon as the socket is connected.
@@ -21,6 +34,9 @@ export class JsonRpcSocket {
     this.calls = {};
     this.nextId = 0;
     this.socket = new WebSocket(url);
+
+    this.callables = {};
+    this.notifiables = {};
 
     var resolveOpen: (any) => void = null;
     var rejectOpen: (any?) => void = null;
@@ -52,12 +68,53 @@ export class JsonRpcSocket {
         }
       } else if (json.hasOwnProperty("id")) {
         // call
+        console.log('call', json);
+        var id = json["id"];
+        var method = json["method"];
+        var sock = this.socket;
+        if (this.callables.hasOwnProperty(method)) {
+          new Promise((resolve, reject) => {
+            this.callables[method](json["params"]).then(resolve, reject);
+          }).then(
+            (result) => {
+              var message = {
+                jsonrpc: "2.0",
+                id: id,
+                result: result
+              };
+              sock.send(JSON.stringify(message));
+            },
+            (error) => {
+              var message = {
+                jsonrpc: "2.0",
+                id: id,
+                error: {
+                  code: 1,
+                  message: "oops!" // TODO: get this from error itself; also: data
+                }
+              };
+              sock.send(JSON.stringify(message));
+            }
+          );
+        }
       } else {
         // notification
+        console.log('notification', json);
+        var method = json["method"];
+        if (this.notifiables.hasOwnProperty(method)) {
+          this.notifiables[method](json["params"]);
+        }
       }
     }
   }
 
+  /**
+   * Call the specified remote method.
+   *
+   * Params to the method can be given an array (positional) or object
+   * (call by name). The returned Promise will be resolved or rejected
+   * when we receive a success or error response, respectively.
+   */
   call(method: string, params: Array<string> | Object): Promise<any> {
     return this.openPromise.then((ignored) => new Promise<any>((resolve, reject) => {
       var id = this.nextId;
@@ -76,6 +133,14 @@ export class JsonRpcSocket {
     }));
   }
 
+  /**
+   * Send a notification to the specified remote method.
+   *
+   * As for calls, params can be given as positional or call-by-name.
+   * Notifications are "fire and forget"; we receive no response from
+   * the remote party, whether notification was delivered successfully
+   * or not.
+   */
   notify(method: string, params: Array<string> | Object): void {
     this.openPromise.then((ignored) => {
       var message = {
@@ -85,6 +150,20 @@ export class JsonRpcSocket {
       };
       this.socket.send(JSON.stringify(message));
     });
+  }
+
+  /**
+   * Register a function to be callable remotely with the given method name.
+   */
+  addCallable(method: string, func: (Object) => Promise<any>): void {
+    this.callables[method] = func;
+  }
+
+  /**
+   * Register a function to be notifiable remotely with the given method name.
+   */
+  addNotifiable(method: string, func: (Object) => void): void {
+    this.notifiables[method] = func;
   }
 }
 
