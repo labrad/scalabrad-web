@@ -1,15 +1,12 @@
 package org.labrad.browser
 
-import javax.inject.Inject
 import org.joda.time.DateTime
 import org.labrad._
+import org.labrad.browser.jsonrpc.{Call, Notify}
 import org.labrad.data._
 import play.api.libs.json._
 import play.api.mvc._
-import scala.async.Async.{async, await}
-import scala.concurrent.{Await, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
 
 trait VaultServer extends Requester {
@@ -69,7 +66,15 @@ class VaultServerPacket(server: ServerProxy, ctx: Context)
 extends PacketProxy(server, ctx) with VaultServer
 
 
-object VaultController {
+// json request/response types
+case class VaultListing(path: Seq[String], dirs: Seq[String], datasets: Seq[String])
+object VaultListing { implicit val format = Json.format[VaultListing] }
+
+case class DatasetInfo(path: Seq[String], name: String, num: Int, independents: Seq[String], dependents: Seq[String], params: Map[String, String])
+object DatasetInfo { implicit val format = Json.format[DatasetInfo] }
+
+
+object VaultApi {
   /**
    * Convert a path to an absolute path, by prepending an empty segment, if needed
    */
@@ -82,15 +87,9 @@ object VaultController {
   }
 }
 
+class VaultApi(cxnHolder: LabradConnectionHolder)(implicit ec: ExecutionContext) {
 
-class VaultController @Inject() (cxnHolder: LabradConnectionHolder) extends Controller with JsonRpc {
-
-  import VaultController._
-
-  // json request/response types
-  case class VaultListing(path: Seq[String], dirs: Seq[String], datasets: Seq[String])
-  object VaultListing { implicit val format = Json.format[VaultListing] }
-
+  import VaultApi._
 
   // vault utility functions
 
@@ -118,71 +117,47 @@ class VaultController @Inject() (cxnHolder: LabradConnectionHolder) extends Cont
 
   // callable RPCs
 
-  def dir = rpc[Seq[String], VaultListing] { path =>
-    println(path)
+  @Call("org.labrad.datavault.dir")
+  def dir(path: Seq[String]): Future[VaultListing] = {
     dvDir(path).map { result =>
-      println(result)
       result
     }
   }
 
-//  def getDatasetInfo(path: Array[String], dataset: String): DatasetInfo =
-//    getDatasetInfo(path, Str(dataset))
-//
-//  def getDatasetInfo(path: Array[String], dataset: Int): DatasetInfo =
-//    getDatasetInfo(path, UInt(dataset.toLong))
-//
-//  private def getDatasetInfo(path: Array[String], identifier: Data): DatasetInfo = {
-//    val req = LabradConnection.to("Data Vault").packet()
-//    req.call("cd", Arr(sanitizePath(path)))
-//    val fOpen = req.call("open", identifier)
-//    val fVars = req.call("variables")
-//    val fParams = req.call("get parameters")
-//
-//    try {
-//      req.send
-//      val open = Await.result(fOpen, 10.seconds)
-//      val vars = Await.result(fVars, 10.seconds)
-//      val params = Await.result(fParams, 10.seconds)
-//      parseDatasetInfo(open, vars, params)
-//    } catch catcher
-//  }
-//
-//  private def parseDatasetInfo(open: Data, vars: Data, params: Data) = {
-//    val path = open(0).get[Array[String]]
-//    val name = open(1).get[String]
-//    val num = name.substring(0, 5).toInt
-//
-//    val indeps = Array.tabulate(vars(0).arraySize)(vars(0, _, 0).getString)
-//    val deps = Array.tabulate(vars(1).arraySize)(vars(1, _, 0).getString)
-//
-//    val paramMap = new HashMap[String, String]
-//    if (params.isCluster) { // might be Empty if there are no params
-//      for (Cluster(Str(key), value) <- params.clusterIterator) yield {
-//        paramMap.put(key, value.toString)
-//      }
-//    }
-//    new DatasetInfo(path, name, num, indeps, deps, paramMap)
-//  }
-//
-//  def getData(path: Array[String], dataset: String) =
-//    parseData(path, Str(dataset))
-//
-//  def getData(path: Array[String], dataset: Int) =
-//    parseData(path, UInt(dataset.toLong))
-//
-//  private def parseData(path: Array[String], identifier: Data) = {
-//    val req = LabradConnection.to("Data Vault").packet()
-//    req.call("cd", Arr(sanitizePath(path)))
-//    req.call("open", identifier)
-//    val idx = req.call("get")
-//
-//    val answer = try {
-//      req.send
-//      Await.result(idx, 10.seconds)
-//    } catch catcher
-//
-//    val Array(rows, cols) = answer.arrayShape
-//    Array.tabulate[Double](rows, cols) { answer(_, _).getValue }
-//  }
+  @Call("org.labrad.datavault.datasetInfo")
+  def datasetInfo(path: Seq[String], dataset: Either[String, Int]): Future[DatasetInfo] = {
+    val p = startPacket(path)
+    val openF = dataset match {
+      case Left(name) => p.open(name)
+      case Right(num) => p.open(num)
+    }
+    val varsF = p.variables()
+    val paramsF = p.getParameters()
+
+    p.send()
+
+    for {
+      (path, name) <- openF
+      (indeps, deps) <- varsF
+      params <- paramsF
+    } yield {
+      val num = name.split(" - ")(0).toInt
+      val paramStrs = params.mapValues(_.toString)
+      DatasetInfo(path, name, num, indeps.map(_._1), deps.map(_._1), paramStrs)
+    }
+  }
+
+  @Call("org.labrad.datavault.data")
+  def data(path: Seq[String], dataset: Either[String, Int]): Future[Array[Array[Double]]] = {
+    val p = startPacket(path)
+    dataset match {
+      case Left(name) => p.open(name)
+      case Right(num) => p.open(num)
+    }
+    val dataF = p.get()
+
+    p.send()
+
+    dataF
+  }
 }

@@ -27,8 +27,6 @@ POST    /api/registry/unwatch        org.labrad.browser.RegistryController.unwat
 
 GET     /api/servers/:name           org.labrad.browser.BrowserController.serverInfo(name)
 
-POST    /api/vault/dir               org.labrad.browser.VaultController.dir
-
 GET     /api/socket                  org.labrad.browser.WebSocketController.socket
 GET     /api/socket2                 org.labrad.browser.JsonRpcController.socket
 

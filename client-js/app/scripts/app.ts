@@ -28,8 +28,7 @@ window.addEventListener('WebComponentsReady', function() {
   var socket = new rpc.JsonRpcSocket('ws://localhost:9000/api/socket2');
   var mgr = new manager.ManagerServiceJsonRpc(socket);
   var reg = new registry.RegistryServiceJsonRpc(socket);
-
-  var dv = new datavault.DataVaultService('http://localhost:9000');
+  var dv = new datavault.DataVaultService(socket);
 
   function pathStr(path: Array<string>, dir?: string): string {
     var url = '';
