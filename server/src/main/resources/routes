@@ -1,5 +1,16 @@
-GET     /     org.labrad.browser.BrowserController.index
+GET     /api/socket    org.labrad.browser.JsonRpcController.socket
 
-GET     /api/socket           org.labrad.browser.JsonRpcController.socket
+# for all app URLs just serve index.html; js code renders the right UI
+GET     /                 org.labrad.browser.BrowserController.index(path="")
+GET     /dataset          org.labrad.browser.BrowserController.index(path="")
+GET     /dataset*path     org.labrad.browser.BrowserController.index(path)
+GET     /grapher          org.labrad.browser.BrowserController.index(path="")
+GET     /grapher*path     org.labrad.browser.BrowserController.index(path)
+GET     /nodes            org.labrad.browser.BrowserController.index(path="")
+GET     /nodes*path       org.labrad.browser.BrowserController.index(path)
+GET     /registry         org.labrad.browser.BrowserController.index(path="")
+GET     /registry*path    org.labrad.browser.BrowserController.index(path)
+GET     /server/*path     org.labrad.browser.BrowserController.index(path)
 
-GET     /assets/*file         controllers.Assets.at(path="/public", file)
+# serve static assets
+GET     /*file            controllers.Assets.at(path="/public", file)

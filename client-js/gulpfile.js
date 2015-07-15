@@ -148,6 +148,8 @@ gulp.task('images', function () {
 // Copy All Files At The Root Level (app)
 gulp.task('copy', function () {
   var app = gulp.src([
+    '.tmp/**/*.js',
+    '.tmp/**/*.js.map',
     'app/*',
     '!app/test',
     '!app/precache.json',
@@ -282,6 +284,7 @@ gulp.task('serve', ['webpack', 'styles', 'elements', 'images'], function () {
 gulp.task('serve:dist', ['default'], function () {
   browserSync({
     notify: false,
+    open: false,
     server: 'dist'
   });
 });

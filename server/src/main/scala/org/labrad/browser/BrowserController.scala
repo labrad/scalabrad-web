@@ -43,8 +43,8 @@ object ServerInfo {
 
 
 class BrowserController() extends Controller {
-  def index = Action {
-    Ok(html.index())
+  def index(path: String) = {
+    controllers.Assets.at(path="/public", file="index.html")
   }
 
   // CORS preflight requests
