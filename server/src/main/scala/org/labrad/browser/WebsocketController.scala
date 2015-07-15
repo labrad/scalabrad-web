@@ -11,7 +11,7 @@ import org.labrad.util.Logging
 import play.api.Application
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.{Json, JsValue}
-import play.api.mvc._
+import play.api.mvc.{Handler => _, _}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.{Await, Future}
@@ -24,23 +24,27 @@ class JsonRpcController @Inject() (cxnHolder: LabradConnectionHolder)(implicit a
   def socket = WebSocket.acceptWithActor[String, String] { request => out =>
     val backend = new Backend {
       var client: Endpoint = null
-      var registryClientApi: RegistryClientApi = null
-
-      val datavaultApi = new VaultApi(cxnHolder)
-      val managerApi = new ManagerApi(cxnHolder)
-      val registryApi = new RegistryApi(cxnHolder)
-      val handlers = JsonRpc.makeHandlers(datavaultApi) ++
-                     JsonRpc.makeHandlers(managerApi) ++
-                     JsonRpc.makeHandlers(registryApi)
+      var datavaultApi: VaultApi = null
+      var managerApi: ManagerApi = null
+      var registryApi: RegistryApi = null
+      var handlers: Map[String, Handler] = null
 
       def connect(endpoint: Endpoint): Unit = {
         client = endpoint
-        registryClientApi = JsonRpc.makeProxy(classOf[RegistryClientApi], client)
+        datavaultApi = new VaultApi(cxnHolder)
+        val registryClientApi = JsonRpc.makeProxy(classOf[RegistryClientApi], client)
+        registryApi = new RegistryApi(cxnHolder, registryClientApi)
+        handlers = JsonRpc.makeHandlers(datavaultApi) ++
+                   JsonRpc.makeHandlers(managerApi) ++
+                   JsonRpc.makeHandlers(registryApi)
       }
 
       def disconnect(endpoint: Endpoint): Unit = {
         client = null
-        registryClientApi = null
+        datavaultApi = null
+        managerApi = null
+        registryApi = null
+        handlers = null
       }
 
       override def call(src: Endpoint, method: String, params: Option[Params]): Future[JsValue] = {

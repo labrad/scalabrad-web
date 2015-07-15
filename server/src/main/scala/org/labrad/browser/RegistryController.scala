@@ -3,11 +3,14 @@ package org.labrad.browser
 import javax.inject._
 import org.labrad.browser.jsonrpc.{Notify, Call}
 import org.labrad.data._
+import org.labrad.util.Logging
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.mvc._
 import scala.async.Async.{async, await}
-import scala.concurrent.Future
+import scala.collection.mutable
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 
 
 object RegistryController {
@@ -76,7 +79,7 @@ class RegistryController @Inject() (cxnHolder: LabradConnectionHolder) extends C
     pkt.cd(absPath(path), create = create)
     pkt
   }
-  
+
   private def dumbPacket(path: Seq[String], create: Boolean = false) = {
     val pkt = cxnHolder.cxn.registry.packet()
     //pkt.cd(absPath(path), create = create)
@@ -273,7 +276,7 @@ class RegistryController @Inject() (cxnHolder: LabradConnectionHolder) extends C
 case class RegistryListing(path: Seq[String], dirs: Seq[String], keys: Seq[String], vals: Seq[String])
 object RegistryListing { implicit val format = Json.format[RegistryListing] }
 
-class RegistryApi @Inject() (cxnHolder: LabradConnectionHolder) {
+class RegistryApi(cxnHolder: LabradConnectionHolder, client: RegistryClientApi) extends Logging {
 
   import RegistryController._
 
@@ -393,7 +396,7 @@ class RegistryApi @Inject() (cxnHolder: LabradConnectionHolder) {
   }
 
   // callable RPCs
-  
+
   @Call("org.labrad.manager.echo")
   def dumbEcho(inp: String): Future[String] = {
     cxnHolder.cxn.get.send("manager", ("echo", Str(inp))).map { results => results(0).get[String] }
@@ -477,18 +480,79 @@ class RegistryApi @Inject() (cxnHolder: LabradConnectionHolder) {
     regMoveDir(path, dir, newPath, newDir)
   }
 
+
   @Call("org.labrad.registry.watch")
-  def watch(id: String, watchId: String, path: String): Future[RegistryListing] = {
+  def watch(path: Seq[String]): Unit = synchronized {
+    try {
+      val cxn = cxnHolder.cxn.get
+      val ctx = cxn.newContext
+      val msgId = ctx.low
+      nextMessageId += 1
+      val listener: Listener = {
+        case msg @ Message(src, `ctx`, `msgId`, Cluster(Str(name), Bool(isDir), Bool(addOrChange))) =>
+          if (isDir) {
+            if (addOrChange) client.dirChanged(path, name) else client.dirRemoved(path, name)
+          } else {
+            if (addOrChange) client.keyChanged(path, name) else client.keyRemoved(path, name)
+          }
+      }
+      cxn.addMessageListener(listener)
+
+      val reg = cxnHolder.cxn.registry
+      val pkt = reg.packet(ctx)
+      pkt.cd(absPath(path))
+      pkt.notifyOnChange(msgId, true)
+      Await.result(pkt.send(), 10.seconds)
+
+      watches += path -> Watch(ctx, msgId, listener)
+
+    } catch {
+      case e: Exception =>
+        log.error(s"unable to watch path $path", e)
+        throw e
+    }
+
     Future(???)
   }
 
   @Call("org.labrad.registry.unwatch")
-  def unwatch(id: String, watchId: String): Future[RegistryListing] = {
-    Future(???)
+  def unwatch(path: Seq[String]): Unit = synchronized {
+    for (watch <- watches.get(path)) {
+      try {
+        watches -= path
+
+        val reg = cxnHolder.cxn.registry
+        val pkt = reg.packet(watch.context)
+        pkt.notifyOnChange(watch.msgId, false)
+        Await.result(pkt.send(), 10.seconds)
+
+        val cxn = cxnHolder.cxn.get
+        cxn.removeMessageListener(watch.listener)
+      } catch {
+        case e: Exception =>
+          log.error(s"unable to unwatch path $path", e)
+          throw e
+      }
+    }
   }
+
+  @volatile private var nextMessageId: Int = 1
+
+  type Listener = PartialFunction[Message, Unit]
+  case class Watch(context: Context, msgId: Long, listener: Listener)
+  private val watches = mutable.Map.empty[Seq[String], Watch]
 }
 
 trait RegistryClientApi {
   @Notify("org.labrad.registry.keyChanged")
   def keyChanged(path: Seq[String], key: String): Unit
+
+  @Notify("org.labrad.registry.keyRemoved")
+  def keyRemoved(path: Seq[String], key: String): Unit
+
+  @Notify("org.labrad.registry.dirChanged")
+  def dirChanged(path: Seq[String], dir: String): Unit
+
+  @Notify("org.labrad.registry.dirRemoved")
+  def dirRemoved(path: Seq[String], dir: String): Unit
 }

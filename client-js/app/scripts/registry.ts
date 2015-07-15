@@ -26,6 +26,9 @@ export interface RegistryApi {
   renameDir(params: {path: Array<string>; dir: string; newDir: string}): Promise<RegistryListing>;
   copyDir(params: {path: Array<string>; dir: string; newPath: Array<string>; newDir: string}): Promise<RegistryListing>;
   moveDir(params: {path: Array<string>; dir: string; newPath: Array<string>; newDir: string}): Promise<RegistryListing>;
+
+  watch(params: {path: Array<string>}): Promise<void>;
+  unwatch(params: {path: Array<string>}): Promise<void>;
 }
 
 export class RegistryServiceJsonRpc extends rpc.RpcService implements RegistryApi {
@@ -69,6 +72,13 @@ export class RegistryServiceJsonRpc extends rpc.RpcService implements RegistryAp
   }
   moveDir(params: {path: Array<string>; dir: string; newPath: Array<string>; newDir: string}): Promise<RegistryListing> {
     return this.call<RegistryListing>('moveDir', params);
+  }
+
+  watch(params: {path: Array<string>}): Promise<void> {
+    return this.call<void>('watch', params);
+  }
+  unwatch(params: {path: Array<string>}): Promise<void> {
+    return this.call<void>('unwatch', params);
   }
 }
 
