@@ -1,33 +1,5 @@
 GET     /     org.labrad.browser.BrowserController.index
 
-OPTIONS /api/*path                    org.labrad.browser.BrowserController.preflight(path)
-
-GET     /api/manager/connections      org.labrad.browser.BrowserController.connections
-DELETE  /api/manager/connections/:id  org.labrad.browser.BrowserController.connectionClose(id: Long)
-
-GET     /api/nodes                                org.labrad.browser.NodeController.allNodes
-POST    /api/nodes/:node/refresh                  org.labrad.browser.NodeController.refreshNode(node)
-POST    /api/nodes/:node/servers/:server/start    org.labrad.browser.NodeController.startServer(node, server)
-POST    /api/nodes/:node/servers/:server/stop     org.labrad.browser.NodeController.stopServer(node, server)
-POST    /api/nodes/:node/servers/:server/restart  org.labrad.browser.NodeController.restartServer(node, server)
-
-POST    /api/registry/dir            org.labrad.browser.RegistryController.dir
-POST    /api/registry/set            org.labrad.browser.RegistryController.set
-POST    /api/registry/del            org.labrad.browser.RegistryController.del
-POST    /api/registry/mkdir          org.labrad.browser.RegistryController.mkdir
-POST    /api/registry/rmdir          org.labrad.browser.RegistryController.rmdir
-POST    /api/registry/copy           org.labrad.browser.RegistryController.copy
-POST    /api/registry/copyDir        org.labrad.browser.RegistryController.copyDir
-POST    /api/registry/rename         org.labrad.browser.RegistryController.rename
-POST    /api/registry/renameDir      org.labrad.browser.RegistryController.renameDir
-POST    /api/registry/move           org.labrad.browser.RegistryController.move
-POST    /api/registry/moveDir        org.labrad.browser.RegistryController.moveDir
-POST    /api/registry/watch          org.labrad.browser.RegistryController.watch
-POST    /api/registry/unwatch        org.labrad.browser.RegistryController.unwatch
-
-GET     /api/servers/:name           org.labrad.browser.BrowserController.serverInfo(name)
-
-GET     /api/socket                  org.labrad.browser.WebSocketController.socket
-GET     /api/socket2                 org.labrad.browser.JsonRpcController.socket
+GET     /api/socket           org.labrad.browser.JsonRpcController.socket
 
 GET     /assets/*file         controllers.Assets.at(path="/public", file)

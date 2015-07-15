@@ -42,7 +42,7 @@ object ServerInfo {
 }
 
 
-class BrowserController @Inject() (cxnHolder: LabradConnectionHolder) extends Controller {
+class BrowserController() extends Controller {
   def index = Action {
     Ok(html.index())
   }
@@ -66,56 +66,13 @@ class BrowserController @Inject() (cxnHolder: LabradConnectionHolder) extends Co
         Ok.withHeaders(headers.result: _*)
     }
   }
-
-  // Manager Service
-  def connections() = Action.async {
-    cxnHolder.cxn.manager.connectionInfo().map { infos =>
-      val result = infos.map {
-        case (id, name, isServer, srvReq, srvRep, clReq, clRep, msgSend, msgRecv) =>
-          ConnectionInfo(id, name, isServer, true, srvReq, srvRep, clReq, clRep, msgSend, msgRecv)
-      }
-      Ok(Json.toJson(result))
-    }
-  }
-
-  def connectionClose(id: Long) = Action.async {
-    cxnHolder.cxn.manager.call("Close Connection", UInt(id)).map { _ =>
-      Ok(Json.toJson("OK"))
-    }
-  }
-
-  // Server Info
-  def serverInfo(name: String) = Action.async {
-    val mgr = cxnHolder.cxn.manager
-    val pkt = mgr.packet()
-    val idFuture = pkt.lookupServer(name)
-    val helpFuture = pkt.serverHelp(name)
-    val settingFuture = pkt.settings(name)
-    pkt.send
-
-    for {
-      id <- idFuture
-      (doc, remarks) <- helpFuture
-      settingIds <- settingFuture
-      settings <- Future.sequence {
-        settingIds.map { case (settingId, settingName) =>
-          mgr.settingHelp(name, settingName).map { case (settingDoc, accepted, returned, settingRemarks) =>
-            SettingInfo(settingId, settingName, settingDoc + "\n\n" + settingRemarks, accepted, returned)
-          }
-        }
-      }
-    } yield {
-      val result = ServerInfo(id, name, doc + "\n\n" + remarks, "", name, Nil, Nil, settings)
-      Ok(Json.toJson(result))
-    }
-  }
 }
 
-class ManagerApi(cxnHolder: LabradConnectionHolder) {
+class ManagerApi(cxn: LabradConnection) {
 
   @Call("org.labrad.manager.connections")
   def connections(): Future[Seq[ConnectionInfo]] = {
-    cxnHolder.cxn.manager.connectionInfo().map { infos =>
+    cxn.manager.connectionInfo().map { infos =>
       infos.map {
         case (id, name, isServer, srvReq, srvRep, clReq, clRep, msgSend, msgRecv) =>
           ConnectionInfo(id, name, isServer, true, srvReq, srvRep, clReq, clRep, msgSend, msgRecv)
@@ -125,12 +82,12 @@ class ManagerApi(cxnHolder: LabradConnectionHolder) {
 
   @Call("org.labrad.manager.connection_close")
   def connectionClose(id: Long): Future[String] = {
-    cxnHolder.cxn.manager.call("Close Connection", UInt(id)).map { _ => "OK" }
+    cxn.manager.call("Close Connection", UInt(id)).map { _ => "OK" }
   }
 
   @Call("org.labrad.manager.server_info")
   def serverInfo(name: String): Future[ServerInfo] = {
-    val mgr = cxnHolder.cxn.manager
+    val mgr = cxn.manager
     val pkt = mgr.packet()
     val idFuture = pkt.lookupServer(name)
     val helpFuture = pkt.serverHelp(name)

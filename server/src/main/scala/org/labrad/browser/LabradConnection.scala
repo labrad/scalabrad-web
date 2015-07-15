@@ -4,7 +4,7 @@ import java.util.{Timer, TimerTask}
 import javax.inject._
 
 import org.labrad._
-import org.labrad.browser.common.message.{Message => _, _}
+import org.labrad.browser.jsonrpc.Notify
 import org.labrad.data._
 import org.labrad.events.{ConnectionEvent, ConnectionListener, MessageEvent, MessageListener}
 import org.slf4j.LoggerFactory
@@ -19,15 +19,21 @@ object LabradConnection {
   val timer = new Timer(true)
 }
 
-@Singleton
-class LabradConnectionHolder @Inject() (lifecycle: ApplicationLifecycle) {
-  val cxn = new LabradConnection(sinkOpt = None)
-  lifecycle.addStopHook { () =>
-    Future.successful(cxn.close())
-  }
+trait LabradClientApi {
+  @Notify("org.labrad.connected")
+  def connected(host: String): Unit
+
+  @Notify("org.labrad.disconnected")
+  def disconnected(host: String): Unit
+
+  @Notify("org.labrad.serverConnected")
+  def serverConnected(name: String): Unit
+
+  @Notify("org.labrad.serverDisconnected")
+  def serverDisconnected(name: String): Unit
 }
 
-class LabradConnection(sinkOpt: Option[Sink]) {
+class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi) {
   private val RECONNECT_TIMEOUT = 10.seconds
   private val log = LoggerFactory.getLogger(classOf[LabradConnection])
 
@@ -67,12 +73,12 @@ class LabradConnection(sinkOpt: Option[Sink]) {
         log.info("connected")
         setupConnection(cxn)
         this.cxnOpt = Some(cxn)
-        for (sink <- sinkOpt) sink.send(new LabradConnectMessage(cxn.host))
+        client.connected(cxn.host)
 
       case false =>
         log.info("disconnected.  will reconnect in 10 seconds")
         this.cxnOpt = None
-        for (sink <- sinkOpt) sink.send(new LabradDisconnectMessage(cxn.host))
+        client.disconnected(cxn.host)
 
         if (live) {
           // reconnect after some delay
@@ -111,10 +117,10 @@ class LabradConnection(sinkOpt: Option[Sink]) {
       subscribeToServerConnectMessages(pkt)
       subscribeToServerDisconnectMessages(pkt)
 
-      subscribeToNodeServerMessage(pkt, "node.server_starting", InstanceStatus.STARTING)
-      subscribeToNodeServerMessage(pkt, "node.server_started", InstanceStatus.STARTED)
-      subscribeToNodeServerMessage(pkt, "node.server_stopping", InstanceStatus.STOPPING)
-      subscribeToNodeServerMessage(pkt, "node.server_stopped", InstanceStatus.STOPPED)
+      subscribeToNodeServerMessage(pkt, "node.server_starting", "STARTING") //InstanceStatus.STARTING)
+      subscribeToNodeServerMessage(pkt, "node.server_started", "STARTED") //InstanceStatus.STARTED)
+      subscribeToNodeServerMessage(pkt, "node.server_stopping", "STOPPING") //InstanceStatus.STOPPING)
+      subscribeToNodeServerMessage(pkt, "node.server_stopped", "STOPPED") //InstanceStatus.STOPPED)
 
       subscribeToNodeStatusMessages(pkt)
       Await.result(pkt.send(), 10.seconds)
@@ -159,7 +165,7 @@ class LabradConnection(sinkOpt: Option[Sink]) {
   private def subscribeToServerConnectMessages(mgr: ManagerServer) {
     addSubscription(mgr, "Server Connect") {
       case Message(_, _, _, Cluster(_, Str(server))) =>
-        for (sink <- sinkOpt) sink.send(new ServerConnectMessage(server))
+        client.serverConnected(server)
     }
   }
 
@@ -170,18 +176,18 @@ class LabradConnection(sinkOpt: Option[Sink]) {
   private def subscribeToServerDisconnectMessages(mgr: ManagerServer) {
     addSubscription(mgr, "Server Disconnect") {
       case Message(_, _, _, Cluster(_, Str(server))) =>
-        for (sink <- sinkOpt) sink.send(new ServerDisconnectMessage(server))
+        client.serverDisconnected(server)
     }
   }
 
-  private def subscribeToNodeServerMessage(mgr: ManagerServer, messageName: String, status: InstanceStatus) {
+  private def subscribeToNodeServerMessage(mgr: ManagerServer, messageName: String, status: String /*InstanceStatus*/) {
     addSubscription(mgr, messageName) {
       case Message(_, _, _, data) =>
         val map = parseNodeMessage(data)
         val node = map("node").get[String]
         val server = map("server").get[String]
         val instance = map("instance").get[String]
-        for (sink <- sinkOpt) sink.send(new NodeServerMessage(node, server, instance, status))
+        nodeClient.serverStatus(node, server, instance, status)
     }
   }
 
@@ -195,8 +201,8 @@ class LabradConnection(sinkOpt: Option[Sink]) {
         val map = parseNodeMessage(data)
         val node = map("node").get[String]
         val serversData = map("servers")
-        val statuses = NodeController.getServerStatuses(serversData).map { _.toJava }.toArray
-        for (sink <- sinkOpt) sink.send(new NodeStatusMessage(node, statuses))
+        val statuses = NodeApi.getServerStatuses(serversData)
+        nodeClient.nodeStatus(node, statuses)
     }
   }
 

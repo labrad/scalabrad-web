@@ -87,14 +87,14 @@ object VaultApi {
   }
 }
 
-class VaultApi(cxnHolder: LabradConnectionHolder)(implicit ec: ExecutionContext) {
+class VaultApi(cxn: LabradConnection)(implicit ec: ExecutionContext) {
 
   import VaultApi._
 
   // vault utility functions
 
   private def startPacket(path: Seq[String]) = {
-    val dv = new VaultServerProxy(cxnHolder.cxn.get)
+    val dv = new VaultServerProxy(cxn.get)
     val pkt = dv.packet()
     pkt.cd(absPath(path))
     pkt

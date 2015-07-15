@@ -25,7 +25,7 @@ window.addEventListener('WebComponentsReady', function() {
     page(e.detail.path);
   });
 
-  var socket = new rpc.JsonRpcSocket('ws://localhost:9000/api/socket2');
+  var socket = new rpc.JsonRpcSocket('ws://localhost:9000/api/socket');
   var mgr = new manager.ManagerServiceJsonRpc(socket);
   var reg = new registry.RegistryServiceJsonRpc(socket);
   var dv = new datavault.DataVaultService(socket);
