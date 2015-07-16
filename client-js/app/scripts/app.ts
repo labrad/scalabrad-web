@@ -5,6 +5,7 @@ import page = require("page");
 import manager = require("./manager");
 import registry = require("./registry");
 import datavault = require("./datavault");
+import nodeApi = require("./node");
 import rpc = require("./rpc");
 
 // autobinding template which is the main ui container
@@ -44,6 +45,7 @@ window.addEventListener('WebComponentsReady', function() {
   var mgr = new manager.ManagerServiceJsonRpc(socket);
   var reg = new registry.RegistryServiceJsonRpc(socket);
   var dv = new datavault.DataVaultService(socket);
+  var node = new nodeApi.NodeService(socket);
 
   function pathStr(path: Array<string>, dir?: string): string {
     var url = '';

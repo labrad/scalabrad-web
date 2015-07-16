@@ -14,6 +14,7 @@ class ApiBackend(implicit ec: ExecutionContext) extends Backend {
   private var cxn: LabradConnection = null
   private var datavaultApi: VaultApi = null
   private var managerApi: ManagerApi = null
+  private var nodeApi: NodeApi = null
   private var registryApi: RegistryApi = null
   private var routes: Map[String, Handler] = null
 
@@ -55,6 +56,12 @@ class ApiBackend(implicit ec: ExecutionContext) extends Backend {
       CALL                    .connection_close            .connectionClose
       CALL                    .server_info                 .serverInfo
 
+      CALL  org.labrad.node.allNodes       nodeApi.allNodes
+      CALL                 .refreshNode           .refreshNode
+      CALL                 .restartServer         .restartServer
+      CALL                 .startServer           .startServer
+      CALL                 .stopServer            .stopServer
+
       CALL  org.labrad.registry.dir        registryApi.dir
       CALL                     .set                   .set
       CALL                     .del                   .del
@@ -75,6 +82,7 @@ class ApiBackend(implicit ec: ExecutionContext) extends Backend {
     cxn.close()
     datavaultApi = null
     managerApi = null
+    nodeApi = null
     registryApi = null
     routes = null
   }
