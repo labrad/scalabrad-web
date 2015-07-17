@@ -68,3 +68,8 @@ build.sbt    # sbt build definition
 
 For instructions on how to contribute to scalabrad-web, see [contributing.md](https://github.com/labrad/labrad/blob/master/contributing.md).
 
+Client-side code should follow the Google [javascript style guide](http://google.github.io/styleguide/javascriptguide.xml).
+New code should include [JSDoc](http://usejsdoc.org/) comments for documentation.
+Note that some information often included in JSDoc comments, such as parameter types, is redundant in typescript code which already has type annotations, so can be omitted.
+Another useful reference for coding style is Microsoft's [coding guidelines](https://github.com/Microsoft/TypeScript/wiki/Coding-guidelines) for typescript code.
+
