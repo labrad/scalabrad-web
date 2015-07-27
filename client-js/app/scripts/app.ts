@@ -126,6 +126,7 @@ window.addEventListener('WebComponentsReady', function() {
       app.route = 'dataset';
       app.path = path;
       app.dataset = dataset;
+      app.parentUrl = '/grapher/' + pathStr(path);
     });
   }
 

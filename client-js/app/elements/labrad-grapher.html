@@ -1,34 +1,31 @@
 <link rel="import" href="app-link.html">
-
 <dom-module id="labrad-grapher">
   <style>
     :host {
       display: block;
     }
+    paper-header-panel {
+      height: 500px;
+      width: 500px
+    }
   </style>
   <template>
-    <table>
+    <paper-menu>
       <template is="dom-repeat" items="{{dirs}}">
-        <tr>
-          <td>
+          <div>
             <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-              <span class="paper-font-body1">{{item.name}}</span>
+              <dir-item kind="folder">{{item.name}}</dir-item>
             </a>
-          </td>
-          <td></td>
-        </tr>
+          </div>
       </template>
       <template is="dom-repeat" items="{{datasets}}">
-        <tr>
-          <td>
+         <div>
             <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-              <span class="paper-font-body1">{{item.name}}</span>
+              <dir-item kind="data">{{item.name}}</dir-item>
             </a>
-          </td>
-          <td></td>
-        </tr>
+         </div>
       </template>
-    </table>
+    </paper-menu>
   </template>
 </dom-module>
 

@@ -1,30 +1,45 @@
 <link rel="import" href="app-link.html">
-
+<!-- This is the component that simply renders the table of registry content -->
 <dom-module id="labrad-registry">
   <style>
     :host {
       display: block;
     }
+    
+    .list {
+      padding-top: 12px;
+      background-color: white;
+      display: inline-block;
+      @apply(--shadow-elevation-2dp);
+    }    
   </style>
   <template>
+  <div class="list short">
     <table>
-      <template is="dom-repeat" items="{{dirs}}">
-        <tr>
-          <td>
-            <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-              <span class="paper-font-body1">{{item.name}}</span>
-            </a>
-          </td>
-          <td></td>
-        </tr>
-      </template>
-      <template is="dom-repeat" items="{{keys}}">
-        <tr>
-          <td><span class="paper-font-body1">{{item.name}}</span></td>
-          <td><span class="paper-font-body1">{{item.value}}</span></td>
-        </tr>
-      </template>
+      <thead>
+        <th>Key/Dir Name</th>
+        <th>Key Value</th>
+      </thead>
+      <tbody>
+        <template is="dom-repeat" items="{{dirs}}">
+          <tr>
+            <td>
+              <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+               <dir-item kind="folder">{{item.name}}</dir-item>
+              </a>
+            </td>
+            <td></td>
+          </tr>
+        </template>
+        <template is="dom-repeat" items="{{keys}}">
+          <tr>
+            <td><dir-item kind="key">{{item.name}}</dir-item></td>
+            <td><span class="paper-font-body1">{{item.value}}</span></td>
+          </tr>
+        </template>
+      </tbody>
     </table>
+    </div>
   </template>
 </dom-module>
 

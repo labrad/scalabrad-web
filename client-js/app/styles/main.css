@@ -3,3 +3,30 @@ body {
   font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   color: #333;
 }
+
+
+
+td,th{
+  padding: 12px 24px;
+}
+
+tr {
+  width :100%;
+}
+   
+th {
+  @apply(--paper-font-body1);
+  color: var(--secondary-text-color);
+  text-align: left;
+  border-bottom: 1px solid;
+  border-bottom-color: #e5e5e5;
+}
+
+tr :hover    {
+  color: #616161;
+}
+  
+tbody tr:hover {
+  background: #fafafa;
+}
+

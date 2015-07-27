@@ -46,14 +46,12 @@ export class RegistryServiceJsonRpc extends rpc.RpcService implements RegistryAp
   del(params: {path: Array<string>; key: string}): Promise<RegistryListing> {
     return this.call<RegistryListing>('del', params);
   }
-
   mkDir(params: {path: Array<string>; dir: string}): Promise<RegistryListing> {
     return this.call<RegistryListing>('mkDir', params);
   }
   rmDir(params: {path: Array<string>; dir: string}): Promise<RegistryListing> {
     return this.call<RegistryListing>('rmDir', params);
   }
-
   rename(params: {path: Array<string>; key: string; newKey: string}): Promise<RegistryListing> {
     return this.call<RegistryListing>('rename', params);
   }
@@ -63,7 +61,6 @@ export class RegistryServiceJsonRpc extends rpc.RpcService implements RegistryAp
   move(params: {path: Array<string>; key: string; newPath: Array<string>; newKey: string}): Promise<RegistryListing> {
     return this.call<RegistryListing>('move', params);
   }
-
   renameDir(params: {path: Array<string>; dir: string; newDir: string}): Promise<RegistryListing> {
     return this.call<RegistryListing>('renameDir', params);
   }

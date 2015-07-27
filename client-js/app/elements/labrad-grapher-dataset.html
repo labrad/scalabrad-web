@@ -5,11 +5,26 @@
     }
   </style>
   <template>
-    <ul>
-      <template is="dom-repeat" items="{{items}}">
-        <li><span class="paper-font-body1">{{item}}</span></li>
-      </template>
-    </ul>
+    <a is="app-link" path="{{parentUrl}}" href="{{parentUrl}}">
+      <paper-button raised class="colorful">BACK</paper-button>
+    </a>
+
+    <paper-tabs selected="{{selected}}" noink> 
+        <paper-tab>Plot</paper-tab>
+        <paper-tab>Parameters</paper-tab>
+    </paper-tabs>
+    
+    <iron-pages selected="{{selected}}">
+      <div>The plot will go here</div>
+      <div>
+        <table>
+          <thead>
+            <th>Parameter</th>
+            <th>Value</th>
+          </thead>
+        </table>
+      </div>
+    </iron-pages>
   </template>
 </dom-module>
 
@@ -18,15 +33,18 @@
   Polymer({
     is: 'labrad-grapher-dataset',
     properties: {
-      items: {
-        type: Array,
+      path: {
+        type: String,
         notify: true,
+      },
+      dataset: {
+        type: String,
+        notify: true
+      },
+      parentUrl: {
+        type: String,
+        notify: true
       }
-    },
-    ready: function() {
-      this.items = [
-        'A single dataset'
-      ];
     }
   });
 })();

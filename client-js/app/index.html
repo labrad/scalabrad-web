@@ -114,6 +114,7 @@
 
           <section data-route="registry">
             <paper-material elevation="0">
+
               <labrad-breadcrumbs breadcrumbs={{breadcrumbs}}></labrad-breadcrumbs>
               <labrad-registry
                   path={{path}}
@@ -136,10 +137,11 @@
 
           <section data-route="dataset">
             <paper-material elevation="0">
-              <div>
-                <p>Path: <span>{{path}}</span>
-                <p>Dataset: <span>{{dataset}}</span>
-              </div>
+            <labrad-grapher-dataset
+                path={{path}}
+                dataset={{dataset}}
+                parent-url={{parentUrl}}>
+              </labrad-grapher-dataset>
             </paper-material>
           </section>
 
