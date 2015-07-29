@@ -1,27 +1,13 @@
-package org.labrad
-package tray
+package org.labrad.tray
 
-import com.google.inject.AbstractModule
 import java.awt.{Desktop, Image, MenuItem, PopupMenu, SystemTray, Toolkit, TrayIcon}
 import java.awt.event.{ActionEvent, ActionListener}
 import java.net.URI
-import javax.inject._
-import org.slf4j.{Logger, LoggerFactory}
-import play.api.inject.ApplicationLifecycle
+import org.labrad.util.Logging
 import scala.concurrent.Future
 
 
-class TrayModule extends AbstractModule {
-  def configure() = {
-    if (SystemTray.isSupported) {
-      bind(classOf[TrayController]).asEagerSingleton()
-    }
-  }
-}
-
-class TrayController @Inject() (lifecycle: ApplicationLifecycle) {
-
-  private val log = LoggerFactory.getLogger(getClass)
+class TrayController extends Logging {
 
   // create popup menu
   private val browseItem = new MenuItem("Manage")
@@ -62,9 +48,8 @@ class TrayController @Inject() (lifecycle: ApplicationLifecycle) {
       sys.exit(1)
   }
 
-  lifecycle.addStopHook{ () =>
+  sys.addShutdownHook {
     SystemTray.getSystemTray.remove(trayIcon)
-    Future.successful(())
   }
 
 
@@ -81,7 +66,7 @@ class TrayController @Inject() (lifecycle: ApplicationLifecycle) {
   protected def createImage(path: String, description: String): Image = {
     val imageURL = getClass.getResource(path)
     if (imageURL == null) {
-      log.error("Resource not found: {}", path)
+      log.error(s"Resource not found: $path")
       null
     } else {
       Toolkit.getDefaultToolkit.getImage(imageURL)

@@ -16,9 +16,9 @@ $ sbt server/run
 ```
 
 After downloading a bunch of packages (these are cached locally, so this will only be slow the first time),
-you'll have a server running on `localhost:9000`. It will try to connect to a labrad manager running on
+you'll have a server running on `localhost:7667`. It will try to connect to a labrad manager running on
 the same machine, so you should start up a labrad manager if you want to see anything interesting.
-Note that the server uses the [play framework](https://www.playframework.com/) which
+Note that the server uses a json library from the [play framework](https://www.playframework.com/) which
 requires java 8, so you'll need to make sure you are using java 8 when you launch sbt
 to run the server. (To check which java version you have, run `java -version`.)
 

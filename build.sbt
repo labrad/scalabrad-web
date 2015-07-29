@@ -28,20 +28,21 @@ lazy val server = project.in(file("server"))
 
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-async" % "0.9.2",
-      "net.maffoo" %% "jsonquote-play" % "0.3.0",
-      "org.labrad" %% "scalabrad" % "0.3.1"
+      "org.labrad" %% "scalabrad" % "0.5.3"
     ),
 
-    routesGenerator := InjectedRoutesGenerator,
-
-    // make sure the eclipse project includes generated source files
-    EclipseKeys.createSrc := EclipseCreateSrc.Default + EclipseCreateSrc.Managed,
+    // When running, connect std in and tell server to stop on EOF (ctrl+D).
+    // This allows us to stop the server without using ctrl+C, which kills sbt.
+    fork in run := true,
+    connectInput in run := true,
+    javaOptions += "-Dorg.labrad.stopOnEOF=true",
 
     // add a resource generator that copies compiled files from the client project
-    managedResourceDirectories in Assets += (resourceManaged in Assets).value,
-    resourceGenerators in Assets <+= Def.task {
+    resourceGenerators in Compile += Def.task {
       val srcDir = baseDirectory.value / ".." / "client-js" / "dist"
-      val dstDir = (resourceManaged in Assets).value
+      val dstDir = (resourceManaged in Compile).value / "public"
+      val s = streams.value
+      s.log.info(s"copying assets from $srcDir to $dstDir")
       for {
         src <- (srcDir ** "*").get if src.isFile
         rel <- IO.relativizeFile(srcDir, src)
@@ -50,7 +51,14 @@ lazy val server = project.in(file("server"))
         IO.copyFile(src, dst, preserveLastModified = true)
         dst
       }
-    }
+    }.taskValue,
 
-  ).enablePlugins(PlayScala)
-   .disablePlugins(PlayLayoutPlugin)
+    // use sbt-pack to create distributable package
+    packSettings,
+
+    packMain := Map(
+      "labrad-web" -> "org.labrad.browser.WebServer"
+    ),
+
+    packGenerateWindowsBatFile := true
+  )

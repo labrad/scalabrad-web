@@ -2,5 +2,6 @@ name := "scalabrad-web"
 
 resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/releases/"
 
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % "2.4.2")
 addSbtPlugin("com.typesafe.sbteclipse" % "sbteclipse-plugin" % "3.0.0")
+
+addSbtPlugin("org.xerial.sbt" % "sbt-pack" % "0.6.5")  // for sbt-0.13.x or higher

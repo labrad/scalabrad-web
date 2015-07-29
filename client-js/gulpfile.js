@@ -228,7 +228,7 @@ gulp.task('html', function () {
 gulp.task('insert-dev-config', function () {
   return gulp.src(['app/index.html'])
     .pipe($.replace('<!-- DEV_MODE_CONFIG -->',
-                    '<script type="text/javascript">window.apiHost = "ws://localhost:9000";</script>'))
+                    '<script type="text/javascript">window.apiHost = "ws://localhost:7667";</script>'))
     .pipe(gulp.dest('.tmp'))
     .pipe($.size({title: 'insert-dev-config'}));
 });
