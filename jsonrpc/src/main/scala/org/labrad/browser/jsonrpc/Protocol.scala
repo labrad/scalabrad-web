@@ -27,20 +27,30 @@ object Message {
 
   /**
    * Convert a JSON value into a JsonRpc 2.0 message.
+   *
+   * We first check that the given value is an object with a field named
+   * jsonrpc that has the value "2.0", as required by the jsonrpc spec.
+   * We then strip that field and attempt to parse the object into one
+   * of the possible jsonrpc message types (the message classes do not
+   * include a "jsonrpc" field since it is constant, which is why we strip
+   * it out first).
    */
   def unapply(json: JsValue): Option[Message] = {
-    (json \ "jsonrpc").asOpt[String].filter(_ == "2.0").flatMap { _ =>
-      json.asOpt[JsObject].map(_ - "jsonrpc").flatMap { obj =>
-        None.orElse {
-          obj.asOpt[Request]
-        }.orElse {
-          obj.asOpt[SuccessResponse]
-        }.orElse {
-          obj.asOpt[ErrorResponse]
-        }.orElse {
-          obj.asOpt[Notification]
-        }
-      }
+    val obj = json.asOpt[JsObject].getOrElse(JsObject(Nil))
+
+    val version = (obj \ "jsonrpc").asOpt[String].getOrElse("")
+    if (version != "2.0") return None
+
+    val msg = obj - "jsonrpc"
+
+    None.orElse {
+      msg.asOpt[Request]
+    }.orElse {
+      msg.asOpt[SuccessResponse]
+    }.orElse {
+      msg.asOpt[ErrorResponse]
+    }.orElse {
+      msg.asOpt[Notification]
     }
   }
 
