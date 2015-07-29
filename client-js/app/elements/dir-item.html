@@ -2,33 +2,33 @@
 <dom-module id='dir-item'>
   <template>
     <paper-icon-item>
-      <iron-icon icon="{{dir_icon}}" item-icon></iron-icon>
+      <iron-icon icon="{{dirIcon}}" item-icon></iron-icon>
       <content></content>
     </paper-icon-item>
   </template>
 
   <script>
     Polymer({
-      is: "dir-item",
+      is: 'dir-item',
       properties: {
-        dir_name: {type: String},
+        dirName: {type: String},
         kind: {type: String},
-        dir_icon: {
+        dirIcon: {
           type: String,
           computed: 'assignIcon(kind)'
         }
       },
-      assignIcon: function(entry_type) {
-        if (entry_type == "folder") {
-          return "folder";
+      assignIcon: function (entryType) {
+        if (entryType === 'folder') {
+          return 'folder';
         }
-        if (entry_type == "data") {
-          return "editor:insert-chart";
+        if (entryType === 'data') {
+          return 'editor:insert-chart';
         }
-        if (entry_type == "key") {
-          return "communication:vpn-key";
+        if (entryType === 'key') {
+          return 'communication:vpn-key';
         } else {
-          return "error";
+          return 'error';
         }
       }
     });
