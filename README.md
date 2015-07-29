@@ -7,18 +7,20 @@ The web server is written in scala (http://scala-lang.org) and built with sbt (h
 To run the server you'll need to install sbt, then from the repository root run
 
 ```
-$ sbt client/compile server/run
+$ sbt server/run
 ```
 
 After downloading a bunch of packages (these are cached locally, so this will only be slow the first time),
 you'll have a server running on `localhost:9000`. It will try to connect to a labrad manager running on
 the same machine, so you should start up a labrad manager if you want to see anything interesting.
+Note that the server uses the [play framework](https://www.playframework.com/) which
+requires java 8, so you'll need to make sure you are using java 8 when you launch sbt
+to run the server. (To check which java version you have, run `java -version`.)
 
-The `client/compile` step builds the client javascript code using GWT (http://gwtproject.org). However,
-we are replacing this with a client built using typescript (http://www.typescriptlang.org/) with a build
-system based on node.js. This new client lives in the `client-js/` folder.
+The client code is built using typescript (http://www.typescriptlang.org/) with a build
+system based on node.js and lives in the `client-js/` folder.
 
-To build the new client, first make sure you have `node.js` installed (https://nodejs.org/), which includes
+To build the client, first make sure you have `node.js` installed (https://nodejs.org/), which includes
 the node package manager `npm`. Then, from inside the `client-js` directory you can install the necessary
 global and project-level dependencies:
 
@@ -46,7 +48,6 @@ the API implementation on the server.
 ```
 client-js/   # the new javascript client code; alpha, not yet complete; built with
              # node.js et al.
-client/      # the old GWT-based client code; deprecated
 jsonrpc/     # scala support code for the server-side JSON-RPC implementation
 project/     # sbt project definition stuff (see the sbt docs for info about sbt
              # project structure)
