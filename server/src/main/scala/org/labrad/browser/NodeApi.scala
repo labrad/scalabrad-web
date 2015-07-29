@@ -1,14 +1,11 @@
 package org.labrad.browser
 
-import javax.inject._
 import org.labrad.browser.jsonrpc.{Call, Notify}
 import org.labrad.data._
 import org.labrad.util.Logging
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
-import play.api.mvc._
 import scala.async.Async.{async, await}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 
 object NodeApi {
@@ -27,7 +24,7 @@ object NodeApi {
   }
 }
 
-class NodeApi(cxn: LabradConnection) extends Logging {
+class NodeApi(cxn: LabradConnection)(implicit ec: ExecutionContext) extends Logging {
   import NodeApi._
 
   def allNodes(): Future[Seq[NodeStatus]] = {

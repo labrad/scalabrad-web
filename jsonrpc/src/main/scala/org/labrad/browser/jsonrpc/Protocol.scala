@@ -1,11 +1,9 @@
 package org.labrad.browser.jsonrpc
 
-import akka.actor.{Actor, ActorRef, PoisonPill, Props}
 import play.api.libs.json._
 import scala.collection.mutable
-import scala.concurrent.{Await, Future, Promise}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Try, Success, Failure}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.util.{Success, Failure}
 
 
 sealed trait Message
@@ -83,103 +81,96 @@ trait Backend extends Endpoint {
 }
 
 
-object JsonRpcTransport {
-  def props(out: ActorRef, backend: Backend) = {
-    Props(new JsonRpcTransport(out, backend))
-  }
+class JsonRpcTransport(backend: Backend, send: String => Unit)(implicit ec: ExecutionContext) {
 
-  // message types used internally to implement the Endpoint interface
-  case class Call(p: Promise[JsValue], method: String, params: Option[Params])
-  case class Notify(method: String, params: Option[Params])
-}
-
-class JsonRpcTransport(out: ActorRef, backend: Backend) extends Actor {
-
-  import JsonRpcTransport._
-
+  // Limit call ids to 2^53 since this is the largest int
+  // that js can represent (its only numeric type is double)
   private val MaxCalls = 1L << 53
+
+  private val lock = new Object
   private var callId: Long = 0
-  private def nextCall: Long = {
-    val result = callId
-    callId = (callId + 1) % MaxCalls
-    result
-  }
   private val calls = mutable.Map.empty[Id, Promise[JsValue]]
+
+  private def makeCall(): (Id, Promise[JsValue]) = lock.synchronized {
+    val nextCall = callId
+    callId = (callId + 1) % MaxCalls
+    val p = Promise[JsValue]
+    val id = Left(nextCall)
+    calls(id) = p
+    id -> p
+  }
+  private def getCall(id: Id): Option[Promise[JsValue]] = lock.synchronized {
+    calls.remove(id)
+  }
+  private def getCalls(): Seq[Promise[JsValue]] = lock.synchronized {
+    val ps = calls.values.toVector
+    calls.clear()
+    ps
+  }
 
   // typed facade to this actor that implements the Endpoint interface
   private val endpoint = new Endpoint {
     override def call(src: Endpoint, method: String, params: Option[Params]): Future[JsValue] = {
-      val p = Promise[JsValue]
-      self ! Call(p, method, params)
+      val (id, p) = makeCall()
+      sendMsg(Request(id, method, params))
       p.future
     }
 
     override def notify(src: Endpoint, method: String, params: Option[Params]): Unit = {
-      self ! Notify(method, params)
+      sendMsg(Notification(method, params))
     }
   }
 
   backend.connect(endpoint)
 
-  override def postStop(): Unit = {
-    for (promise <- calls.values) {
-      promise.failure(JsonRpcError(-1, "transport closed"))
+  def receive(msg: String): Unit = {
+    println(s"got message: $msg")
+    Message.unapply(Json.parse(msg)) match {
+      case None =>
+        sys.error(s"invalid jsonrpc message: $msg")
+
+      case Some(msg) =>
+        handle(msg)
     }
-    calls.clear()
-    backend.disconnect(endpoint)
   }
 
-  def receive = {
-    // from the client
-    case msg: String =>
-      println(s"got message: $msg")
-      Message.unapply(Json.parse(msg)) match {
-        case None =>
-          self ! PoisonPill
-
-        case Some(msg) =>
-          handle(msg)
-      }
-
-    // from the backend
-    case Call(p, method, params) =>
-      val id = Left(nextCall)
-      calls(id) = p
-      send(Request(id, method, params))
-
-    case Notify(method, params) =>
-      send(Notification(method, params))
+  def stop(): Unit = {
+    backend.disconnect(endpoint)
+    val promises = getCalls()
+    for (promise <- promises) {
+      promise.failure(JsonRpcError(-1, "transport closed"))
+    }
   }
 
   private def handle(msg: Message): Unit = msg match {
     case r: Request =>
       backend.call(endpoint, r.method, r.params).onComplete {
         case Success(result) =>
-          send(SuccessResponse(r.id, result))
+          sendMsg(SuccessResponse(r.id, result))
 
         case Failure(e: JsonRpcError) =>
-          send(ErrorResponse(r.id, e))
+          sendMsg(ErrorResponse(r.id, e))
 
         case Failure(e) =>
-          send(ErrorResponse(r.id, JsonRpcError(-10, e.toString)))
+          sendMsg(ErrorResponse(r.id, JsonRpcError(-10, e.toString)))
       }
 
     case n: Notification =>
       backend.notify(endpoint, n.method, n.params)
 
     case s: SuccessResponse =>
-      for (p <- calls.get(s.id)) {
+      for (p <- getCall(s.id)) {
         p.success(s.result)
       }
 
     case e: ErrorResponse =>
-      for (p <- calls.get(e.id)) {
+      for (p <- getCall(e.id)) {
         p.failure(e.error)
       }
   }
 
-  private def send(msg: Message): Unit = {
+  private def sendMsg(msg: Message): Unit = {
     println(s"sending: ${Message.toJson(msg).toString}")
-    out ! Message.toJson(msg).toString
+    send(Message.toJson(msg).toString)
   }
 }

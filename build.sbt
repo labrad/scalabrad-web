@@ -14,7 +14,6 @@ lazy val jsonrpc = project.in(file("jsonrpc"))
 
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-      "com.typesafe.akka" %% "akka-actor" % "2.3.11",
       "com.typesafe.play" %% "play-json" % "2.4.0",
       "net.maffoo" %% "jsonquote-play" % "0.3.0"
     )
@@ -27,7 +26,6 @@ lazy val server = project.in(file("server"))
     name := "scalabrad-web-server",
 
     libraryDependencies ++= Seq(
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.5.0",
       "org.scala-lang.modules" %% "scala-async" % "0.9.2",
       "net.maffoo" %% "jsonquote-play" % "0.3.0",
       "org.labrad" %% "scalabrad" % "0.3.1"

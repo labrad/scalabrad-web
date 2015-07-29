@@ -1,18 +1,12 @@
 package org.labrad.browser
 
 import java.util.{Timer, TimerTask}
-import javax.inject._
-
 import org.labrad._
 import org.labrad.browser.jsonrpc.Notify
 import org.labrad.data._
 import org.labrad.events.{ConnectionEvent, ConnectionListener, MessageEvent, MessageListener}
-import org.slf4j.LoggerFactory
-
-import play.api.inject.ApplicationLifecycle
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import org.labrad.util.Logging
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 
 object LabradConnection {
@@ -33,9 +27,8 @@ trait LabradClientApi {
   def serverDisconnected(name: String): Unit
 }
 
-class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi) {
+class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi)(implicit ec: ExecutionContext) extends Logging {
   private val RECONNECT_TIMEOUT = 10.seconds
-  private val log = LoggerFactory.getLogger(classOf[LabradConnection])
 
   @volatile private var live: Boolean = true
   @volatile private var cxnOpt: Option[Connection] = None

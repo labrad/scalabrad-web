@@ -5,7 +5,6 @@ import org.labrad._
 import org.labrad.browser.jsonrpc.{Call, Notify}
 import org.labrad.data._
 import play.api.libs.json._
-import play.api.mvc._
 import scala.concurrent.{ExecutionContext, Future}
 
 

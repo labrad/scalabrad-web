@@ -1,15 +1,12 @@
 package org.labrad.browser
 
-import javax.inject._
 import org.labrad.browser.jsonrpc.{Notify, Call}
 import org.labrad.data._
 import org.labrad.util.Logging
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
-import play.api.mvc._
 import scala.async.Async.{async, await}
 import scala.collection.mutable
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 
 
@@ -30,7 +27,7 @@ object RegistryApi {
 case class RegistryListing(path: Seq[String], dirs: Seq[String], keys: Seq[String], vals: Seq[String])
 object RegistryListing { implicit val format = Json.format[RegistryListing] }
 
-class RegistryApi(cxn: LabradConnection, client: RegistryClientApi) extends Logging {
+class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec: ExecutionContext) extends Logging {
 
   import RegistryApi._
 

@@ -1,112 +1,52 @@
 package org.labrad.browser
 
+import akka.actor.{Actor, ActorRef, Props}
 import javax.inject._
-import org.labrad.browser.jsonrpc.{Notify, Call}
-import org.labrad.data._
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.libs.json._
-import play.api.mvc._
-import scala.concurrent.Future
+import org.labrad.browser.jsonrpc.JsonRpcTransport
+import play.api.Application
+import play.api.mvc.{Action, Controller, WebSocket}
 
+class BrowserController @Inject() ()(implicit app: Application) extends Controller {
 
-case class ConnectionInfo(
-  id: Long, name: String, server: Boolean, active: Boolean,
-  serverReqCount: Long, serverRespCount: Long,
-  clientReqCount: Long, clientRespCount: Long,
-  msgSendCount: Long, msgRecvCount: Long
-)
+  // bring execution context into scope for scheduling asynchronous operations
+  implicit val executionContext = app.actorSystem.dispatcher
 
-object ConnectionInfo {
-  implicit val format = Json.format[ConnectionInfo]
-}
-
-case class SettingInfo(id: Long, name: String, doc: String, acceptedTypes: Seq[String], returnedTypes: Seq[String])
-
-object SettingInfo {
-  implicit val format = Json.format[SettingInfo]
-}
-
-case class ServerInfo(
-  id: Long,
-  name: String,
-  description: String,
-  version: String,
-  instanceName: String,
-  environmentVars: Seq[String],
-  instances: Seq[String],
-  settings: Seq[SettingInfo]
-)
-
-object ServerInfo {
-  implicit val format = Json.format[ServerInfo]
-}
-
-
-class BrowserController() extends Controller {
-  def index(path: String) = {
+  /**
+   * Render the index.html page which launches the client app.
+   *
+   * This is called for any url which is a valid app url, and the
+   * client-side code then renders the correct UI based on the url.
+   * We accept a parameter 'path' because the play routes compiler
+   * wants to pass a parameter when it matches routes, but in fact
+   * we just ignore that here since we always send the same html.
+   */
+  def app(path: String) = {
     controllers.Assets.at(path="/public", file="index.html")
   }
 
-  // CORS preflight requests
-  def preflight(path: String) = Action { request =>
-    val originOpt = request.headers.get("Origin")
-    val headersOpt = request.headers.get("Access-Control-Request-Headers")
-    val methodOpt = request.headers.get("Access-Control-Request-Method")
-    originOpt match {
-      case None => BadRequest
-      case Some(origin) =>
-        val headers = Seq.newBuilder[(String, String)]
-        headers += "Access-Control-Allow-Origin" -> origin
-        for (reqHeaders <- headersOpt) {
-          headers += "Access-Control-Allow-Headers" -> reqHeaders
-        }
-        for (method <- methodOpt) {
-          headers += "Access-Control-Allow-Methods" -> method
-        }
-        Ok.withHeaders(headers.result: _*)
+  /**
+   * Accept a websocket connection that uses jsonrpc to make api calls.
+   *
+   * We create a new ApiBackend for each websocket connection, which manages
+   * its own connection to labrad and lasts until the websocket is closed.
+   */
+  def socket = WebSocket.acceptWithActor[String, String] { request => out =>
+    Props(new SocketActor(out))
+  }
+
+  class SocketActor(out: ActorRef) extends Actor {
+    // create an rpc backend and a jsonrpc transport that talks to the backend
+    // and send outgoing messages to the 'out' actor
+    val backend = new ApiBackend()
+    val transport = new JsonRpcTransport(backend, msg => out ! msg)
+
+    def receive = {
+      case msg: String => transport.receive(msg)
+      case msg => println(s"unexpected message: $msg")
     }
-  }
-}
 
-class ManagerApi(cxn: LabradConnection) {
-
-  @Call("org.labrad.manager.connections")
-  def connections(): Future[Seq[ConnectionInfo]] = {
-    cxn.manager.connectionInfo().map { infos =>
-      infos.map {
-        case (id, name, isServer, srvReq, srvRep, clReq, clRep, msgSend, msgRecv) =>
-          ConnectionInfo(id, name, isServer, true, srvReq, srvRep, clReq, clRep, msgSend, msgRecv)
-      }
-    }
-  }
-
-  @Call("org.labrad.manager.connection_close")
-  def connectionClose(id: Long): Future[String] = {
-    cxn.manager.call("Close Connection", UInt(id)).map { _ => "OK" }
-  }
-
-  @Call("org.labrad.manager.server_info")
-  def serverInfo(name: String): Future[ServerInfo] = {
-    val mgr = cxn.manager
-    val pkt = mgr.packet()
-    val idFuture = pkt.lookupServer(name)
-    val helpFuture = pkt.serverHelp(name)
-    val settingFuture = pkt.settings(name)
-    pkt.send
-
-    for {
-      id <- idFuture
-      (doc, remarks) <- helpFuture
-      settingIds <- settingFuture
-      settings <- Future.sequence {
-        settingIds.map { case (settingId, settingName) =>
-          mgr.settingHelp(name, settingName).map { case (settingDoc, accepted, returned, settingRemarks) =>
-            SettingInfo(settingId, settingName, settingDoc + "\n\n" + settingRemarks, accepted, returned)
-          }
-        }
-      }
-    } yield {
-      ServerInfo(id, name, doc + "\n\n" + remarks, "", name, Nil, Nil, settings)
+    override def postStop(): Unit = {
+      transport.stop()
     }
   }
 }
