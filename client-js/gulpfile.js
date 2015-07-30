@@ -32,20 +32,6 @@ var AUTOPREFIXER_BROWSERS = [
   'bb >= 10'
 ];
 
-
-// Generate the app.d.ts references file dynamically from all application *.ts files.
-// gulp.task('gen-ts-refs', function () {
-//     var target = gulp.src(config.appTypeScriptReferences);
-//     var sources = gulp.src([config.allTypeScript], {read: false});
-//     return target.pipe(inject(sources, {
-//         starttag: '//{',
-//         endtag: '//}',
-//         transform: function (filepath) {
-//             return '/// <reference path="../..' + filepath + '" />';
-//         }
-//     })).pipe(gulp.dest(config.typings));
-// });
-
 // Lint all custom TypeScript files.
 gulp.task('tslint', function () {
   return gulp.src('app/**/*.ts')
@@ -78,25 +64,6 @@ gulp.task("webpack", function(callback) {
     }));
     callback();
   });
-});
-
-// TODO: get this working; figure out what to do between this and browserSync
-gulp.task("webpack-dev-server", function(callback) {
-    // Start a webpack-dev-server
-    var compiler = webpack({
-        // configuration
-    });
-
-    new WebpackDevServer(compiler, {
-        // server and middleware options
-    }).listen(8080, "localhost", function(err) {
-        if(err) throw new gutil.PluginError("webpack-dev-server", err);
-        // Server listening
-        gutil.log("[webpack-dev-server]", "http://localhost:8080/webpack-dev-server/index.html");
-
-        // keep the server alive or continue?
-        // callback();
-    });
 });
 
 var styleTask = function (stylesPath, srcs) {
