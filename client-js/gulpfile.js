@@ -178,6 +178,15 @@ gulp.task('html', function () {
     .pipe($.size({title: 'html'}));
 });
 
+// Inject an alternate url for connecting to the api backend in dev mode.
+gulp.task('websocket-url', function () {
+  return gulp.src(['app/index.html'])
+    .pipe($.replace('<!-- PROD_MODE -->',
+                    '<script type="text/javascript">window.apiHost = "ws://localhost:9000";</script>'))
+    .pipe(gulp.dest('.tmp'))
+    .pipe($.size({title: 'websocket-url'}));
+});
+
 // Vulcanize imports
 gulp.task('vulcanize', function () {
   var DEST_DIR = 'dist/elements';
@@ -213,7 +222,7 @@ gulp.task('precache', function (callback) {
 gulp.task('clean', del.bind(null, ['.tmp', 'dist']));
 
 // Watch Files For Changes & Reload
-gulp.task('serve', ['webpack', 'styles', 'elements', 'images'], function () {
+gulp.task('serve', ['websocket-url', 'webpack', 'styles', 'elements', 'images'], function () {
   var folder = path.resolve(__dirname, ".");
   browserSync({
     notify: false,

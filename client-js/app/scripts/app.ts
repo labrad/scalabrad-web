@@ -25,7 +25,22 @@ window.addEventListener('WebComponentsReady', function() {
     page(e.detail.path);
   });
 
-  var socket = new rpc.JsonRpcSocket('ws://localhost:9000/api/socket');
+  // Construct a websocket url relative to this page based on window.location
+  // Note that window.location.protocol includes a trailing colon, but
+  // window.location.port does not include a leading colon.
+  function relativeWebSocketUrl(): string {
+    var loc = window.location;
+    var protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+    var port = loc.port === '' ? '' : `:${loc.port}`;
+    return `${protocol}//${loc.hostname}${port}`;
+  }
+
+  // Get the url for the api backend websocket connection.
+  // If the apiHost variable has been set globally, use that,
+  // otherwise construct a url relative to the page host.
+  var apiUrl = (window['apiHost'] || relativeWebSocketUrl()) + "/api/socket";
+
+  var socket = new rpc.JsonRpcSocket(apiUrl);
   var mgr = new manager.ManagerServiceJsonRpc(socket);
   var reg = new registry.RegistryServiceJsonRpc(socket);
   var dv = new datavault.DataVaultService(socket);
