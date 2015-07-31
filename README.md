@@ -25,7 +25,7 @@ the node package manager `npm`. Then, from inside the `client-js` directory you 
 global and project-level dependencies:
 
 ```
-$ npm install -g bower typescript-compiler tsd webpack
+$ npm install -g bower typescript-compiler tsd gulp
 $ npm install
 $ bower install
 $ tsd reinstall
