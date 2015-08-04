@@ -1,6 +1,5 @@
 package org.labrad.browser
 
-import org.labrad.browser.jsonrpc.{Notify, Call}
 import org.labrad.data._
 import play.api.libs.json._
 import scala.concurrent.{ExecutionContext, Future}
@@ -40,7 +39,6 @@ object ServerInfo {
 
 class ManagerApi(cxn: LabradConnection)(implicit ec: ExecutionContext) {
 
-  @Call("org.labrad.manager.connections")
   def connections(): Future[Seq[ConnectionInfo]] = {
     cxn.manager.connectionInfo().map { infos =>
       infos.map {
@@ -50,12 +48,10 @@ class ManagerApi(cxn: LabradConnection)(implicit ec: ExecutionContext) {
     }
   }
 
-  @Call("org.labrad.manager.connection_close")
   def connectionClose(id: Long): Future[String] = {
     cxn.manager.call("Close Connection", UInt(id)).map { _ => "OK" }
   }
 
-  @Call("org.labrad.manager.server_info")
   def serverInfo(name: String): Future[ServerInfo] = {
     val mgr = cxn.manager
     val pkt = mgr.packet()

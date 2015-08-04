@@ -1,6 +1,5 @@
 package org.labrad.browser
 
-import org.labrad.browser.jsonrpc.{Call, Notify}
 import org.labrad.data._
 import org.labrad.util.Logging
 import play.api.libs.json._
@@ -66,9 +65,6 @@ class NodeApi(cxn: LabradConnection)(implicit ec: ExecutionContext) extends Logg
 trait NodeClientApi {
   import NodeApi._
 
-  @Notify("org.labrad.node.nodeStatus")
   def nodeStatus(name: String, servers: Seq[ServerStatus]): Unit
-
-  @Notify("org.labrad.node.serverStatus")
   def serverStatus(node: String, server: String, instance: String, status: String /*InstanceStatus*/): Unit
 }

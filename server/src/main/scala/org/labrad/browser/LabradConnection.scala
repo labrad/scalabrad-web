@@ -2,7 +2,6 @@ package org.labrad.browser
 
 import java.util.{Timer, TimerTask}
 import org.labrad._
-import org.labrad.browser.jsonrpc.Notify
 import org.labrad.data._
 import org.labrad.events.{ConnectionEvent, ConnectionListener, MessageEvent, MessageListener}
 import org.labrad.util.Logging
@@ -14,16 +13,9 @@ object LabradConnection {
 }
 
 trait LabradClientApi {
-  @Notify("org.labrad.connected")
   def connected(host: String): Unit
-
-  @Notify("org.labrad.disconnected")
   def disconnected(host: String): Unit
-
-  @Notify("org.labrad.serverConnected")
   def serverConnected(name: String): Unit
-
-  @Notify("org.labrad.serverDisconnected")
   def serverDisconnected(name: String): Unit
 }
 

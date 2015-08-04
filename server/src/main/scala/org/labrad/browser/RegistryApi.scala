@@ -1,6 +1,5 @@
 package org.labrad.browser
 
-import org.labrad.browser.jsonrpc.{Notify, Call}
 import org.labrad.data._
 import org.labrad.util.Logging
 import play.api.libs.json._
@@ -146,19 +145,17 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     await { regDir(newPath) }
   }
 
+
   // callable RPCs
 
-  @Call("org.labrad.manager.echo")
   def dumbEcho(inp: String): Future[String] = {
     cxn.get.send("manager", ("echo", Str(inp))).map { results => results(0).get[String] }
   }
 
-  @Call("org.labrad.registry.dir")
   def dir(path: Seq[String]): Future[RegistryListing] = {
     regDir(path)
   }
 
-  @Call("org.labrad.registry.set")
   def set(path: Seq[String], key: String, value: String): Future[RegistryListing] = {
     val data = Data.parse(value)
     val pkt = startPacket(path)
@@ -169,7 +166,6 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     }
   }
 
-  @Call("org.labrad.registry.del")
   def del(path: Seq[String], key: String): Future[RegistryListing] = {
     async {
       await { regDel(path, key) }
@@ -177,7 +173,6 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     }
   }
 
-  @Call("org.labrad.registry.mkdir")
   def mkDir(path: Seq[String], dir: String): Future[RegistryListing] = {
     val pkt = startPacket(path)
     pkt.mkDir(dir)
@@ -187,7 +182,6 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     }
   }
 
-  @Call("org.labrad.registry.rmdir")
   def rmDir(path: Seq[String], dir: String): Future[RegistryListing] = {
     async {
       await { regRmdir(path, dir) }
@@ -195,7 +189,6 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     }
   }
 
-  @Call("org.labrad.registry.copy")
   def copy(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[RegistryListing] = {
     async {
       await { regCopy(path, key, newPath, newKey) }
@@ -203,7 +196,6 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     }
   }
 
-  @Call("org.labrad.registry.copyDir")
   def copyDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[RegistryListing] = {
     async {
       await { regCopyDir(path, dir, newPath, newDir) }
@@ -211,28 +203,23 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     }
   }
 
-  @Call("org.labrad.registry.rename")
   def rename(path: Seq[String], key: String, newKey: String): Future[RegistryListing] = {
     regMove(path, key, path, newKey)
   }
 
-  @Call("org.labrad.registry.renameDir")
   def renameDir(path: Seq[String], dir: String, newDir: String): Future[RegistryListing] = {
     regMoveDir(path, dir, path, newDir)
   }
 
-  @Call("org.labrad.registry.move")
   def move(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[RegistryListing] = {
     regMove(path, key, newPath, newKey)
   }
 
-  @Call("org.labrad.registry.moveDir")
   def moveDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[RegistryListing] = {
     regMoveDir(path, dir, newPath, newDir)
   }
 
 
-  @Call("org.labrad.registry.watch")
   def watch(path: Seq[String]): Unit = synchronized {
     try {
       val ctx = cxn.get.newContext
@@ -265,7 +252,6 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     Future(???)
   }
 
-  @Call("org.labrad.registry.unwatch")
   def unwatch(path: Seq[String]): Unit = synchronized {
     for (watch <- watches.get(path)) {
       try {
@@ -293,15 +279,8 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
 }
 
 trait RegistryClientApi {
-  @Notify("org.labrad.registry.keyChanged")
   def keyChanged(path: Seq[String], key: String): Unit
-
-  @Notify("org.labrad.registry.keyRemoved")
   def keyRemoved(path: Seq[String], key: String): Unit
-
-  @Notify("org.labrad.registry.dirChanged")
   def dirChanged(path: Seq[String], dir: String): Unit
-
-  @Notify("org.labrad.registry.dirRemoved")
   def dirRemoved(path: Seq[String], dir: String): Unit
 }

@@ -2,7 +2,6 @@ package org.labrad.browser
 
 import org.joda.time.DateTime
 import org.labrad._
-import org.labrad.browser.jsonrpc.{Call, Notify}
 import org.labrad.data._
 import play.api.libs.json._
 import scala.concurrent.{ExecutionContext, Future}
@@ -116,14 +115,12 @@ class VaultApi(cxn: LabradConnection)(implicit ec: ExecutionContext) {
 
   // callable RPCs
 
-  @Call("org.labrad.datavault.dir")
   def dir(path: Seq[String]): Future[VaultListing] = {
     dvDir(path).map { result =>
       result
     }
   }
 
-  @Call("org.labrad.datavault.datasetInfo")
   def datasetInfo(path: Seq[String], dataset: Either[String, Int]): Future[DatasetInfo] = {
     val p = startPacket(path)
     val openF = dataset match {
@@ -146,7 +143,6 @@ class VaultApi(cxn: LabradConnection)(implicit ec: ExecutionContext) {
     }
   }
 
-  @Call("org.labrad.datavault.data")
   def data(path: Seq[String], dataset: Either[String, Int]): Future[Array[Array[Double]]] = {
     val p = startPacket(path)
     dataset match {
