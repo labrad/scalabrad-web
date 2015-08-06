@@ -1,7 +1,3 @@
-import promise = require('es6-promise');
-
-var Promise = promise.Promise;
-
 /**
  * Implements the JSON-RPC 2.0 protocol over websockets.
  *

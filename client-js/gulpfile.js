@@ -16,9 +16,8 @@ var fs = require('fs');
 var path = require('path');
 var url = require('url');
 var glob = require('glob');
-var webpack = require('webpack');
-
-var webpack_config = require('./webpack.config');
+var merge = require('merge2');
+var exec = require('child_process').exec;
 
 var AUTOPREFIXER_BROWSERS = [
   'ie >= 10',
@@ -44,25 +43,27 @@ gulp.task('compile-ts', function () {
   var tsResult = gulp.src(['app/**/*.ts', 'typings/**/*.ts'])
     .pipe(sourcemaps.init())
     .pipe(tsc({
-      target: 'ES5',
-      module: 'amd',
+      typescript: require('typescript'),
+      target: 'ES6',
       declarationFiles: false,
-      noExternalResolve: true
+      noExternalResolve: true,
+      experimentalDecorators: true,
+      emitDecoratorMetadata: true
     }));
 
-  tsResult.dts.pipe(gulp.dest('.tmp/'));
-  return tsResult.js
-                 .pipe(sourcemaps.write('.'))
-                 .pipe(gulp.dest('.tmp/'));
+  return merge([
+    tsResult.dts.pipe(gulp.dest('.tmp/')),
+    tsResult.js.pipe(sourcemaps.write('.')).pipe(gulp.dest('.tmp/'))
+  ]);
 });
 
-gulp.task("webpack", function(callback) {
-  webpack(webpack_config, function(err, stats) {
-    if(err) throw new gutil.PluginError("webpack", err);
-    gutil.log("[webpack]", stats.toString({
-      // output options
-    }));
-    callback();
+// create a single executable js file using systemjs-builder
+gulp.task('bundle', ['compile-ts'], function(cb) {
+  var cmd = 'node_modules/.bin/jspm bundle-sfx scripts/app .tmp/scripts/bundle.js --skip-source-maps';
+  exec(cmd, function (err, stdout, stderr) {
+    console.log(stdout);
+    console.log(stderr);
+    cb(err);
   });
 });
 
@@ -119,8 +120,7 @@ gulp.task('copy', function () {
     '.tmp/**/*.js.map',
     'app/*',
     '!app/test',
-    '!app/precache.json',
-    'node_modules/apache-server-configs/dist/.htaccess'
+    '!app/precache.json'
   ], {
     dot: true
   }).pipe(gulp.dest('dist'));
@@ -222,7 +222,7 @@ gulp.task('precache', function (callback) {
 gulp.task('clean', del.bind(null, ['.tmp', 'dist']));
 
 // Watch Files For Changes & Reload
-gulp.task('serve', ['insert-dev-config', 'webpack', 'styles', 'elements', 'images'], function () {
+gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'elements', 'images'], function () {
   var folder = path.resolve(__dirname, ".");
   browserSync({
     notify: false,
@@ -251,8 +251,8 @@ gulp.task('serve', ['insert-dev-config', 'webpack', 'styles', 'elements', 'image
   gulp.watch(['app/**/*.html'], reload);
   gulp.watch(['app/styles/**/*.css'], ['styles', reload]);
   gulp.watch(['app/elements/**/*.css'], ['elements', reload]);
-  gulp.watch(['app/{scripts,elements}/**/*.js'], ['jshint', 'webpack', reload]);
-  gulp.watch(['app/{scripts,elements}/**/*.ts'], ['webpack', reload]);
+  gulp.watch(['app/{scripts,elements}/**/*.js'], ['jshint', reload]);
+  gulp.watch(['app/{scripts,elements}/**/*.ts'], ['bundle', reload]);
   gulp.watch(['app/images/**/*'], reload);
 });
 
@@ -268,7 +268,7 @@ gulp.task('serve:dist', ['default'], function () {
 // Build Production Files, the Default Task
 gulp.task('default', ['clean'], function (cb) {
   runSequence(
-    'webpack',
+    'bundle',
     ['copy', 'styles'],
     'elements',
     ['jshint', 'images', 'fonts', 'html'],

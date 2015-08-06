@@ -1,12 +1,12 @@
 /// <reference path="../../typings/tsd.d.ts" />
 
-import page = require("page");
+import page from "page";
 
-import manager = require("./manager");
-import registry = require("./registry");
-import datavault = require("./datavault");
-import nodeApi = require("./node");
-import rpc = require("./rpc");
+import * as manager from "./manager";
+import * as registry from "./registry";
+import * as datavault from "./datavault";
+import * as nodeApi from "./node";
+import * as rpc from "./rpc";
 
 // autobinding template which is the main ui container
 var app: any = document.querySelector('#app');

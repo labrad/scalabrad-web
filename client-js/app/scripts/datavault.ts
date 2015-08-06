@@ -1,7 +1,4 @@
-import promise = require('es6-promise');
-import rpc = require('./rpc');
-
-var Promise = promise.Promise;
+import * as rpc from './rpc';
 
 export interface DataVaultListing {
   path: Array<string>;
