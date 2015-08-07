@@ -107,7 +107,7 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     // if newDir does not exist, create it
     val listing = await { regDir(newPath) }
     if (!listing.dirs.contains(newDir)) {
-      val pkt = startPacket(path)
+      val pkt = startPacket(newPath)
       pkt.mkDir(newDir)
       await { pkt.send() }
     }
