@@ -1,4 +1,6 @@
 <link rel="import" href="app-link.html">
+<link rel="import" href="dir-item.html">
+
 <!-- This is the component that simply renders the table of registry content -->
 <dom-module id="labrad-registry">
   <style>
@@ -65,42 +67,42 @@
     }
   </style>
   <template>
-    <div id="reg-menu" > 
+    <div id="reg-menu" >
       <section on-click="clickHandler">
-        <menu-button data-dialog="doDelete" name="delete" icon-name="delete" class = "done"></menu-button>
-        <menu-button data-dialog="newFolderDialog" name="new folder" icon-name="folder-open" class = "done"></menu-button>
-        <menu-button data-dialog="copyDialog" name="copy" icon-name="content-copy" class = "done"></menu-button>
-        <menu-button data-dialog="renameDialog" name="rename" icon-name="code" class= "done"></menu-button>
-        <menu-button data-dialog="newKeyDialog" name="new key" icon-name="create"  class = "done"></menu-button>
+        <menu-button data-dialog="doDelete" name="delete" icon-name="delete" class="done"></menu-button>
+        <menu-button data-dialog="newFolderDialog" name="new folder" icon-name="folder-open" class="done"></menu-button>
+        <menu-button data-dialog="copyDialog" name="copy" icon-name="content-copy" class="done"></menu-button>
+        <menu-button data-dialog="renameDialog" name="rename" icon-name="code" class="done"></menu-button>
+        <menu-button data-dialog="newKeyDialog" name="new key" icon-name="create"  class="done"></menu-button>
      </section>
     </div>
-    <div id="reg-area"> 
+    <div id="reg-area">
       <table>
-        <tbody class="table-header" is="selectable-table"> 
+        <tbody class="table-header" is="selectable-table">
           <th></th>
           <th>Key/Dir Name</th>
           <th>Key Value</th>
         </tbody>
-        <tbody is="selectable-table"  id="dirList" attr-for-selected="name" selected="{{selDir}}" on-tap="selectDir">       
+        <tbody is="selectable-table"  id="dirList" attr-for-selected="name" selected="{{selDir}}" on-tap="selectDir">
           <template is="dom-repeat" items="{{dirs}}">
             <tr name="{{item.name}}">
               <td>
-                <iron-icon icon = "more-vert"></iron-icon>
+                <iron-icon icon="more-vert"></iron-icon>
               </td>
               <td>
-               <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-                 <dir-item kind="folder">{{item.name}}</dir-item>
+                <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+                  <dir-item kind="folder">{{item.name}}</dir-item>
                 </a>
               </td>
               <td class="label-wide"></td>
             </tr>
           </template>
         </tbody>
-        <tbody is="selectable-table" is="keyList" attr-for-selected="name"  selected="{{selKey}}" on-tap="selectKey"> 
+        <tbody is="selectable-table" is="keyList" attr-for-selected="name"  selected="{{selKey}}" on-tap="selectKey">
           <template is="dom-repeat" items="{{keys}}">
             <tr name="{{item.name}}">
               <td>
-                <iron-icon icon = "more-vert"></iron-icon>
+                <iron-icon icon="more-vert"></iron-icon>
               </td>
               <td>
                 <dir-item kind="key">{{item.name}}</dir-item>
@@ -108,10 +110,9 @@
               <td class="label-wide">
                 <form is="iron-form" id="{{item.name}}">
                   <iron-a11y-keys keys="tab" on-keys-pressed="incrementSelector">
-                   <paper-input-container>
-                    <label>{{item.value}}</label>
-                    <input is="iron-input" name="{{item.name}}">
-                   </paper-input-container>
+                    <paper-input-container>
+                      <input is="iron-input" name="{{item.name}}" value="{{item.value}}">
+                    </paper-input-container>
                   </iron-a11y-keys>
                 </form>
               </td>
@@ -120,6 +121,7 @@
         </tbody>
       </div>
     </table>
+
     <!-- These are the dialogs -->
     <paper-dialog id="doRename">
       <p>Rename "<span>{{selItem}}</span>" to something else</p>
@@ -165,7 +167,7 @@
     <paper-dialog id="renameDialog">
       <p>Rename <span>{{selectType}}</span> "<span>{{selDir}}</span><span>{{selKey}}</span>"?</p>
       <form>
-        <input id="newNameInput"></input> 
+        <input id="newNameInput"></input>
       </form>
       <div class="buttons">
           <paper-button on-click="doRename" dialog-confirm autofocus>OK</paper-button>
@@ -185,220 +187,3 @@
     </paper-dialog>
   </template>
 </dom-module>
-
-<script>
-
-(function () {
-
-  Polymer({
-    is: 'labrad-registry',
-    properties: {
-      dirs: {
-        type: Array,
-        notify: true
-      },
-      keys: {
-        type: Array,
-        notify: true
-      },
-      path: {
-        type: Array,
-        notify: true
-      },
-      socket: {
-        type: Object,
-        notify: true,
-      },
-      selectType: {
-        type: String,
-        notify: true
-      }
-    },
-    clickHandler: function(e) {
-      console.log('clickhandler', e);
-      var button = e.target;
-      while (!button.hasAttribute('data-dialog') && button !== document.body) {
-        button = button.parentElement;
-      }
-
-      if (!button.hasAttribute('data-dialog')) {
-        return;
-      }
-
-      var id = button.getAttribute('data-dialog');
-      var dialog = document.getElementById(id);
-      if (dialog) {
-        dialog.open();
-        console.log('opening dialog');
-      }
-    },
-    ready: function() {
-      console.log(Polymer.version);
-      this.addEventListener('iron-form-submit', this.updateKey);
-    },
-    //Helper Functions
-    selectKey: function() {
-      this.selDir = null;
-      this.selectType = 'key';
-    },
-    selectDir: function(){
-      this.selKey = null;
-      this.selectType = 'dir';
-    },
-    incrementSelector: function() {
-      console.log(this.selKey);
-      //TODO increment selected key on tab
-    },
-    repopulateList: function(resp) {
-      this.selDir = null;
-      this.splice('dirs', 0, this.dirs.length);
-      this.splice('keys', 0, this.keys.length);
-
-      for (var i in resp.dirs) {
-        //bw = resp.dirs.length-1-i; //run through list backwards so it orders correctly
-        //console.log(resp.dirs[i]);
-        this.push('dirs', {name: resp.dirs[i], url: this.createUrl(resp.path, resp.dirs[i])});
-      }
-      for (var j in resp.keys){ 
-        //bw = resp.keys.length-1-i; //run through list backwards so it orders correctly
-        this.push('keys', {name: resp.keys[j], value: resp.vals[j]});
-      }
-    },
-    createUrl: function(path,dir) {
-      var pathUrl = '/registry/';
-      if (path.length === 0){
-        return pathUrl+dir;
-      }//not sure if this is the best way to handle this edge case
-      for (var i in path) {
-        pathUrl += path[i] + '/';
-      }
-      console.log(pathUrl+dir);
-      return pathUrl+dir;
-    },
-    pathToString: function(path) {
-      return JSON.stringify(path);
-    },
-    handleError: function(error) {
-      //we can add a more creative way of displaying errors here
-      console.log(error);
-    },
-    /////////////////////
-    //Interface Functions
-    ////////////////////
-    doDelete: function() {
-      var self = this;
-      var p1;
-      
-      if (self.selectType === 'dir') {
-        p1 = self.socket.rmDir({path: self.path, dir: self.selDir});
-        p1.then(function(resp) {
-          self.repopulateList(resp);
-        }, 
-        function(reason) {
-          self.handleError(reason); 
-        });
-      }
-      else if (self.selectType === 'key') {
-        p1 = self.socket.del({path: self.path, key: self.selKey});
-        p1.then(function(resp) {
-            self.repopulateList(resp);
-        }, 
-        function(reason) {
-          self.handleError(reason); // Error!
-        });
-      }
-    },
-    doRename: function() {
-      var self = this;
-      var p1;
-
-      if (self.selectType === 'dir') {
-        p1 = self.socket.renameDir({path: self.path, dir: self.selDir, newDir: self.$.newNameInput.value});
-        p1.then(function(resp) {
-          self.repopulateList(resp);
-        }, 
-        function(reason) {
-          self.handleError(reason); 
-        });
-      }
-
-      else if (self.selectType === 'key') {
-        p1 = self.socket.rename({path: self.path, key: self.selKey, newKey: self.$.newNameInput.value});
-        p1.then(
-          function(resp) { self.repopulateList(resp); }, 
-          function(reason) { self.handleError(reason); }
-        );
-      }
-    },
-    doCopy: function() {
-      var self = this;
-      var p1;
-      var newName =  this.$.copyNameInput.value;
-      var newPath = JSON.parse(this.$.copyPathInput.value);
-      var currPath = self.path;
-      if (self.selectType === 'dir') {      
-        p1 = self.socket.copyDir({path: currPath, dir: self.selDir, newPath: newPath, newDir: newName});
-        p1.then(
-          function(resp) { self.repopulateList(resp); }, 
-          function(reason) { self.handleError(reason); }
-        );
-      }
-      else if (self.selectType === 'key') {
-        p1 = self.socket.copy({path: currPath, key: self.selKey, newPath: newPath, newKey: newName});
-        p1.then(
-          function(resp) { self.repopulateList(resp); },
-          function(reason) { self.handleError(reason); }
-        );
-      }
-    },
-    createNewKey: function() {
-      var self = this;
-      var p1;
-      var newKey = self.$.newKeyInput.value; 
-      var newVal = self.$.newValueInput.value;
-      if (newKey) {
-        p1 = self.socket.set({path: self.path, key: newKey, value: newVal});
-        p1.then(
-          function(resp) { self.repopulateList(resp); }, 
-          function(reason) { self.handleError(reason); }
-        );
-      }
-      else {
-        self.handleError('Cannot create key');
-      }
-    },
-    createNewFolder: function() {
-      var self = this;
-      var p1;
-      var newName = self.$.nameInput.value;
-      if (this.$.nameInput.value){
-        p1 = self.socket.mkDir({path: self.path, dir: newName});
-        p1.then(
-          function(resp) { self.repopulateList(resp); },
-          function(reason) { this.handleError(reason); }
-        );
-      }
-      else {
-        this.handleError('Cannot create folder named empty string');      
-     }
-    },
-    updateKey: function(event) {
-      var self = this;
-      var p1;
-      var selKey = Object.keys(event.detail)[0];
-      var newVal = event.detail[selKey]; 
-      p1 = self.socket.set({path: self.path, key: selKey, value: newVal});
-      p1.then(
-        function(resp) { self.repopulateList(resp); }, 
-        function(reason) { self.handleError(reason); });
-      this.selKey = null;
-      console.log(event.target[0]);
-      event.target.reset();
-      event.target[0].value = null; 
-      //todo fix rendering of input after repopulatelist
-    }
-  });
-})();
-
-
-</script>

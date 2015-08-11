@@ -8,6 +8,8 @@ import * as datavault from "./datavault";
 import * as nodeApi from "./node";
 import * as rpc from "./rpc";
 
+import {LabradRegistry} from "../elements/labrad-registry";
+
 // autobinding template which is the main ui container
 var app: any = document.querySelector('#app');
 
@@ -20,6 +22,9 @@ app.onMenuSelect = function() {
 };
 
 window.addEventListener('WebComponentsReady', function() {
+  // register our custom elements with polymer
+  LabradRegistry.register();
+
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
   body.addEventListener('app-link-click', (e: any) => {

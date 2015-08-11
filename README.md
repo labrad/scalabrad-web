@@ -25,13 +25,13 @@ the node package manager `npm`. Then, from inside the `client-js` directory you 
 global and project-level dependencies:
 
 ```
-$ npm install -g bower typescript-compiler tsd gulp
+$ npm install -g gulp typescript jspm bower
 $ npm install
+$ jspm install
 $ bower install
-$ tsd reinstall
 ```
 
-Now, you should be able to run the webpack server to compile and launch the app:
+Now, you should be able to run the gulp build to compile and launch the app:
 
 ```
 $ gulp serve
@@ -46,8 +46,7 @@ the API implementation on the server.
 ### Some notes about code organization
 
 ```
-client-js/   # the new javascript client code; alpha, not yet complete; built with
-             # node.js et al.
+client-js/   # javascript client code; built with node.js et al.
 jsonrpc/     # scala support code for the server-side JSON-RPC implementation
 project/     # sbt project definition stuff (see the sbt docs for info about sbt
              # project structure)
@@ -56,12 +55,9 @@ server/      # scala API server code; uses scalabrad to actually talk to labrad
                                   # that handle them
   src/main/scala/                 # server code is in here
     org/labrad/browser/
-      RegistryController.scala    # the RegistryApi class is an example of exposing
-                                  # methods to be callable via JSON-RPC
-      WebsocketController.scala   # handles the actual request to open a websocket
-                                  # and sets up server-side state
-shared/      # code shared between server and GWT client; will go away when GWT
-             # client does
+      ApiBackend.scala     # defines "routes" that map JSON-RPC calls to scala
+      BrowserController.scala   # handles the actual request to open a websocket
+      *Api.scala    # classes with api methods that are callable from the client
 build.sbt    # sbt build definition
 ```
 
