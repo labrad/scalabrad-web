@@ -55,9 +55,9 @@ server/      # scala API server code; uses scalabrad to actually talk to labrad
                                   # that handle them
   src/main/scala/                 # server code is in here
     org/labrad/browser/
-      ApiBackend.scala     # defines "routes" that map JSON-RPC calls to scala
-      BrowserController.scala   # handles the actual request to open a websocket
-      *Api.scala    # classes with api methods that are callable from the client
+      ApiBackend.scala         # defines "routes" that map JSON-RPC calls to scala
+      BrowserController.scala  # handles the actual request to open a websocket
+      *Api.scala               # classes with api methods callable from the client
 build.sbt    # sbt build definition
 ```
 
