@@ -1,0 +1,40 @@
+<dom-module id="menu-button">
+  <style>
+    #caption {
+      color: #757575;
+      font-size: 11px;
+      margin-top: 16px;
+      overflow: hidden;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100px;
+      z-index: 1;
+    }
+    .paper-button {
+      padding: -10px 0px;
+    }
+  </style>
+  <template>
+    <paper-button> 
+     <iron-icon icon="{{iconName}}"></iron-icon>
+     <div id="caption">{{name}}</div>
+    </paper-button>
+  </template>
+  <script>
+  Polymer({
+    is: 'menu-button',
+    properties: {
+      iconName: {
+        type: String,
+        notify: true
+      },
+      name: {
+        type: String,
+        notify: true
+      }
+    }
+  });
+  </script>
+</dom-module>
+

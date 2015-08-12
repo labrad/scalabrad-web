@@ -94,6 +94,8 @@ window.addEventListener('WebComponentsReady', function() {
       app.path = path;
       app.registryDirs = dirs;
       app.registryKeys = keys;
+      app.reg = reg;
+      console.log(dirs);
     });
   }
 
@@ -242,4 +244,3 @@ window.addEventListener('WebComponentsReady', function() {
   var drawerPanel: any = document.querySelector('#paperDrawerPanel');
   drawerPanel.forceNarrow = true;
 });
-

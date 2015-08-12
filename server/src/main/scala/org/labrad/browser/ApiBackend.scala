@@ -65,8 +65,8 @@ class ApiBackend(implicit ec: ExecutionContext) extends Backend {
       CALL  org.labrad.registry.dir        registryApi.dir
       CALL                     .set                   .set
       CALL                     .del                   .del
-      CALL                     .mkdir                 .mkDir
-      CALL                     .rmdir                 .rmDir
+      CALL                     .mkDir                 .mkDir
+      CALL                     .rmDir                 .rmDir
       CALL                     .copy                  .copy
       CALL                     .copyDir               .copyDir
       CALL                     .rename                .rename

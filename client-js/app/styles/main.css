@@ -30,3 +30,7 @@ tbody tr:hover {
   background: #fafafa;
 }
 
+table{
+  width: 100%;
+}
+

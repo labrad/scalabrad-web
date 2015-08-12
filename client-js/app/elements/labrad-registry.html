@@ -5,46 +5,191 @@
     :host {
       display: block;
     }
-    
-    .list {
+    #reg-menu {
+      position: fixed;
+       @apply(--shadow-elevation-3dp);
+       padding-top: 5px;
+       padding-bottom: 5px;
+       background-color: white;
+       z-index: +1;
+    }
+    #reg-area {
+      margin-top: 85px;
       padding-top: 12px;
       background-color: white;
       display: inline-block;
       @apply(--shadow-elevation-2dp);
-    }    
+    }
+    .iron-selected {
+      background-color: #ddd;
+    }
+    .iron-selector {
+      width: 100%;
+      display: block;
+      border: 1px solid #ccc;
+      border-top: none;
+    }
+    .reg-list { 
+      padding-top: 12px;
+      display: table; 
+      border: 1px solid;
+    }
+    tbody {
+      display:table-header-group;
+    }
+
+    .table-header {
+      @apply(--paper-font-body1);
+      color: var(--secondary-text-color);
+      *text-align: middle;
+      border-bottom: 1px solid;
+      border-bottom-color: #e5e5e5;
+      display:table-header-group;
+
+    }
+    .label-wide{
+      width: 100%;
+    }
+
+    paper-dialog.size-position {
+      position: fixed;
+      top: 16p
+      right: 16px;
+    }
+    paper-dialog.size-position {
+      width: 300px;
+      height: 300px;
+    }
+    menu-button.done {
+      color: #0F9D58;
+    }
   </style>
   <template>
-  <div class="list short">
-    <table>
-      <thead>
-        <th>Key/Dir Name</th>
-        <th>Key Value</th>
-      </thead>
-      <tbody>
-        <template is="dom-repeat" items="{{dirs}}">
-          <tr>
-            <td>
-              <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-               <dir-item kind="folder">{{item.name}}</dir-item>
-              </a>
-            </td>
-            <td></td>
-          </tr>
-        </template>
-        <template is="dom-repeat" items="{{keys}}">
-          <tr>
-            <td><dir-item kind="key">{{item.name}}</dir-item></td>
-            <td><span class="paper-font-body1">{{item.value}}</span></td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+    <div id="reg-menu" > 
+      <section on-click="clickHandler">
+        <menu-button data-dialog="doDelete" name="delete" icon-name="delete" class = "done"></menu-button>
+        <menu-button data-dialog="newFolderDialog" name="new folder" icon-name="folder-open" class = "done"></menu-button>
+        <menu-button data-dialog="copyDialog" name="copy" icon-name="content-copy" class = "done"></menu-button>
+        <menu-button data-dialog="renameDialog" name="rename" icon-name="code" class= "done"></menu-button>
+        <menu-button data-dialog="newKeyDialog" name="new key" icon-name="create"  class = "done"></menu-button>
+     </section>
     </div>
+    <div id="reg-area"> 
+      <table>
+        <tbody class="table-header" is="selectable-table"> 
+          <th></th>
+          <th>Key/Dir Name</th>
+          <th>Key Value</th>
+        </tbody>
+        <tbody is="selectable-table"  id="dirList" attr-for-selected="name" selected="{{selDir}}" on-tap="selectDir">       
+          <template is="dom-repeat" items="{{dirs}}">
+            <tr name="{{item.name}}">
+              <td>
+                <iron-icon icon = "more-vert"></iron-icon>
+              </td>
+              <td>
+               <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+                 <dir-item kind="folder">{{item.name}}</dir-item>
+                </a>
+              </td>
+              <td class="label-wide"></td>
+            </tr>
+          </template>
+        </tbody>
+        <tbody is="selectable-table" is="keyList" attr-for-selected="name"  selected="{{selKey}}" on-tap="selectKey"> 
+          <template is="dom-repeat" items="{{keys}}">
+            <tr name="{{item.name}}">
+              <td>
+                <iron-icon icon = "more-vert"></iron-icon>
+              </td>
+              <td>
+                <dir-item kind="key">{{item.name}}</dir-item>
+              </td>
+              <td class="label-wide">
+                <form is="iron-form" id="{{item.name}}">
+                  <iron-a11y-keys keys="tab" on-keys-pressed="incrementSelector">
+                   <paper-input-container>
+                    <label>{{item.value}}</label>
+                    <input is="iron-input" name="{{item.name}}">
+                   </paper-input-container>
+                  </iron-a11y-keys>
+                </form>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </div>
+    </table>
+    <!-- These are the dialogs -->
+    <paper-dialog id="doRename">
+      <p>Rename "<span>{{selItem}}</span>" to something else</p>
+      <form>
+        <input></input>
+      </form>
+      <div class="buttons">
+        <paper-button dialog-confirm autofocus>Submit</paper-button>
+      </div>
+    </paper-dialog>
+
+    <paper-dialog id="doDelete">
+      <p>Delete "<span>{{selDir}}</span><span>{{selKey}}</span>" of type <span>{{selectType}}</span>?</p>
+      <div class="buttons">
+        <paper-button on-click="doDelete" dialog-confirm autofocus>OK</paper-button>
+        <paper-button dialog-dismiss>CLOSE</paper-button>
+      </div>
+    </paper-dialog>
+
+    <paper-dialog id="newFolderDialog">
+      <p>Create a new folder, call it:</p>
+      <form>
+        <input id="nameInput"></input>
+      </form>
+      <div class="buttons">
+          <paper-button on-click="createNewFolder" dialog-confirm autofocus>OK</paper-button>
+          <paper-button dialog-dismiss>CLOSE</paper-button>
+      </div>
+    </paper-dialog>
+
+    <paper-dialog id="copyDialog">
+      <p>Copy <span>{{selectType}}</span> "<span>{{selDir}}</span><span>{{selKey}}</span>"?</p>
+      <form>
+        New Name: <input id="copyNameInput"></input> <br>
+        New Path: <input id="copyPathInput" value="{{pathToString(path)}}"></input>
+      </form>
+      <div class="buttons">
+          <paper-button on-click="doCopy" dialog-confirm autofocus>OK</paper-button>
+          <paper-button dialog-dismiss>CLOSE</paper-button>
+      </div>
+    </paper-dialog>
+
+    <paper-dialog id="renameDialog">
+      <p>Rename <span>{{selectType}}</span> "<span>{{selDir}}</span><span>{{selKey}}</span>"?</p>
+      <form>
+        <input id="newNameInput"></input> 
+      </form>
+      <div class="buttons">
+          <paper-button on-click="doRename" dialog-confirm autofocus>OK</paper-button>
+          <paper-button dialog-dismiss>CLOSE</paper-button>
+      </div>
+    </paper-dialog>
+
+    <paper-dialog id="newKeyDialog">
+      <p>Create a new key, value</p>
+      <form>
+        <input id="newKeyInput"></input> <input id="newValueInput"></input>
+      </form>
+      <div class="buttons"> 
+          <paper-button on-click="createNewKey" dialog-confirm autofocus>OK</paper-button>
+          <paper-button dialog-dismiss>CLOSE</paper-button>
+      </div>
+    </paper-dialog>
   </template>
 </dom-module>
 
 <script>
+
 (function () {
+
   Polymer({
     is: 'labrad-registry',
     properties: {
@@ -59,8 +204,201 @@
       path: {
         type: Array,
         notify: true
+      },
+      socket: {
+        type: Object,
+        notify: true,
+      },
+      selectType: {
+        type: String,
+        notify: true
       }
+    },
+    clickHandler: function(e) {
+      console.log('clickhandler', e);
+      var button = e.target;
+      while (!button.hasAttribute('data-dialog') && button !== document.body) {
+        button = button.parentElement;
+      }
+
+      if (!button.hasAttribute('data-dialog')) {
+        return;
+      }
+
+      var id = button.getAttribute('data-dialog');
+      var dialog = document.getElementById(id);
+      if (dialog) {
+        dialog.open();
+        console.log('opening dialog');
+      }
+    },
+    ready: function() {
+      console.log(Polymer.version);
+      this.addEventListener('iron-form-submit', this.updateKey);
+    },
+    //Helper Functions
+    selectKey: function() {
+      this.selDir = null;
+      this.selectType = 'key';
+    },
+    selectDir: function(){
+      this.selKey = null;
+      this.selectType = 'dir';
+    },
+    incrementSelector: function() {
+      console.log(this.selKey);
+      //TODO increment selected key on tab
+    },
+    repopulateList: function(resp) {
+      this.selDir = null;
+      this.splice('dirs', 0, this.dirs.length);
+      this.splice('keys', 0, this.keys.length);
+
+      for (var i in resp.dirs) {
+        //bw = resp.dirs.length-1-i; //run through list backwards so it orders correctly
+        //console.log(resp.dirs[i]);
+        this.push('dirs', {name: resp.dirs[i], url: this.createUrl(resp.path, resp.dirs[i])});
+      }
+      for (var j in resp.keys){ 
+        //bw = resp.keys.length-1-i; //run through list backwards so it orders correctly
+        this.push('keys', {name: resp.keys[j], value: resp.vals[j]});
+      }
+    },
+    createUrl: function(path,dir) {
+      var pathUrl = '/registry/';
+      if (path.length === 0){
+        return pathUrl+dir;
+      }//not sure if this is the best way to handle this edge case
+      for (var i in path) {
+        pathUrl += path[i] + '/';
+      }
+      console.log(pathUrl+dir);
+      return pathUrl+dir;
+    },
+    pathToString: function(path) {
+      return JSON.stringify(path);
+    },
+    handleError: function(error) {
+      //we can add a more creative way of displaying errors here
+      console.log(error);
+    },
+    /////////////////////
+    //Interface Functions
+    ////////////////////
+    doDelete: function() {
+      var self = this;
+      var p1;
+      
+      if (self.selectType === 'dir') {
+        p1 = self.socket.rmDir({path: self.path, dir: self.selDir});
+        p1.then(function(resp) {
+          self.repopulateList(resp);
+        }, 
+        function(reason) {
+          self.handleError(reason); 
+        });
+      }
+      else if (self.selectType === 'key') {
+        p1 = self.socket.del({path: self.path, key: self.selKey});
+        p1.then(function(resp) {
+            self.repopulateList(resp);
+        }, 
+        function(reason) {
+          self.handleError(reason); // Error!
+        });
+      }
+    },
+    doRename: function() {
+      var self = this;
+      var p1;
+
+      if (self.selectType === 'dir') {
+        p1 = self.socket.renameDir({path: self.path, dir: self.selDir, newDir: self.$.newNameInput.value});
+        p1.then(function(resp) {
+          self.repopulateList(resp);
+        }, 
+        function(reason) {
+          self.handleError(reason); 
+        });
+      }
+
+      else if (self.selectType === 'key') {
+        p1 = self.socket.rename({path: self.path, key: self.selKey, newKey: self.$.newNameInput.value});
+        p1.then(
+          function(resp) { self.repopulateList(resp); }, 
+          function(reason) { self.handleError(reason); }
+        );
+      }
+    },
+    doCopy: function() {
+      var self = this;
+      var p1;
+      var newName =  this.$.copyNameInput.value;
+      var newPath = JSON.parse(this.$.copyPathInput.value);
+      var currPath = self.path;
+      if (self.selectType === 'dir') {      
+        p1 = self.socket.copyDir({path: currPath, dir: self.selDir, newPath: newPath, newDir: newName});
+        p1.then(
+          function(resp) { self.repopulateList(resp); }, 
+          function(reason) { self.handleError(reason); }
+        );
+      }
+      else if (self.selectType === 'key') {
+        p1 = self.socket.copy({path: currPath, key: self.selKey, newPath: newPath, newKey: newName});
+        p1.then(
+          function(resp) { self.repopulateList(resp); },
+          function(reason) { self.handleError(reason); }
+        );
+      }
+    },
+    createNewKey: function() {
+      var self = this;
+      var p1;
+      var newKey = self.$.newKeyInput.value; 
+      var newVal = self.$.newValueInput.value;
+      if (newKey) {
+        p1 = self.socket.set({path: self.path, key: newKey, value: newVal});
+        p1.then(
+          function(resp) { self.repopulateList(resp); }, 
+          function(reason) { self.handleError(reason); }
+        );
+      }
+      else {
+        self.handleError('Cannot create key');
+      }
+    },
+    createNewFolder: function() {
+      var self = this;
+      var p1;
+      var newName = self.$.nameInput.value;
+      if (this.$.nameInput.value){
+        p1 = self.socket.mkDir({path: self.path, dir: newName});
+        p1.then(
+          function(resp) { self.repopulateList(resp); },
+          function(reason) { this.handleError(reason); }
+        );
+      }
+      else {
+        this.handleError('Cannot create folder named empty string');      
+     }
+    },
+    updateKey: function(event) {
+      var self = this;
+      var p1;
+      var selKey = Object.keys(event.detail)[0];
+      var newVal = event.detail[selKey]; 
+      p1 = self.socket.set({path: self.path, key: selKey, value: newVal});
+      p1.then(
+        function(resp) { self.repopulateList(resp); }, 
+        function(reason) { self.handleError(reason); });
+      this.selKey = null;
+      console.log(event.target[0]);
+      event.target.reset();
+      event.target[0].value = null; 
+      //todo fix rendering of input after repopulatelist
     }
   });
 })();
+
+
 </script>
