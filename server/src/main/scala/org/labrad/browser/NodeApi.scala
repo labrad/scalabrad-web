@@ -31,7 +31,7 @@ class NodeApi(cxn: LabradConnection)(implicit ec: ExecutionContext) extends Logg
       val serverData = await { cxn.manager.servers() }
       val servers = serverData.map { case (id, name) => name }
 
-      val nodes = servers.filter(_.toLowerCase.startsWith("node"))
+      val nodes = servers.filter(_.toLowerCase.startsWith("node "))
       val futures = nodes.map { node =>
         cxn.to(node).call("status").map((node, _))
       }

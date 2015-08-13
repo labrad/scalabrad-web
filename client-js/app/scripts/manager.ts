@@ -1,3 +1,4 @@
+import {Observable} from "./observable";
 import * as rpc from "./rpc";
 
 export interface ConnectionInfo {
@@ -32,16 +33,35 @@ export interface ServerInfo {
   settings: Array<SettingInfo>;
 }
 
+export interface LabradConnectMessage { host: string; }
+export interface LabradDisconnectMessage { host: string; }
+export interface ServerConnectMessage { name: string; }
+export interface ServerDisconnectMessage { name: string; }
+
 export interface ManagerApi {
   connections(): Promise<Array<ConnectionInfo>>;
   connectionClose(id: number): Promise<string>;
   serverInfo(name: String): Promise<ServerInfo>;
+
+  connected: Observable<LabradConnectMessage>;
+  disconnected: Observable<LabradDisconnectMessage>;
+  serverConnected: Observable<ServerConnectMessage>;
+  serverDisconnected: Observable<ServerDisconnectMessage>;
 }
 
 export class ManagerServiceJsonRpc extends rpc.RpcService implements ManagerApi {
 
+  connected = new Observable<LabradConnectMessage>();
+  disconnected = new Observable<LabradDisconnectMessage>();
+  serverConnected = new Observable<ServerConnectMessage>();
+  serverDisconnected = new Observable<ServerDisconnectMessage>();
+
   constructor(socket: rpc.JsonRpcSocket) {
     super(socket, "org.labrad.manager.");
+    this.connect("org.labrad.connected", this.connected);
+    this.connect("org.labrad.disconnected", this.disconnected);
+    this.connect("org.labrad.serverConnected", this.serverConnected);
+    this.connect("org.labrad.serverDisconnected", this.serverDisconnected);
   }
 
   connections(): Promise<Array<ConnectionInfo>> {

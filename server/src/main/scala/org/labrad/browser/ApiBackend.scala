@@ -45,6 +45,7 @@ class ApiBackend(implicit ec: ExecutionContext) extends Backend {
     // api implementations for incoming calls and notifications
     datavaultApi = new VaultApi(cxn)
     managerApi = new ManagerApi(cxn)
+    nodeApi = new NodeApi(cxn)
     registryApi = new RegistryApi(cxn, registryClient)
 
     routes = JsonRpc.routes("""

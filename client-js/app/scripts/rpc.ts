@@ -1,3 +1,5 @@
+import {Observable} from "./observable";
+
 /**
  * Implements the JSON-RPC 2.0 protocol over websockets.
  *
@@ -163,6 +165,8 @@ export class JsonRpcSocket {
   }
 }
 
+
+
 export class RpcService {
   socket: JsonRpcSocket;
   prefix: string;
@@ -174,5 +178,13 @@ export class RpcService {
 
   call<A>(method: string, params: Array<string> | Object): Promise<A> {
     return <Promise<A>> this.socket.call(this.prefix + method, params);
+  }
+
+  notify(method: string, params: Array<string> | Object): void {
+    this.socket.notify(this.prefix + method, params);
+  }
+
+  protected connect<A>(method: string, observable: Observable<A>): void {
+    this.socket.addNotifiable(method, (msg) => observable.call(<A>msg));
   }
 }
