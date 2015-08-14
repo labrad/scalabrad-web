@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="../../bower_components/webcomponentsjs/webcomponents.min.js"></script>
+  <link rel="import" href="../../bower_components/polymer/polymer.html">
+  <script src="../../bower_components/web-component-tester/browser.js"></script>
+  <script src="../../bower_components/test-fixture/test-fixture-mocha.js"></script>
+  <link rel="import" href="../../bower_components/test-fixture/test-fixture.html">
+  <link rel="import" href="../elements/dir-item.html">
+</head>
+<body>
+  <test-fixture id="basic">
+    <template>
+      <dir-item>TEST</dir-item>
+    </template>
+  </test-fixture>
+  <script>
+    suite('labrad-registry-test', function() {
+      var fixt,header
+
+      setup(function() {
+        fixt = fixture('basic');
+      });
+
+
+      test('registry header', function() {
+        header = fixt.querySelector('body');
+        assert.include(fixt.textContent,'TEST');
+      });
+    });
+  </script>
+</body>
+</html>
