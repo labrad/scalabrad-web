@@ -8,6 +8,7 @@ import * as datavault from "./datavault";
 import * as nodeApi from "./node";
 import * as rpc from "./rpc";
 
+import {LabradNodes, LabradInstanceController, LabradNodeController} from "../elements/labrad-nodes";
 import {LabradRegistry} from "../elements/labrad-registry";
 
 // autobinding template which is the main ui container
@@ -24,6 +25,9 @@ app.onMenuSelect = function() {
 window.addEventListener('WebComponentsReady', function() {
   // register our custom elements with polymer
   LabradRegistry.register();
+  LabradNodes.register();
+  LabradInstanceController.register();
+  LabradNodeController.register();
 
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
@@ -177,7 +181,12 @@ window.addEventListener('WebComponentsReady', function() {
   });
 
   page('/nodes', () => {
-    app.route = 'nodes';
+    node.allNodes().then((nodesInfo) => {
+      app.route = 'nodes';
+      app.nodesInfo = nodesInfo;
+      app.nodeApi = node;
+      app.managerApi = mgr;
+    });
   });
 
   page('/registry', () => {

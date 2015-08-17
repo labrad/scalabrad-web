@@ -115,7 +115,11 @@
 
           <section data-route="nodes">
             <paper-material elevation="0">
-              <h1>Nodes!!</h1>
+              <labrad-nodes
+                  info={{nodesInfo}}
+                  api={{nodeApi}}
+                  manager-api={{managerApi}}>
+              </labrad-nodes>
             </paper-material>
           </section>
 

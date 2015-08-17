@@ -1,0 +1,131 @@
+<link rel="import" href="../bower_components/iron-icons/av-icons.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="app-link.html">
+
+<dom-module id="labrad-instance-controller">
+  <style>
+    .divider {
+      font-weight: bold;
+    }
+    td {
+      padding: 2px 5px 2px 5px;
+    }
+    paper-icon-button {
+      padding: 0px;
+    }
+    paper-spinner {
+      width: 18px;
+      height: 18px;
+      top: 5px;
+    }
+  </style>
+  <template>
+    <div>
+      <!-- states: stopped, starting, started, stopping -->
+      <!-- <span>{{status}}</span> -->
+      <a is="app-link" path="{{serverUrl}}" href="{{serverUrl}}">
+        <paper-icon-button id="info" icon="info"></paper-icon-button></a>
+
+      <span hidden$="{{!active}}">
+        <paper-spinner active></paper-spinner>
+      </span>
+
+      <span hidden$="{{active}}">
+        <paper-icon-button id="start" icon="av:play-arrow"></paper-icon-button>
+        <paper-icon-button id="stop" icon="av:stop"></paper-icon-button>
+        <paper-icon-button id="restart" icon="av:replay"></paper-icon-button>
+      </span>
+    </div>
+  </template>
+</dom-module>
+
+<dom-module id="labrad-node-controller">
+  <style>
+    paper-icon-button {
+      padding: 0px;
+    }
+    paper-spinner {
+      width: 18px;
+      height: 18px;
+      top: 5px;
+    }
+  </style>
+  <template>
+    <span>{{name}}</span>
+
+    <span hidden$="{{!active}}">
+      <paper-spinner active></paper-spinner>
+    </span>
+
+    <span hidden$="{{active}}">
+      <paper-icon-button id="refresh" icon="av:replay"></paper-icon-button>
+    </span>
+  </template>
+</dom-module>
+
+<dom-module id="labrad-nodes">
+  <style>
+    :host {
+      display: block;
+    }
+  </style>
+  <template>
+    <div>
+      <table>
+        <thead>
+          <th>Global Servers</th>
+          <template is="dom-repeat" items="{{nodeNames}}" as="node">
+            <th><labrad-node-controller api={{api}} name={{node}}></labrad-node-controller></th>
+          </template>
+        </thead>
+        <tbody>
+          <template is="dom-repeat" items="{{globalServers}}" as="server">
+            <tr>
+              <td>{{server.name}}</td>
+              <template is="dom-repeat" items="{{server.nodes}}" as="node">
+                <td>
+                  <template is="dom-if" if="{{node.exists}}">
+                    <labrad-instance-controller
+                      api={{api}}
+                      local
+                      name={{server.name}}
+                      instance-name={{node.instanceName}}
+                      node={{node.name}}
+                      status={{node.status}} />
+                  </template>
+                </td>
+              </template>
+            </tr>
+          </template>
+        </tbody>
+
+        <thead>
+          <th>Local Servers</th>
+          <template is="dom-repeat" items="{{nodeNames}}">
+            <th></th>
+          </template>
+        </thead>
+        <tbody>
+          <template is="dom-repeat" items="{{localServers}}" as="server">
+            <tr>
+              <td>{{server.name}}</td>
+              <template is="dom-repeat" items="{{server.nodes}}" as="node">
+                <td>
+                  <template is="dom-if" if="{{node.exists}}">
+                    <labrad-instance-controller
+                      api={{api}}
+                      name={{server.name}}
+                      instance-name={{node.instanceName}}
+                      node={{node.name}}
+                      status={{node.status}} />
+                  </template>
+                </td>
+              </template>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </template>
+</dom-module>
