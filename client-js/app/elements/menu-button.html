@@ -9,14 +9,13 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       width: 100px;
-      z-index: 1;
     }
     .paper-button {
       padding: -10px 0px;
     }
   </style>
   <template>
-    <paper-button> 
+    <paper-button disabled={{disabled}}>
      <iron-icon icon="{{iconName}}"></iron-icon>
      <div id="caption">{{name}}</div>
     </paper-button>
@@ -31,6 +30,10 @@
       },
       name: {
         type: String,
+        notify: true
+      },
+      disabled: {
+        type: Boolean,
         notify: true
       }
     }

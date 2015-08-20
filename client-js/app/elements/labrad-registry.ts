@@ -18,30 +18,24 @@ export class LabradRegistry extends polymer.Base {
   @property({type: String, notify: true})
   notify: string;
 
-  selDir: any;
-  selKey: any;
+  @property({type: String, notify: true, value: null})
+  selDir: string;
+
+  @property({type: String, notify: true, value: null})
+  selKey: string;
+
+  @property({type: String, notify: true, value: null})
   selectType: string;
 
-  clickHandler(e) {
-    console.log('clickhandler', e);
-    var button = e.target;
-    while (!button.hasAttribute('data-dialog') && button !== document.body) {
-      button = button.parentElement;
-    }
-
-    if (!button.hasAttribute('data-dialog')) {
-      return;
-    }
-
-    var id = button.getAttribute('data-dialog');
-    var dialog = this.$[id];
-    if (dialog) {
-      dialog.open();
-      console.log('opening dialog');
-    }
+  //Helper Functions
+  @observe('path')
+  pathChanged(newPath: string[], oldPath: string[]) {
+    // on a path change, we deselect everything
+    this.selDir = null;
+    this.selKey = null;
+    this.selectType = null;
   }
 
-  //Helper Functions
   selectKey() {
     this.selDir = null;
     this.selectType = 'key';
@@ -50,6 +44,12 @@ export class LabradRegistry extends polymer.Base {
   selectDir() {
     this.selKey = null;
     this.selectType = 'dir';
+  }
+
+  @computed()
+  selected(selectType: string, selDir: string, selKey: string): boolean {
+    console.log('selectType', selectType, 'selDir', selDir, 'selKey', selKey);
+    return (selectType === 'dir' && selDir != null) || (selectType === 'key' && selKey != null);
   }
 
   incrementSelector() {
@@ -91,43 +91,105 @@ export class LabradRegistry extends polymer.Base {
     console.log(error);
   }
 
-  /////////////////////
-  //Interface Functions
-  ////////////////////
-  doDelete() {
-    var self = this;
 
-    if (this.selectType === 'dir') {
-      this.socket.rmDir({path: this.path, dir: this.selDir}).then(
-        (resp) => self.repopulateList(resp),
-        (reason) => self.handleError(reason) // Error!
-      );
-    }
-    else if (this.selectType === 'key') {
-      this.socket.del({path: this.path, key: this.selKey}).then(
-        (resp) => self.repopulateList(resp),
-        (reason) => self.handleError(reason) // Error!
-      );
-    }
+  /**
+   * Update a key in response to change in the inline form submission.
+   */
+  @listen('iron-form-submit')
+  updateKey(event) {
+    console.log('iron-form-submit', event);
+    var self = this;
+    var selKey = Object.keys(event.detail)[0];
+    var newVal = event.detail[selKey];
+    this.socket.set({path: this.path, key: selKey, value: newVal}).then(
+      (resp) => {
+        self.repopulateList(resp);
+        self.selKey = null;
+      },
+      (reason) => self.handleError(reason)
+    );
   }
 
-  doRename() {
-    var self = this;
 
-    if (this.selectType === 'dir') {
-      this.socket.renameDir({path: this.path, dir: this.selDir, newDir: this.$.newNameInput.value}).then(
+  /**
+   * Launch new key dialog.
+   */
+  newKeyClicked(event) {
+    var dialog = this.$.newKeyDialog,
+        newKeyElem = this.$.newKeyInput,
+        newValueElem = this.$.newValueInput;
+    newKeyElem.value = '';
+    newValueElem.value = '';
+    dialog.open();
+    window.setTimeout(() => newKeyElem.$.input.focus(), 0);
+  }
+
+  /**
+   * Create new key.
+   */
+  doNewKey() {
+    var self = this;
+    var newKey = this.$.newKeyInput.value;
+    var newVal = this.$.newValueInput.value;
+
+    if (newKey) {
+      this.socket.set({path: this.path, key: newKey, value: newVal}).then(
         (resp) => self.repopulateList(resp),
         (reason) => self.handleError(reason)
       );
     }
-    else if (this.selectType === 'key') {
-      this.socket.rename({path: this.path, key: this.selKey, newKey: this.$.newNameInput.value}).then(
+    else {
+      this.handleError('Cannot create key with empty name');
+    }
+  }
+
+
+  /**
+   * Launch new folder dialog.
+   */
+  newFolderClicked() {
+    var dialog = this.$.newFolderDialog,
+        newFolderElem = this.$.newFolderInput;
+    newFolderElem.value = '';
+    dialog.open();
+    window.setTimeout(() => newFolderElem.$.input.focus(), 0);
+  }
+
+  /**
+   * Create new folder.
+   */
+  doNewFolder() {
+    var self = this,
+        newFolder = this.$.newFolderInput.value;
+
+    if (newFolder) {
+      this.socket.mkDir({path: this.path, dir: newFolder}).then(
         (resp) => self.repopulateList(resp),
         (reason) => self.handleError(reason)
       );
     }
+    else {
+      this.handleError('Cannot create folder with empty name');
+    }
   }
 
+
+  /**
+   * Launch copy dialog.
+   */
+  copyClicked() {
+    var dialog = this.$.copyDialog,
+        copyNameElem = this.$.copyNameInput,
+        copyPathElem = this.$.copyPathInput;
+    copyNameElem.value = this.selDir || this.selKey;
+    copyPathElem.value = this.pathToString(this.path);
+    dialog.open();
+    window.setTimeout(() => copyNameElem.$.input.focus(), 0);
+  }
+
+  /**
+   * Copy the selected key or folder.
+   */
   doCopy() {
     var self = this;
     var newName =  this.$.copyNameInput.value;
@@ -147,49 +209,85 @@ export class LabradRegistry extends polymer.Base {
     }
   }
 
-  createNewKey() {
-    var self = this;
-    var newKey = this.$.newKeyInput.value;
-    var newVal = this.$.newValueInput.value;
 
-    if (newKey) {
-      this.socket.set({path: this.path, key: newKey, value: newVal}).then(
+  /**
+   * Launch rename dialog.
+   */
+  renameClicked() {
+    var dialog = this.$.renameDialog,
+        renameElem = this.$.renameInput;
+
+    var name: string;
+    switch (this.selectType) {
+      case 'dir': name = this.selDir; break;
+      case 'key': name = this.selKey; break;
+      default: return;
+    }
+
+    renameElem.value = name;
+    dialog.open();
+    window.setTimeout(() => renameElem.$.input.focus(), 0);
+  }
+
+  /**
+   * Rename the selected key or folder.
+   */
+  doRename() {
+    var self = this,
+        newName = this.$.renameInput.value;
+
+    var name: string;
+    switch (this.selectType) {
+      case 'dir': name = this.selDir; break;
+      case 'key': name = this.selKey; break;
+      default: return;
+    }
+
+    if (newName === null || newName === name) return;
+    if (newName) {
+      if (this.selectType === 'dir') {
+        this.socket.renameDir({path: this.path, dir: name, newDir: newName}).then(
+          (resp) => self.repopulateList(resp),
+          (reason) => self.handleError(reason)
+        );
+      }
+      else if (this.selectType === 'key') {
+        this.socket.rename({path: this.path, key: name, newKey: newName}).then(
+          (resp) => self.repopulateList(resp),
+          (reason) => self.handleError(reason)
+        );
+      }
+    }
+    else {
+      this.handleError(`Cannot rename ${this.selectType} to empty string`);
+    }
+  }
+
+
+  /**
+   * Launch the delete confirmation dialog.
+   */
+  deleteClicked() {
+    this.$.deleteDialog.open();
+  }
+
+  /**
+   * Delete the selected key or folder.
+   */
+  doDelete() {
+    var self = this;
+
+    if (this.selectType === 'dir') {
+      this.socket.rmDir({path: this.path, dir: this.selDir}).then(
         (resp) => self.repopulateList(resp),
         (reason) => self.handleError(reason)
       );
     }
-    else {
-      this.handleError('Cannot create key');
-    }
-  }
-
-  createNewFolder() {
-    var self = this;
-    var newName = this.$.nameInput.value;
-
-    if (this.$.nameInput.value) {
-      this.socket.mkDir({path: this.path, dir: newName}).then(
+    else if (this.selectType === 'key') {
+      this.socket.del({path: this.path, key: this.selKey}).then(
         (resp) => self.repopulateList(resp),
         (reason) => self.handleError(reason)
       );
     }
-    else {
-      this.handleError('Cannot create folder named empty string');
-    }
-  }
-
-  @listen('iron-form-submit')
-  updateKey(event) {
-    console.log('iron-form-submit', event);
-    var self = this;
-    var selKey = Object.keys(event.detail)[0];
-    var newVal = event.detail[selKey];
-    this.socket.set({path: this.path, key: selKey, value: newVal}).then(
-      (resp) => {
-        self.repopulateList(resp);
-        self.selKey = null;
-      },
-      (reason) => self.handleError(reason)
-    );
   }
 }

@@ -1,3 +1,4 @@
+<link rel="import" href="../bower_components/paper-input/paper-textarea.html">
 <link rel="import" href="app-link.html">
 <link rel="import" href="dir-item.html">
 
@@ -21,6 +22,7 @@
       background-color: white;
       display: inline-block;
       @apply(--shadow-elevation-2dp);
+      height: 100%;
     }
     .iron-selected {
       background-color: #ddd;
@@ -36,6 +38,9 @@
       display: table; 
       border: 1px solid;
     }
+    table {
+      width: 100%;
+    }
     tbody {
       display:table-header-group;
     }
@@ -49,7 +54,7 @@
       display:table-header-group;
 
     }
-    .label-wide{
+    .label-wide {
       width: 100%;
     }
 
@@ -62,33 +67,28 @@
       width: 300px;
       height: 300px;
     }
-    menu-button.done {
+    menu-button {
       color: #0F9D58;
+    }
+    iron-autogrow-textarea {
+      max-width: 400px;
     }
   </style>
   <template>
-    <div id="reg-menu" >
-      <section on-click="clickHandler">
-        <menu-button data-dialog="doDelete" name="delete" icon-name="delete" class="done"></menu-button>
-        <menu-button data-dialog="newFolderDialog" name="new folder" icon-name="folder-open" class="done"></menu-button>
-        <menu-button data-dialog="copyDialog" name="copy" icon-name="content-copy" class="done"></menu-button>
-        <menu-button data-dialog="renameDialog" name="rename" icon-name="code" class="done"></menu-button>
-        <menu-button data-dialog="newKeyDialog" name="new key" icon-name="create"  class="done"></menu-button>
-     </section>
+    <div id="reg-menu">
+      <section>
+        <menu-button on-click="newKeyClicked" name="new key" icon-name="create"></menu-button>
+        <menu-button on-click="newFolderClicked" name="new folder" icon-name="folder-open"></menu-button>
+        <menu-button on-click="copyClicked" name="copy" icon-name="content-copy" disabled={{!selected}}></menu-button>
+        <menu-button on-click="renameClicked" name="rename" icon-name="code" disabled={{!selected}}></menu-button>
+        <menu-button on-click="deleteClicked" name="delete" icon-name="delete" disabled={{!selected}}></menu-button>
+      </section>
     </div>
     <div id="reg-area">
       <table>
-        <tbody class="table-header" is="selectable-table">
-          <th></th>
-          <th>Key/Dir Name</th>
-          <th>Key Value</th>
-        </tbody>
         <tbody is="selectable-table"  id="dirList" attr-for-selected="name" selected="{{selDir}}" on-tap="selectDir">
           <template is="dom-repeat" items="{{dirs}}">
             <tr name="{{item.name}}">
-              <td>
-                <iron-icon icon="more-vert"></iron-icon>
-              </td>
               <td>
                 <a is="app-link" path="{{item.url}}" href="{{item.url}}">
                   <dir-item kind="folder">{{item.name}}</dir-item>
@@ -102,87 +102,74 @@
           <template is="dom-repeat" items="{{keys}}">
             <tr name="{{item.name}}">
               <td>
-                <iron-icon icon="more-vert"></iron-icon>
-              </td>
-              <td>
                 <dir-item kind="key">{{item.name}}</dir-item>
               </td>
               <td class="label-wide">
                 <form is="iron-form" id="{{item.name}}">
-                  <iron-a11y-keys keys="tab" on-keys-pressed="incrementSelector">
-                    <paper-input-container>
-                      <input is="iron-input" name="{{item.name}}" value="{{item.value}}">
-                    </paper-input-container>
-                  </iron-a11y-keys>
+                  <paper-input-container no-label-float>
+                    <input is="iron-input" name="{{item.name}}" value="{{item.value}}">
+                  </paper-input-container>
                 </form>
               </td>
             </tr>
           </template>
         </tbody>
-      </div>
-    </table>
+      </table>
+    </div>
 
-    <!-- These are the dialogs -->
-    <paper-dialog id="doRename">
-      <p>Rename "<span>{{selItem}}</span>" to something else</p>
+    <!-- Dialogs for various registry operations -->
+
+    <paper-dialog id="newKeyDialog" modal>
+      <h1>Create new key</h1>
       <form>
-        <input></input>
-      </form>
-      <div class="buttons">
-        <paper-button dialog-confirm autofocus>Submit</paper-button>
-      </div>
-    </paper-dialog>
-
-    <paper-dialog id="doDelete">
-      <p>Delete "<span>{{selDir}}</span><span>{{selKey}}</span>" of type <span>{{selectType}}</span>?</p>
-      <div class="buttons">
-        <paper-button on-click="doDelete" dialog-confirm autofocus>OK</paper-button>
-        <paper-button dialog-dismiss>CLOSE</paper-button>
-      </div>
-    </paper-dialog>
-
-    <paper-dialog id="newFolderDialog">
-      <p>Create a new folder, call it:</p>
-      <form>
-        <input id="nameInput"></input>
-      </form>
-      <div class="buttons">
-          <paper-button on-click="createNewFolder" dialog-confirm autofocus>OK</paper-button>
-          <paper-button dialog-dismiss>CLOSE</paper-button>
-      </div>
-    </paper-dialog>
-
-    <paper-dialog id="copyDialog">
-      <p>Copy <span>{{selectType}}</span> "<span>{{selDir}}</span><span>{{selKey}}</span>"?</p>
-      <form>
-        New Name: <input id="copyNameInput"></input> <br>
-        New Path: <input id="copyPathInput" value="{{pathToString(path)}}"></input>
-      </form>
-      <div class="buttons">
-          <paper-button on-click="doCopy" dialog-confirm autofocus>OK</paper-button>
-          <paper-button dialog-dismiss>CLOSE</paper-button>
-      </div>
-    </paper-dialog>
-
-    <paper-dialog id="renameDialog">
-      <p>Rename <span>{{selectType}}</span> "<span>{{selDir}}</span><span>{{selKey}}</span>"?</p>
-      <form>
-        <input id="newNameInput"></input>
-      </form>
-      <div class="buttons">
-          <paper-button on-click="doRename" dialog-confirm autofocus>OK</paper-button>
-          <paper-button dialog-dismiss>CLOSE</paper-button>
-      </div>
-    </paper-dialog>
-
-    <paper-dialog id="newKeyDialog">
-      <p>Create a new key, value</p>
-      <form>
-        <input id="newKeyInput"></input> <input id="newValueInput"></input>
+        <paper-input id="newKeyInput" label="Key"></paper-input>
+        <paper-textarea id="newValueInput" label="Value"></paper-textarea>
       </form>
       <div class="buttons"> 
-          <paper-button on-click="createNewKey" dialog-confirm autofocus>OK</paper-button>
-          <paper-button dialog-dismiss>CLOSE</paper-button>
+        <paper-button on-click="doNewKey" dialog-confirm>OK</paper-button>
+        <paper-button dialog-dismiss>CANCEL</paper-button>
+      </div>
+    </paper-dialog>
+
+    <paper-dialog id="newFolderDialog" modal>
+      <h1>Create new folder</h1>
+      <form>
+        <paper-input id="newFolderInput" label="Name"></paper-input>
+      </form>
+      <div class="buttons">
+        <paper-button on-click="doNewFolder" dialog-confirm autofocus>OK</paper-button>
+        <paper-button dialog-dismiss>CANCEL</paper-button>
+      </div>
+    </paper-dialog>
+
+    <paper-dialog id="copyDialog" modal>
+      <h1>Copy <span>{{selectType}}</span> "<span>{{selDir}}</span><span>{{selKey}}</span>"</h1>
+      <form>
+        <paper-input id="copyNameInput" label="New Name" always-float-label></paper-input>
+        <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
+      </form>
+      <div class="buttons">
+        <paper-button on-click="doCopy" dialog-confirm>OK</paper-button>
+        <paper-button dialog-dismiss>CANCEL</paper-button>
+      </div>
+    </paper-dialog>
+
+    <paper-dialog id="renameDialog" modal>
+      <h1>Rename <span>{{selectType}}</span> "<span>{{selDir}}</span><span>{{selKey}}</span>"</h1>
+      <form>
+        <paper-input id="renameInput" label="New Name" always-float-label></paper-input>
+      </form>
+      <div class="buttons">
+        <paper-button on-click="doRename" dialog-confirm autofocus>OK</paper-button>
+        <paper-button dialog-dismiss>CANCEL</paper-button>
+      </div>
+    </paper-dialog>
+
+    <paper-dialog id="deleteDialog" modal>
+      <h1>Delete <span>{{selectType}}</span> "<span>{{selDir}}</span><span>{{selKey}}</span>"?</h1>
+      <div class="buttons">
+        <paper-button on-click="doDelete" dialog-confirm autofocus>OK</paper-button>
+        <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
   </template>
