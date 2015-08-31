@@ -106,9 +106,14 @@
               </td>
               <td class="label-wide">
                 <form is="iron-form" id="{{item.name}}">
-                  <paper-input-container no-label-float>
-                    <input is="iron-input" name="{{item.name}}" value="{{item.value}}">
-                  </paper-input-container>
+                  <iron-a11y-keys keys="tab" on-keys-pressed="incrementSelector">
+
+                    <!-- <paper-input-container> 
+                      <input is="iron-input" name="{{item.name}}" value="{{item.value}}">
+                     </paper-input-container>  -->
+
+                      <expandable-input name="{{item.name}}" value="{{item.value}}"></expandable-input>
+                  </iron-a11y-keys>
                 </form>
               </td>
             </tr>
@@ -121,6 +126,7 @@
 
     <paper-dialog id="newKeyDialog" modal>
       <h1>Create new key</h1>
+
       <form>
         <paper-input id="newKeyInput" label="Key"></paper-input>
         <paper-textarea id="newValueInput" label="Value"></paper-textarea>

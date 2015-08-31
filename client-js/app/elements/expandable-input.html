@@ -1,0 +1,83 @@
+<!-- 
+Expandable input. Takes a registry key value and shortens it to fit on the 
+screen. When clicked on reveals an editable text box which is shifted into 
+focus. Enter fires 'iron-form-submit' which sends the key, value pair as 
+event.detail
+ -->
+
+<dom-module id="expandable-input">
+  <style>
+  #long {
+    width: 80%;
+  }
+  </style>
+  <template >
+    <iron-a11y-keys keys="enter" on-keys-pressed="submitForm">
+    <!-- TODO remap newline from enter to "ctrl enter" -->
+      <paper-textarea id="long" value="{{value::input}}" cols="[[cols]]" no-label-float hidden></paper-textarea>
+      <paper-item id="short" on-click="selectField" label="{{valueShort}}">{{valueShort}}</paper-item>
+    </iron-a11y-keys>
+  </template>
+  <script>
+  Polymer({
+    is: 'expandable-input',
+    properties: {
+      name: {stype: String},
+      value: {type: String},
+      valueShort: {
+      //holds the shortened value which renders as 'value...' if longer than cols
+        type: String,
+        computed: 'shortenValue(value)'
+        },
+        cols: {
+          //number of characters in text field. Not sized dynamically. For now
+          type: Number,
+          value: 60
+        }
+    },
+    behaviors: [
+      Polymer.IronFormElementBehavior,
+      Polymer.PaperInputBehavior,
+      Polymer.IronControlState,
+      Polymer.PaperInputBehaviorImpl
+               ],
+    ready: function() {
+      //This focus-changed event handles the revealing and hiding of the static field
+      this.addEventListener('focused-changed', this.fieldFocus);
+    },
+    calculateRows: function(value) {
+      //calculates the number of rows in the editable input field
+      console.log(this.cols,value.length,value.length/this.cols);
+      return Math.ceil(value.length/this.cols); //number of rows in dialog rounded up
+    },
+    shortenValue: function(value) {
+      //returned shortened string if longer than this.cols
+      if (value.length>this.cols) {
+        return value.substr(0,this.cols)+'...';
+      }
+      else {
+        return value;
+      }
+    },
+    fieldFocus: function() {
+      /* When input field brought into focus this enlarges the input field.
+      When focus is passed on, this shrinks the field and hides it behind the
+      static label */
+      if (!this.focused) {
+        this.$.short.hidden = false;
+        this.$.long.hidden = true;
+      }
+    },
+    submitForm: function() {
+      //fires submit so event is picked up by correct Polymer listener
+      this.fire('iron-form-submit', [this.name, this.$.long.$.input.$.textarea.value]);
+    },
+    selectField: function() {
+      //Hides static field to reveal multi-line input which is given focus
+      this.$.short.hidden = true;
+      this.$.long.hidden = false;
+      this.$.long.$.input.$.textarea.focus();
+    }
+  });
+  </script>
+</dom-module>

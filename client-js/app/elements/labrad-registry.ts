@@ -290,4 +290,20 @@ export class LabradRegistry extends polymer.Base {
       );
     }
   }
+
+  @listen('iron-form-submit')
+  updateKey(event) {
+    console.log('iron-form-submit', event);
+    var self = this;
+    var selKey = event.detail[0];
+    var newVal = event.detail[1];
+    this.socket.set({path: this.path, key: selKey, value: newVal}).then(
+      (resp) => {
+        self.repopulateList(resp);
+        self.selKey = null;
+      },
+      (reason) => self.handleError(reason)
+    );
+  }
+
 }
