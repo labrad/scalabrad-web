@@ -20,19 +20,18 @@ event.detail
         <textarea id="input" value="{{value::input}}" rows="[[compRows]]" cols="[[cols]]"></textarea>
       </div>
       <div id="short">
-        <paper-item on-click="selectField" id="static" label="{{value_short}}">{{value_short}}</paper-item>
+        <paper-item on-click="selectField" id="static" label="{{valueShort}}">{{valueShort}}</paper-item>
       </div>
     </iron-a11y-keys>
   </template>
   <script>
   Polymer({
-    is: "expandable-input",
+    is: 'expandable-input',
     properties: {
       name: {stype: String},
       value: {type: String},
-      value_short: {
-        //holds the shortened value which renders as 'value...' if longer than
-        //cols
+      valueShort: {
+      //holds the shortened value which renders as 'value...' if longer than cols
         type: String,
         computed: 'shortenValue(value)'
         },
