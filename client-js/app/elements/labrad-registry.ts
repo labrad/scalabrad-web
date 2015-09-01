@@ -182,8 +182,8 @@ export class LabradRegistry extends polymer.Base {
   updateKey(event) {
     console.log('iron-form-submit', event);
     var self = this;
-    var selKey = Object.keys(event.detail)[0];
-    var newVal = event.detail[selKey];
+    var selKey = event.detail[0];
+    var newVal = event.detail[1];
     this.socket.set({path: this.path, key: selKey, value: newVal}).then(
       (resp) => {
         self.repopulateList(resp);
