@@ -1,37 +1,27 @@
-<dom-module id="expandable-input">
-  <template>
-    <iron-a11y-keys keys="enter" on-keys-pressed="submitForm">
+<!-- 
+Expandable input. Takes a registry key value and shortens it to fit on the 
+screen. When clicked on reveals an editable text box which is shifted into 
+focus. Enter fires 'iron-form-submit' which sends the key, value pair as 
+event.detail
+ -->
 
-     <!--   <input is="iron-input" id="input"
-          aria-labelledby$="[[_ariaLabelledBy]]"
-          aria-describedby$="[[_ariaDescribedBy]]"
-          disabled$="[[disabled]]"
-          bind-value="{{value_short}}"
-          invalid="{{invalid}}"
-          prevent-invalid-input="[[preventInvalidInput]]"
-          allowed-pattern="[[allowedPattern]]"
-          validator="[[validator]]"
-          type$="[[type]]"
-          pattern$="[[pattern]]"
-          required$="[[required]]"
-          autocomplete$="[[autocomplete]]"
-          autofocus$="[[autofocus]]"
-          inputmode$="[[inputmode]]"
-          minlength$="[[minlength]]"
-          maxlength$="[[maxlength]]"
-          min$="[[min]]"
-          max$="[[max]]"
-          step$="[[step]]"
-          name$="[[name]]"
-          placeholder$="[[placeholder]]"
-          readonly$="[[readonly]]"
-          list$="[[list]]"
-          size$="[[size]]"
-          autocapitalize$="[[autocapitalize]]"
-          autocorrect$="[[autocorrect]]"
-          on-click="testFunc">-->
-          
-      <paper-textarea id="foo" bind-value="{{value_short}}" label="{{value_short}}" rows="[[focus_rows]]" max-rows="4"></paper-textarea>
+<dom-module id="expandable-input">
+  <style>
+  #long{
+    visibility: hidden;
+    position: absolute;
+    width: 80%;
+  }
+  </style>
+  <template >
+    <iron-a11y-keys keys="enter" on-keys-pressed="submitForm">
+    <!-- TODO remap newline from enter to "ctrl enter" -->
+      <div id="long">
+        <textarea id="input" value="{{value::input}}" rows="[[compRows]]" cols="[[cols]]"></textarea>
+      </div>
+      <div id="short">
+        <paper-item on-click="selectField" id="static" label="{{value_short}}">{{value_short}}</paper-item>
+      </div>
     </iron-a11y-keys>
   </template>
   <script>
@@ -41,13 +31,20 @@
       name: {stype: String},
       value: {type: String},
       value_short: {
+        //holds the shortened value which renders as 'value...' if longer than
+        //cols
         type: String,
-        computed: 'shortenValue(value)',
-        bind: 'focused' 
+        computed: 'shortenValue(value)'
         },
-      focus_rows: {
-        type: Number,
-        default: 1,
+        compRows: {
+          //computed number of rows for input
+          type: Number,
+          value: 1
+        },
+        cols: {
+          //number of characters in text field. Not sized dynamically. For now
+          type: Number,
+          value: 100
         }
     },
     behaviors: [
@@ -57,40 +54,45 @@
       Polymer.PaperInputBehaviorImpl
                ],
     ready: function() {
-     console.log("ready, focus is:", this.focused);
-     this.addEventListener('focused-changed', this.testFocus);
+      //This focus-changed event handles the revealing and hiding of the static field
+     this.addEventListener('focused-changed', this.fieldFocus);
+    },
+    calculateRows: function(value) {
+      //calculates the number of rows in the editable input field
+      console.log(this.cols,value.length,value.length/this.cols);
+      return Math.ceil(value.length/this.cols); //number of rows in dialog rounded up
     },
     shortenValue: function(value) {
-      //console.log(value.length);
-      if (!this.focused){
-        var field_len = 7;
-        if (value.length > field_len){
-          return value.substr(0,field_len)+'...';
-        }
-        else {
-          return value;
-        }
+      //returned shortened string if longer than this.cols
+      if (value.length>this.cols) {
+        return value.substr(0,this.cols)+'...';
       }
       else {
         return value;
       }
-
     },
-    testFocus: function(){
-      console.log(this.value, ' in focus');
+    fieldFocus: function() {
+      /* When input field brought into focus this enlarges the input field.
+      When focus is passed on, this shrinks the field and hides it behind the
+      static label */
       if (this.focused){
-        this.focus_rows=3;
-        console.log(this.$.foo.offsetWidth);
+        this.compRows = this.calculateRows(this.value);
       } else {
-        this.focus_rows=1;
-      }
+        this.compRows = 1;
+        this.$.short.style.visibility = 'visible';
+        this.$.long.style.visibility = 'hidden';
+      } 
     },
-    submitForm: function(){
-      //console.log('value', this.name);
-      //this.focused = false;
-      this.fire('iron-form-submit', [this.name, this.$.foo.value]);
+    submitForm: function() {
+      //fires submit so event is picked up by correct Polymer listener
+      this.fire('iron-form-submit', [this.name, this.$.input.value]);
+    },
+    selectField: function() {
+      //Hides static field to reveal multi-line input which is given focus
+      this.$.short.style.visibility = 'hidden';
+      this.$.long.style.visibility = 'visible';
+      this.$$('textarea').focus();
     }
   });
-
   </script>
 </dom-module>
