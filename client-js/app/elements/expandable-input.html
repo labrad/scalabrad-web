@@ -7,21 +7,15 @@ event.detail
 
 <dom-module id="expandable-input">
   <style>
-  #long{
-    visibility: hidden;
-    position: absolute;
+  #long {
     width: 80%;
   }
   </style>
   <template >
     <iron-a11y-keys keys="enter" on-keys-pressed="submitForm">
     <!-- TODO remap newline from enter to "ctrl enter" -->
-      <div id="long">
-        <textarea id="input" value="{{value::input}}" rows="[[compRows]]" cols="[[cols]]"></textarea>
-      </div>
-      <div id="short">
-        <paper-item on-click="selectField" id="static" label="{{valueShort}}">{{valueShort}}</paper-item>
-      </div>
+      <paper-textarea id="long" value="{{value::input}}" cols="[[cols]]" no-label-float hidden></paper-textarea>
+      <paper-item id="short" on-click="selectField" label="{{valueShort}}">{{valueShort}}</paper-item>
     </iron-a11y-keys>
   </template>
   <script>
@@ -35,15 +29,10 @@ event.detail
         type: String,
         computed: 'shortenValue(value)'
         },
-        compRows: {
-          //computed number of rows for input
-          type: Number,
-          value: 1
-        },
         cols: {
           //number of characters in text field. Not sized dynamically. For now
           type: Number,
-          value: 100
+          value: 60
         }
     },
     behaviors: [
@@ -54,7 +43,7 @@ event.detail
                ],
     ready: function() {
       //This focus-changed event handles the revealing and hiding of the static field
-     this.addEventListener('focused-changed', this.fieldFocus);
+      this.addEventListener('focused-changed', this.fieldFocus);
     },
     calculateRows: function(value) {
       //calculates the number of rows in the editable input field
@@ -74,23 +63,20 @@ event.detail
       /* When input field brought into focus this enlarges the input field.
       When focus is passed on, this shrinks the field and hides it behind the
       static label */
-      if (this.focused){
-        this.compRows = this.calculateRows(this.value);
-      } else {
-        this.compRows = 1;
-        this.$.short.style.visibility = 'visible';
-        this.$.long.style.visibility = 'hidden';
-      } 
+      if (!this.focused) {
+        this.$.short.hidden = false;
+        this.$.long.hidden = true;
+      }
     },
     submitForm: function() {
       //fires submit so event is picked up by correct Polymer listener
-      this.fire('iron-form-submit', [this.name, this.$.input.value]);
+      this.fire('iron-form-submit', [this.name, this.$.long.$.input.$.textarea.value]);
     },
     selectField: function() {
       //Hides static field to reveal multi-line input which is given focus
-      this.$.short.style.visibility = 'hidden';
-      this.$.long.style.visibility = 'visible';
-      this.$$('textarea').focus();
+      this.$.short.hidden = true;
+      this.$.long.hidden = false;
+      this.$.long.$.input.$.textarea.focus();
     }
   });
   </script>
