@@ -26,14 +26,36 @@ export class LabradRegistry extends polymer.Base {
 
   @property({type: String, notify: true, value: null})
   selectType: string;
+    
+  @property({type: String, notify: true, value: ''})
+  filterText: string;
+  
+  regex: RegExp; //regular expression for string comparison
 
   //Helper Functions
   @observe('path')
   pathChanged(newPath: string[], oldPath: string[]) {
-    // on a path change, we deselect everything
+    // on a path change, we deselect everything, empty filterText
     this.selDir = null;
     this.selKey = null;
     this.selectType = null;
+    this.filterText = '';
+  }
+
+  @observe('filterText')
+  reloadMenu() {
+    //triggers re-render of dir, key lists when filterText is changed
+    this.regex = new RegExp(this.filterText, 'i');
+    this.$.dirList.render();
+    this.$.keyList.render();
+
+
+  }
+
+  filterFunc(item) {
+    // called when dir, key lists are populated. Returns entries that contain
+    // substring in filterText
+    return item.name.match(this.regex);
   }
 
   selectKey() {
