@@ -7,7 +7,8 @@
     "paper-elements": "PolymerElements/paper-elements#1.0.1",
     "platinum-elements": "PolymerElements/platinum-elements#1.0.0",
     "neon-elements": "PolymerElements/neon-elements#1.0.0",
-    "polymer-ts": "nippur72/PolymerTS#~0.1.13"
+    "polymer-ts": "nippur72/PolymerTS#~0.1.13",
+    "paper-tooltip": "PolymerElements/paper-tooltip#~1.1.0"
   },
   "devDependencies": {
     "web-component-tester": "*",
