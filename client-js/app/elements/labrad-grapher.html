@@ -10,43 +10,29 @@
     }
   </style>
   <template>
-    <paper-menu>
-      <template is="dom-repeat" items="{{dirs}}">
-          <div>
-            <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-              <dir-item kind="folder">{{item.name}}</dir-item>
-            </a>
-          </div>
-      </template>
-      <template is="dom-repeat" items="{{datasets}}">
-         <div>
-            <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-              <dir-item kind="data">{{item.name}}</dir-item>
-            </a>
-         </div>
-      </template>
-    </paper-menu>
+    <table>
+      <tbody>
+        <template is="dom-repeat" items="{{dirs}}">
+          <tr>
+            <td>
+              <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+                <dir-item kind="folder">{{item.name}}</dir-item>
+              </a>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+      <tbody>
+        <template is="dom-repeat" items="{{datasets}}">
+          <tr>
+            <td>
+              <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+                <dir-item kind="data">{{item.name}}</dir-item>
+              </a>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
   </template>
 </dom-module>
-
-<script>
-(function () {
-  Polymer({
-    is: 'labrad-grapher',
-    properties: {
-      dirs: {
-        type: Array,
-        notify: true
-      },
-      datasets: {
-        type: Array,
-        notify: true
-      },
-      path: {
-        type: Array,
-        notify: true
-      }
-    }
-  });
-})();
-</script>

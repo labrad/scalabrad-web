@@ -2,6 +2,9 @@
 
 import page from "page";
 
+import {Activity, ActivityState} from "./activity";
+import {AsyncQueue} from './async-queue';
+import {Lifetime} from "./lifetime";
 import * as manager from "./manager";
 import * as registry from "./registry";
 import * as datavault from "./datavault";
@@ -9,9 +12,13 @@ import * as nodeApi from "./node";
 import * as rpc from "./rpc";
 
 import {LabradApp} from "../elements/labrad-app";
+import {LabradGrapher} from "../elements/labrad-grapher";
+import {LabradManager} from "../elements/labrad-manager";
 import {LabradNodes, LabradInstanceController, LabradNodeController} from "../elements/labrad-nodes";
 import {LabradRegistry} from "../elements/labrad-registry";
-import * as pages from "../elements/labrad-pages";
+import {LabradServer} from "../elements/labrad-server";
+import {Plot, Plot1D} from "../elements/labrad-plot1d";
+import {Plot2D} from "../elements/labrad-plot2d";
 
 
 /**
@@ -23,20 +30,48 @@ interface Creds {
 }
 
 
+// common methods for creating URLs
+function pathStr(path: Array<string>, dir?: string): string {
+  var url = '';
+  path.forEach(function(seg) {
+    url += encodeURIComponent(seg) + '/';
+  });
+  if (typeof dir !== 'undefined') {
+    url += encodeURIComponent(dir) + '/';
+  }
+  return url;
+}
+
+function grapherUrl(path: Array<string>, dir?: string): string {
+  return '/grapher/' + pathStr(path, dir);
+}
+
+function datasetUrl(path: Array<string>, dataset: string): string {
+  return '/dataset/' + pathStr(path, dataset);
+}
+
+function registryUrl(path: Array<string>, dir?: string): string {
+  return '/registry/' + pathStr(path, dir);
+}
+
+function serverUrl(name: string): string {
+  return '/server/' + encodeURIComponent(name);
+}
+
+
 window.addEventListener('WebComponentsReady', () => {
 
   // register our custom elements with polymer
   LabradApp.register();
+  LabradGrapher.register();
+  LabradManager.register();
   LabradRegistry.register();
   LabradNodes.register();
   LabradInstanceController.register();
   LabradNodeController.register();
-  pages.ManagerPage.register();
-  pages.ServerPage.register();
-  pages.NodesPage.register();
-  pages.RegistryPage.register();
-  pages.GrapherPage.register();
-  pages.DatasetPage.register();
+  LabradServer.register();
+  Plot1D.register();
+  Plot2D.register();
 
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
@@ -68,156 +103,378 @@ window.addEventListener('WebComponentsReady', () => {
   var dv = new datavault.DataVaultService(socket);
   var node = new nodeApi.NodeService(socket);
 
-  function setContent(elem: HTMLElement, route: string, breadcrumbs?: Array<{name: string; isLink: boolean; url?: string}>): void {
-    app.route = route;
-    if (breadcrumbs) {
-      app.hasBreadcrumbs = true;
-      app.breadcrumbs = breadcrumbs;
-    } else {
-      app.hasBreadcrumbs = false;
+  var activity: Activity = null;
+
+  function activate(newActivity: Activity): void {
+    var p: Promise<void> = Promise.resolve(null);
+    if (activity) {
+      p = activity.stop();
     }
-    var content = app.$.content;
-    while (content.firstChild) {
-      content.removeChild(content.firstChild);
-    }
-    content.appendChild(elem);
+    p.then(
+      (success) => {
+        newActivity.start().then(
+          (state) => {
+            app.route = state.route;
+            if (state.breadcrumbs) {
+              app.hasBreadcrumbs = true;
+              app.breadcrumbs = state.breadcrumbs;
+            } else {
+              app.hasBreadcrumbs = false;
+            }
+            var content = app.$.content;
+            while (content.firstChild) {
+              content.removeChild(content.firstChild);
+            }
+            content.appendChild(state.elem);
+            activity = newActivity;
+          },
+          (error) => {
+            console.log('error while starting activity', error);
+          }
+        )
+      },
+      (error) => {
+        console.log('error while shutting down activity', error);
+      }
+    )
   }
 
-  function pathStr(path: Array<string>, dir?: string): string {
-    var url = '';
-    path.forEach(function(seg) {
-      url += encodeURIComponent(seg) + '/';
-    });
-    if (typeof dir !== 'undefined') {
-      url += encodeURIComponent(dir) + '/';
+  class RegistryActivity implements Activity {
+    path: Array<string>;
+
+    constructor(path: Array<string>) {
+      this.path = path;
     }
-    return url;
+
+    start(): Promise<ActivityState> {
+      console.log('loading registry:', this.path);
+      return reg.dir({path: this.path}).then((listing) => {
+        var breadcrumbs = [];
+        for (var i = 0; i <= this.path.length; i++) {
+          breadcrumbs.push({
+            name: (i == 0) ? 'registry' : this.path[i-1],
+            isLink: i < this.path.length,
+            url: registryUrl(this.path.slice(0, i))
+          });
+        }
+
+        var dirs = [];
+        for (var i = 0; i < listing.dirs.length; i++) {
+          var dir = listing.dirs[i];
+          dirs.push({
+            name: dir,
+            url: registryUrl(this.path, dir)
+          });
+        }
+        var keys = [];
+        for (var i = 0; i < listing.keys.length; i++) {
+          keys.push({
+            name: listing.keys[i],
+            value: listing.vals[i]
+          });
+        }
+        var elem = <LabradRegistry> LabradRegistry.create();
+        elem.path = this.path;
+        elem.dirs = dirs;
+        elem.keys = keys;
+        elem.socket = reg;
+
+        return {
+          elem: elem,
+          route: 'registry',
+          breadcrumbs: breadcrumbs
+        };
+      });
+    }
+
+    stop(): Promise<void> {
+      return Promise.resolve(null);
+    }
   }
 
-  function loadRegistry(path: Array<string>) {
-    console.log('loading registry:', path);
-    reg.dir({path: path}).then((listing) => {
-      console.log(listing);
+  class DatavaultActivity implements Activity {
+    path: Array<string>;
 
-      var breadcrumbs = [];
-      for (var i = 0; i <= path.length; i++) {
+    private elem: LabradGrapher;
+
+    private api: datavault.DataVaultService;
+    private lifetime = new Lifetime();
+
+    constructor(api: datavault.DataVaultService, path: Array<string>) {
+      this.api = api;
+      this.path = path;
+    }
+
+    start(): Promise<ActivityState> {
+      console.log('loading datavault:', this.path);
+      this.api.newDir.add(x => this.onNewDir(), this.lifetime);
+      this.api.newDataset.add(x => this.onNewDataset(), this.lifetime);
+      return dv.dir(this.path).then((listing) => {
+        var breadcrumbs = [];
+        for (var i = 0; i <= this.path.length; i++) {
+          breadcrumbs.push({
+            name: (i == 0) ? 'grapher' : this.path[i-1],
+            isLink: i < this.path.length,
+            url: grapherUrl(this.path.slice(0, i))
+          });
+        }
+
+        this.elem = <LabradGrapher> LabradGrapher.create();
+        this.elem.path = this.path;
+        this.elem.dirs = this.getDirs(listing);
+        this.elem.datasets = this.getDatasets(listing);
+
+        return {
+          elem: this.elem,
+          route: 'grapher',
+          breadcrumbs: breadcrumbs
+        };
+      });
+    }
+
+    onNewDir() {
+      dv.dir(this.path).then(listing => {
+        this.elem.dirs = this.getDirs(listing);
+      });
+    }
+
+    onNewDataset() {
+      dv.dir(this.path).then(listing => {
+        this.elem.datasets = this.getDatasets(listing);
+      });
+    }
+
+    stop(): Promise<void> {
+      this.lifetime.close();
+      return Promise.resolve(null);
+    }
+
+    private getDirs(listing: datavault.DataVaultListing) {
+      return listing.dirs.map(name => {
+        return {name: name, url: grapherUrl(this.path, name)};
+      });
+    }
+
+    private getDatasets(listing: datavault.DataVaultListing) {
+      return listing.datasets.map(name => {
+        return {name: name, url: datasetUrl(this.path, name.slice(0, 5))};
+      });
+    }
+  }
+
+  class DatasetActivity implements Activity {
+    path: Array<string>;
+    dataset: number;
+
+    private api: datavault.DataVaultService
+    private lifetime = new Lifetime();
+    private dataAvailable = new AsyncQueue<void>();
+
+    private plot: Plot;
+
+    constructor(api: datavault.DataVaultService, path: Array<string>, dataset: number) {
+      this.api = api;
+      this.path = path;
+      this.dataset = dataset;
+      this.lifetime.defer(() => this.dataAvailable.close());
+    }
+
+    start(): Promise<ActivityState> {
+      console.log('loading dataset:', this.path, this.dataset);
+      this.api.dataAvailable.add(x => this.dataAvailable.offer(null), this.lifetime);
+      this.api.newParameter.add(x => this.onNewParameter(), this.lifetime);
+      return this.api.datasetInfo({path: this.path, dataset: this.dataset}).then((info) => {
+        var breadcrumbs = [];
+        for (var i = 0; i <= this.path.length; i++) {
+          breadcrumbs.push({
+            name: (i == 0) ? 'grapher' : this.path[i-1],
+            isLink: true,
+            url: grapherUrl(this.path.slice(0, i))
+          });
+        }
         breadcrumbs.push({
-          name: (i == 0) ? 'registry' : path[i-1],
-          isLink: i < path.length,
-          url: '/registry/' + pathStr(path.slice(0, i))
+          name: info.name,
+          isLink: false,
+          url: datasetUrl(this.path, String(info.num))
         });
-      }
-      console.log('breadcrumbs', breadcrumbs);
 
-      var dirs = [];
-      for (var i = 0; i < listing.dirs.length; i++) {
-        var dir = listing.dirs[i];
-        dirs.push({
-          name: dir,
-          url: '/registry/' + pathStr(path, dir)
-        });
-      }
-      var keys = [];
-      for (var i = 0; i < listing.keys.length; i++) {
-        keys.push({
-          name: listing.keys[i],
-          value: listing.vals[i]
-        });
-      }
+        var elem: HTMLElement = null;
+        switch (info.independents.length) {
+          case 1:
+            let p1D = <Plot1D> Plot1D.create();
+            p1D.setAttribute('class', 'flex');
+            p1D.xLabel = info.independents[0];
+            p1D.yLabel = info.dependents[0];
+            this.plot = p1D;
+            elem = p1D;
+            break;
 
-      setContent(pages.RegistryPage.init(breadcrumbs, path, dirs, keys, reg), 'registry', breadcrumbs);
-    });
+          case 2:
+            let p2D = <Plot2D> Plot2D.create();
+            p2D.setAttribute('class', 'flex');
+            p2D.xLabel = info.independents[0];
+            p2D.yLabel = info.independents[1];
+            this.plot = p2D;
+            elem = p2D;
+            break;
+
+          default:
+            elem = document.createElement('div');
+            break;
+        }
+
+        this.requestData();
+
+        return {
+          elem: elem,
+          route: 'dataset',
+          breadcrumbs: breadcrumbs
+        };
+      });
+    }
+
+    onNewParameter(): void {
+    }
+
+    requestData(): void {
+      this.api.data({limit: 100, startOver: false}).then(data => {
+        this.addData(data);
+        this.dataAvailable.take().then(
+          (success) => this.requestData(),
+          (error) => {} // queue closed; do nothing
+        );
+      });
+    }
+
+    addData(data: Array<Array<number>>): void {
+      this.plot.addData(data);
+    }
+
+    stop(): Promise<void> {
+      this.lifetime.close();
+      return Promise.resolve(null);
+    }
   }
 
-  function loadDatavault(path: Array<string>) {
-    console.log('loading datavault:', path);
-    dv.dir(path).then((listing) => {
-      console.log(listing);
-
-      var breadcrumbs = [];
-      for (var i = 0; i <= path.length; i++) {
-        breadcrumbs.push({
-          name: (i == 0) ? 'grapher' : path[i-1],
-          isLink: i < path.length,
-          url: '/grapher/' + pathStr(path.slice(0, i))
+  class ManagerActivity implements Activity {
+    start(): Promise<ActivityState> {
+      return mgr.connections().then((conns) => {
+        var connsWithUrl = conns.map((c) => {
+          var x = <any> c;
+          if (c.server) {
+            x['url'] = serverUrl(c.name);
+          }
+          return x;
         });
-      }
-      console.log('breadcrumbs', breadcrumbs);
+        var elem = <LabradManager> LabradManager.create();
+        elem.connections = connsWithUrl;
+        return {
+          elem: elem,
+          route: 'manager'
+        };
+      });
+    }
 
-      var dirs = [];
-      for (var i = 0; i < listing.dirs.length; i++) {
-        var dir = listing.dirs[i];
-        dirs.push({
-          name: dir,
-          url: '/grapher/' + pathStr(path, dir)
-        });
-      }
-      var datasets = [];
-      for (var i = 0; i < listing.datasets.length; i++) {
-        var name = listing.datasets[i];
-        datasets.push({
-          name: name,
-          url: '/dataset/' + pathStr(path, name.slice(0, 5))
-        });
-      }
-
-      setContent(pages.GrapherPage.init(path, dirs, datasets), 'grapher', breadcrumbs);
-    });
+    stop(): Promise<void> {
+      return Promise.resolve(null);
+    }
   }
 
-  function loadDataset(path: Array<string>, dataset: string) {
-    console.log('loading dataset:', path, dataset);
-    dv.dir(path).then((listing) => {
-      var parentUrl = '/grapher/' + pathStr(path);
-      setContent(pages.DatasetPage.init(path, dataset, parentUrl), 'dataset');
-    });
+  class ServerActivity implements Activity {
+    name: string;
+
+    constructor(name: string) {
+      this.name = name;
+    }
+
+    start(): Promise<ActivityState> {
+      return mgr.serverInfo(this.name).then((info) => {
+        var elem = <LabradServer> LabradServer.create();
+        elem.info = info;
+        return {
+          elem: elem,
+          route: 'server'
+        }
+      });
+    }
+
+    stop(): Promise<void> {
+      return Promise.resolve(null);
+    }
+  }
+
+  class NodesActivity implements Activity {
+    start(): Promise<ActivityState> {
+      return node.allNodes().then((nodesInfo) => {
+        var elem = <LabradNodes> LabradNodes.create();
+        elem.info = nodesInfo;
+        elem.api = node;
+        elem.managerApi = mgr;
+        return {
+          elem: elem,
+          route: 'nodes'
+        }
+      });
+    }
+
+    stop(): Promise<void> {
+      return Promise.resolve(null);
+    }
   }
 
   // Set up page routing
   page('/', () => {
-    mgr.connections().then((conns) => {
-      var connsWithUrl = conns.map((c) => {
-        var x = <any> c;
-        if (c.server) {
-          x['url'] = `/server/${encodeURIComponent(c.name)}`;
-        }
-        return x;
-      });
-      setContent(pages.ManagerPage.init(connsWithUrl), 'manager');
-    });
+    activate(new ManagerActivity());
   });
 
   page('/server/:name', (ctx, next) => {
-    mgr.serverInfo(ctx.params['name']).then((info) => {
-      setContent(pages.ServerPage.init(info), 'server');
-    });
+    activate(new ServerActivity(ctx.params['name']));
   });
 
   page('/nodes', () => {
-    node.allNodes().then((nodesInfo) => {
-      setContent(pages.NodesPage.init(nodesInfo, node, mgr), 'nodes');
-    });
+    activate(new NodesActivity());
   });
 
-  page('/registry', () => {
-    loadRegistry([]);
-  });
-
-  // TODO: why does this wildcard route not work??
-  //page('/registry/*', function (ctx, next) {
-  //  loadRegistry([ctx.params[0]]);
-  //});
-  function mkRegRoute(n: number) {
-    var route = '/registry/';
+  /**
+   * Make a route with n path segments labeled p<i>.
+   *
+   * On a page change, the path can be extracted using the getPath function.
+   * TODO: figure out a way to use wildcard routes instead of multiple routes
+   * each with a fixed number of segments.
+   */
+  function pathRoute(n: number): string {
+    var route = '';
     for (var i = 0; i < n; i++) {
       route += ':p' + i + '/';
     }
-    page(route, (ctx, next) => {
-      var path = [];
-      for (var i = 0; i < n; i++) {
-        path.push(ctx.params['p' + i]);
+    return route;
+  }
+
+  /**
+   * Get a path from the given page context.
+   *
+   * This is a helper to be used with heirarchical routes for the registry and
+   * datavault, as created by the pathRoute function.
+   */
+  function getPath(ctx): Array<string> {
+    var path = [], i = 0;
+    while (true) {
+      var name = 'p' + i;
+      if (ctx.params.hasOwnProperty(name)) {
+        path.push(ctx.params[name]);
+      } else {
+        return path;
       }
-      loadRegistry(path);
+      i++;
+    }
+  }
+
+  page('/registry', () => {
+    activate(new RegistryActivity([]));
+  });
+  function mkRegRoute(n: number) {
+    page('/registry/' + pathRoute(n), (ctx, next) => {
+      activate(new RegistryActivity(getPath(ctx)));
     })
   }
   for (var i = 0; i <= 20; i++) {
@@ -225,34 +482,14 @@ window.addEventListener('WebComponentsReady', () => {
   }
 
   page('/grapher', function () {
-    loadDatavault([]);
+    activate(new DatavaultActivity(dv, []));
   });
-
-  // TODO: use wildcard route instead
-  //page('/grapher/*', function (ctx) {
-  //  app.route = 'grapher';
-  //  app.path = ctx.params[0];
-  //});
   function mkDvRoutes(n: number) {
-    var route = '/grapher/';
-    var dsroute = '/dataset/';
-    for (var i = 0; i < n; i++) {
-      route += ':p' + i + '/';
-      dsroute += ':p' + i + '/';
-    }
-    page(route, (ctx, next) => {
-      var path = [];
-      for (var i = 0; i < n; i++) {
-        path.push(ctx.params['p' + i]);
-      }
-      loadDatavault(path);
+    page('/grapher/' + pathRoute(n), (ctx, next) => {
+      activate(new DatavaultActivity(dv, getPath(ctx)));
     });
-    page(dsroute + ':dataset', (ctx, next) => {
-      var path = [];
-      for (var i = 0; i < n; i++) {
-        path.push(ctx.params['p' + i]);
-      }
-      loadDataset(path, ctx.params['dataset']);
+    page('/dataset/' + pathRoute(n) + ':dataset', (ctx, next) => {
+      activate(new DatasetActivity(dv, getPath(ctx), Number(ctx.params['dataset'])));
     });
   }
   for (var i = 0; i <= 20; i++) {

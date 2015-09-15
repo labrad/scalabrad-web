@@ -3,6 +3,7 @@ package org.labrad.browser
 import org.joda.time.DateTime
 import org.labrad._
 import org.labrad.data._
+import org.labrad.util.Logging
 import play.api.libs.json._
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -16,14 +17,19 @@ trait VaultServer extends Requester {
     call[(Seq[(String, Seq[String])], Seq[(String, Seq[String])])]("dir", strSeq(tagFilters), Bool(false))
 
   def cd(dir: String): Future[Seq[String]] = call[Seq[String]]("cd", Str(dir))
-  def cd(dir: Seq[String]): Future[Seq[String]] = call[Seq[String]]("cd", strSeq(dir))
+  def cd(dir: Seq[String], create: Boolean = false): Future[Seq[String]] = call[Seq[String]]("cd", strSeq(dir), Bool(create))
 
   def open(name: String): Future[(Seq[String], String)] = call[(Seq[String], String)]("open", Str(name))
   def open(num: Int): Future[(Seq[String], String)] = call[(Seq[String], String)]("open", UInt(num))
 
-  def get(): Future[Array[Array[Double]]] = call[Array[Array[Double]]]("get")
+  private def parseData(data: Data): Array[Array[Double]] = {
+    val Array(rows, cols) = data.arrayShape
+    Array.tabulate(rows, cols) { (r, c) => data(r, c).getValue }
+  }
+
+  def get(): Future[Array[Array[Double]]] = call[Data]("get").map(parseData)
   def get(limit: Int, startOver: Boolean = false): Future[Array[Array[Double]]] =
-    call[Array[Array[Double]]]("get", UInt(limit), Bool(startOver))
+    call[Data]("get", UInt(limit), Bool(startOver)).map(parseData)
 
   def variables(): Future[(Seq[(String, String)], Seq[(String, String, String)])] =
     call[(Seq[(String, String)], Seq[(String, String, String)])]("variables")
@@ -53,6 +59,14 @@ trait VaultServer extends Requester {
 
   def updateTags(tags: Seq[String], dirs: Seq[String] = Nil, datasets: Seq[String] = Nil): Future[Unit] =
     callUnit("update tags", strSeq(tags), strSeq(dirs), strSeq(datasets))
+
+  def signalNewDir(id: Long): Future[Unit] = callUnit("signal: new dir", UInt(id))
+  def signalNewDataset(id: Long): Future[Unit] = callUnit("signal: new dataset", UInt(id))
+  def signalTagsUpdated(id: Long): Future[Unit] = callUnit("signal: new dataset", UInt(id))
+
+  def signalDataAvailable(id: Long): Future[Unit] = callUnit("signal: data available", UInt(id))
+  def signalNewParameter(id: Long): Future[Unit] = callUnit("signal: new parameter", UInt(id))
+  def signalCommentsAvailable(id: Long): Future[Unit] = callUnit("signal: comments available", UInt(id))
 }
 
 class VaultServerProxy(cxn: Connection, name: String = "Data Vault", context: Context = Context(0, 0))
@@ -68,7 +82,10 @@ extends PacketProxy(server, ctx) with VaultServer
 case class VaultListing(path: Seq[String], dirs: Seq[String], datasets: Seq[String])
 object VaultListing { implicit val format = Json.format[VaultListing] }
 
-case class DatasetInfo(path: Seq[String], name: String, num: Int, independents: Seq[String], dependents: Seq[String], params: Map[String, String])
+case class Param(name: String, value: String)
+object Param { implicit val format = Json.format[Param] }
+
+case class DatasetInfo(path: Seq[String], name: String, num: Int, independents: Seq[String], dependents: Seq[String], params: Seq[Param])
 object DatasetInfo { implicit val format = Json.format[DatasetInfo] }
 
 
@@ -85,9 +102,47 @@ object VaultApi {
   }
 }
 
-class VaultApi(cxn: LabradConnection)(implicit ec: ExecutionContext) {
+class VaultApi(cxn: LabradConnection, client: VaultClientApi)(implicit ec: ExecutionContext) extends Logging {
 
   import VaultApi._
+
+  // set up message listeners for various signals
+  cxn.onConnect { c =>
+    c.addMessageListener {
+      case Message(_, _, 1111, Str(name)) =>
+        client.newDir(name)
+
+      case Message(_, _, 2222, Str(name)) =>
+        client.newDataset(name)
+
+      case Message(_, _, 3333, Cluster(dirTags, datasetTags)) =>
+        client.tagsUpdated(
+          dirTags.get[Seq[(String, Seq[String])]].toMap,
+          datasetTags.get[Seq[(String, Seq[String])]].toMap
+        )
+
+      case Message(_, _, 4444, Data.NONE) =>
+        client.dataAvailable()
+
+      case Message(_, _, 5555, Data.NONE) =>
+        client.newParameter()
+
+      case Message(_, _, 6666, Data.NONE) =>
+        client.commentsAvailable()
+    }
+
+    val dv = new VaultServerProxy(c)
+    val pkt = dv.packet()
+    pkt.signalNewDir(1111)
+    pkt.signalNewDataset(2222)
+    pkt.signalTagsUpdated(3333)
+    pkt.signalDataAvailable(4444)
+    pkt.signalNewParameter(5555)
+    pkt.signalCommentsAvailable(6666)
+    pkt.send().onFailure { case e =>
+      log.error("failed to register for datavault messages", e)
+    }
+  }
 
   // vault utility functions
 
@@ -135,24 +190,29 @@ class VaultApi(cxn: LabradConnection)(implicit ec: ExecutionContext) {
     for {
       (path, name) <- openF
       (indeps, deps) <- varsF
-      params <- paramsF
+      paramMap <- paramsF
     } yield {
       val num = name.split(" - ")(0).toInt
-      val paramStrs = params.mapValues(_.toString)
-      DatasetInfo(path, name, num, indeps.map(_._1), deps.map(_._1), paramStrs)
+      val paramNames = paramMap.keys.toSeq.sorted
+      val params = paramNames.map { name => Param(name, paramMap(name).toString) }
+      DatasetInfo(path, name, num, indeps.map(_._1), deps.map(_._1), params)
     }
   }
 
-  def data(path: Seq[String], dataset: Either[String, Int]): Future[Array[Array[Double]]] = {
-    val p = startPacket(path)
-    dataset match {
-      case Left(name) => p.open(name)
-      case Right(num) => p.open(num)
-    }
-    val dataF = p.get()
-
-    p.send()
-
-    dataF
+  // TODO: JsonRpc does not work with default values of type Int
+  def data(limit: Int, startOver: Boolean): Future[Array[Array[Double]]] = {
+    new VaultServerProxy(cxn.get).get(limit, startOver)
   }
+}
+
+trait VaultClientApi {
+  // messages related to the current session
+  def newDir(name: String): Unit
+  def newDataset(name: String): Unit
+  def tagsUpdated(dirTags: Map[String, Seq[String]], datasetTags: Map[String, Seq[String]]): Unit
+
+  // messages related to the current dataset
+  def dataAvailable(): Unit
+  def newParameter(): Unit
+  def commentsAvailable(): Unit
 }

@@ -5,6 +5,7 @@ import org.labrad._
 import org.labrad.data._
 import org.labrad.events.{ConnectionEvent, ConnectionListener, MessageEvent, MessageListener}
 import org.labrad.util.Logging
+import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 
@@ -27,10 +28,21 @@ class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi)(impli
 
   private var nextMessageId: Long = 1L
 
+  private val lock = new Object
+  private val setupFuncs = mutable.Buffer.empty[Connection => Unit]
+
+  /**
+   * Add a function that will be called on the connection once it is established
+   */
+  def onConnect(f: Connection => Unit): Unit = lock.synchronized {
+    setupFuncs += f
+  }
+
   def login(username: String, password: String): Unit = {
     val cxn = new Client("Browser", password = password.toCharArray)
     handleConnectionEvents(cxn)
     cxn.connect()
+    runSetupFuncs(cxn)
   }
 
   def get: Connection = {
@@ -74,9 +86,28 @@ class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi)(impli
     }
   }
 
+  private def runSetupFuncs(cxn: Connection) {
+    lock.synchronized {
+      log.info("running setup functions")
+      for (func <- setupFuncs) {
+        try {
+          func(cxn)
+        } catch {
+          case e: Exception =>
+            log.error("error in setup function", e)
+        }
+      }
+    }
+  }
+
   private def startConnection(cxn: Connection) {
     try {
-      if (live) cxn.connect()
+      if (live) {
+        cxn.addConnectionListener { case true =>
+          runSetupFuncs(cxn)
+        }
+        cxn.connect()
+      }
     } catch {
       case e: Throwable =>
         doLater(RECONNECT_TIMEOUT) {

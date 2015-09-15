@@ -111,8 +111,10 @@ class EndpointInvocationHandler(
   }
 
   private def buildParams(paramDefs: Seq[(String, Any => JsValue)], args: Array[Object]): Map[String, JsValue] = {
+    // args array will be null rather than empty if there are no arguments
+    val argsSeq = if (args == null) Seq() else args.toSeq
     val params = Map.newBuilder[String, JsValue]
-    for (((paramName, writer), arg) <- paramDefs zip args) {
+    for (((paramName, writer), arg) <- paramDefs zip argsSeq) {
       params += paramName -> writer(arg)
     }
     params.result

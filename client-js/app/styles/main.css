@@ -15,3 +15,26 @@ th {
 tbody tr:hover {
   background: #fafafa;
 }
+
+/*
+ * SVG Plot styles
+ *
+ * These seem to be ignored for some reason when we try to style svg created
+ * by d3 within a custom element. We've placed them here for now, until we can
+ * understand and fix the problem with polymer/d3.
+ */
+rect {
+  fill: #ddd;
+}
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.x.axis path {
+  display: none;
+}
+.line {
+  fill: none;
+  stroke-width: 1.5px;
+}

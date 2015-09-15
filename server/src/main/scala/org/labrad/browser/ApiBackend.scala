@@ -39,11 +39,21 @@ class ApiBackend(implicit ec: ExecutionContext) extends Backend {
       NOTIFY                     .dirRemoved        .dirRemoved
     """)
 
+    val vaultClient = JsonRpc.proxy[VaultClientApi]("""
+      NOTIFY  org.labrad.datavault.newDir       client.newDir
+      NOTIFY                      .newDataset         .newDataset
+      NOTIFY                      .tagsUpdated        .tagsUpdated
+
+      NOTIFY                      .dataAvailable      .dataAvailable
+      NOTIFY                      .newParameter       .newParameter
+      NOTIFY                      .commentsAvailable  .commentsAvailable
+    """)
+
     // connect to labrad (and reconnect if connection is lost)
     cxn = new LabradConnection(labradClient, nodeClient)
 
     // api implementations for incoming calls and notifications
-    datavaultApi = new VaultApi(cxn)
+    datavaultApi = new VaultApi(cxn, vaultClient)
     managerApi = new ManagerApi(cxn)
     nodeApi = new NodeApi(cxn)
     registryApi = new RegistryApi(cxn, registryClient)
