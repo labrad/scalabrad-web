@@ -1,0 +1,68 @@
+<dom-module id="labrad-page-manager">
+  <template>
+    <paper-material elevation="0">
+      <labrad-manager connections={{connections}}>
+      </labrad-manager>
+    </paper-material>
+  </template>
+</dom-module>
+
+<dom-module id="labrad-page-server">
+  <template>
+    <paper-material elevation="0">
+      <labrad-server info={{serverInfo}}>
+      </labrad-server>
+    </paper-material>
+  </template>
+</dom-module>
+
+<dom-module id="labrad-page-nodes">
+  <template>
+    <paper-material elevation="0">
+      <labrad-nodes
+          info={{nodesInfo}}
+          api={{nodeApi}}
+          manager-api={{managerApi}}>
+      </labrad-nodes>
+    </paper-material>
+  </template>
+</dom-module>
+
+<dom-module id="labrad-page-registry">
+  <template>
+    <paper-material elevation="0">
+      <labrad-breadcrumbs breadcrumbs={{breadcrumbs}}></labrad-breadcrumbs>
+      <labrad-registry
+          path={{path}}
+          dirs={{dirs}}
+          keys={{keys}}
+          socket={{reg}}>
+      </labrad-registry>
+    </paper-material>
+  </template>
+</dom-module>
+
+<dom-module id="labrad-page-grapher">
+  <template>
+    <paper-material elevation="0">
+      <labrad-breadcrumbs breadcrumbs={{breadcrumbs}}></labrad-breadcrumbs>
+      <labrad-grapher
+          path={{path}}
+          dirs={{dirs}}
+          datasets={{datasets}}>
+      </labrad-grapher>
+    </paper-material>
+  </template>
+</dom-module>
+
+<dom-module id="labrad-page-dataset">
+  <template>
+    <paper-material elevation="0">
+      <labrad-grapher-dataset
+          path={{path}}
+          dataset={{dataset}}
+          parent-url={{parentUrl}}>
+      </labrad-grapher-dataset>
+    </paper-material>
+  </template>
+</dom-module>

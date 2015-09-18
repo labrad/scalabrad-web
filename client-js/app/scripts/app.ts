@@ -10,6 +10,7 @@ import * as rpc from "./rpc";
 
 import {LabradNodes, LabradInstanceController, LabradNodeController} from "../elements/labrad-nodes";
 import {LabradRegistry} from "../elements/labrad-registry";
+import * as pages from "../elements/labrad-pages";
 
 // autobinding template which is the main ui container
 var app: any = document.querySelector('#app');
@@ -28,6 +29,12 @@ window.addEventListener('WebComponentsReady', function() {
   LabradNodes.register();
   LabradInstanceController.register();
   LabradNodeController.register();
+  pages.ManagerPage.register();
+  pages.ServerPage.register();
+  pages.NodesPage.register();
+  pages.RegistryPage.register();
+  pages.GrapherPage.register();
+  pages.DatasetPage.register();
 
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
@@ -55,6 +62,16 @@ window.addEventListener('WebComponentsReady', function() {
   var reg = new registry.RegistryServiceJsonRpc(socket);
   var dv = new datavault.DataVaultService(socket);
   var node = new nodeApi.NodeService(socket);
+
+  function setContent(elem): void {
+    var content = app.$.content;
+    console.log('container', content);
+    console.log('contents', elem);
+    while (content.firstChild) {
+      content.removeChild(content.firstChild);
+    }
+    content.appendChild(elem);
+  }
 
   function pathStr(path: Array<string>, dir?: string): string {
     var url = '';
@@ -99,12 +116,7 @@ window.addEventListener('WebComponentsReady', function() {
       }
 
       app.route = 'registry';
-      app.breadcrumbs = breadcrumbs;
-      app.path = path;
-      app.registryDirs = dirs;
-      app.registryKeys = keys;
-      app.reg = reg;
-      console.log(dirs);
+      setContent(pages.RegistryPage.init(breadcrumbs, path, dirs, keys, reg));
     });
   }
 
@@ -141,20 +153,16 @@ window.addEventListener('WebComponentsReady', function() {
       }
 
       app.route = 'grapher';
-      app.breadcrumbs = breadcrumbs;
-      app.path = path;
-      app.datavaultDirs = dirs;
-      app.datavaultDatasets = datasets;
+      setContent(pages.GrapherPage.init(path, breadcrumbs, dirs, datasets));
     });
   }
 
-  function loadDataset(path: Array<string>, dataset: String) {
+  function loadDataset(path: Array<string>, dataset: string) {
     console.log('loading dataset:', path, dataset);
     dv.dir(path).then((listing) => {
       app.route = 'dataset';
-      app.path = path;
-      app.dataset = dataset;
-      app.parentUrl = '/grapher/' + pathStr(path);
+      var parentUrl = '/grapher/' + pathStr(path);
+      setContent(pages.DatasetPage.init(path, dataset, parentUrl));
     });
   }
 
@@ -169,23 +177,21 @@ window.addEventListener('WebComponentsReady', function() {
         return x;
       });
       app.route = 'manager';
-      app.connections = connsWithUrl;
+      setContent(pages.ManagerPage.init(connsWithUrl));
     });
   });
 
   page('/server/:name', (ctx, next) => {
     mgr.serverInfo(ctx.params['name']).then((info) => {
       app.route = 'server';
-      app.serverInfo = info;
+      setContent(pages.ServerPage.init(info));
     });
   });
 
   page('/nodes', () => {
     node.allNodes().then((nodesInfo) => {
       app.route = 'nodes';
-      app.nodesInfo = nodesInfo;
-      app.nodeApi = node;
-      app.managerApi = mgr;
+      setContent(pages.NodesPage.init(nodesInfo, node, mgr));
     });
   });
 
