@@ -75,26 +75,6 @@ export class GrapherPage extends polymer.Base {
   }
 }
 
-@ng.Component({
-  selector: 'labrad-page-dataset-ng'
-})
-@ng.View({
-  templateUrl: '/elements/labrad-page-grapher-ng.html'
-})
-export class GrapherPageNg {
-  breadcrumbs: Array<any>;
-  path: Array<string>;
-  dirs: Array<any>;
-  datasets: Array<any>;
-
-  constructor(path: Array<string>, breadcrumbs: Array<any>, dirs: Array<any>, datasets: Array<any>) {
-    this.path = path;
-    this.breadcrumbs = breadcrumbs;
-    this.dirs = dirs;
-    this.datasets = datasets;
-  }
-}
-
 @component("labrad-page-dataset")
 export class DatasetPage extends polymer.Base {
   @property({type: Array})
