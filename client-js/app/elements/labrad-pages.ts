@@ -1,5 +1,3 @@
-import ng from 'angular2/angular2';
-
 @component("labrad-page-manager")
 export class ManagerPage extends polymer.Base {
   @property({type: Array})
@@ -55,10 +53,6 @@ export class GrapherPage extends polymer.Base {
 
   @property({type: Array})
   datavaultDatasets: Array<{name: string; url: string}>;
-
-  constructor() {
-    super();
-  }
 
   static init(
     path: Array<string>,
