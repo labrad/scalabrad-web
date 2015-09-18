@@ -1,5 +1,9 @@
 /// <reference path="../../typings/tsd.d.ts" />
 
+//import 'zone.js';
+import 'reflect-metadata';
+
+import ng from 'angular2/angular2';
 import page from "page";
 
 import * as manager from "./manager";
@@ -22,12 +26,29 @@ app.onMenuSelect = function() {
   }
 };
 
+@ng.Component({
+  selector: 'my-app'
+})
+@ng.View({
+  template: '<h1>Hello {{ name }}</h1>'
+})
+// Component controller
+class MyAppComponent {
+  name: string;
+  constructor() {
+    this.name = 'Alice';
+  }
+}
+
 window.addEventListener('WebComponentsReady', function() {
   // register our custom elements with polymer
   LabradRegistry.register();
   LabradNodes.register();
   LabradInstanceController.register();
   LabradNodeController.register();
+
+  ng.bootstrap(MyAppComponent);
+  return;
 
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');

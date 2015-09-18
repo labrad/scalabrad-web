@@ -45,9 +45,15 @@
   "jspm": {
     "directories": {},
     "dependencies": {
-      "page": "npm:page@^1.6.3"
+      "angular2": "npm:angular2@^2.0.0-alpha.37",
+      "page": "npm:page@^1.6.3",
+      "reflect-metadata": "npm:reflect-metadata@^0.1.1",
+      "zone.js": "npm:zone.js@^0.5.5"
     },
     "devDependencies": {
+      "babel": "npm:babel-core@^5.1.13",
+      "babel-runtime": "npm:babel-runtime@^5.1.13",
+      "core-js": "npm:core-js@^0.9.4",
       "traceur": "github:jmcriffey/bower-traceur@0.0.88",
       "traceur-runtime": "github:jmcriffey/bower-traceur-runtime@0.0.88"
     }

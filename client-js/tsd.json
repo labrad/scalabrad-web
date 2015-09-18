@@ -13,6 +13,15 @@
     },
     "path-to-regexp/path-to-regexp.d.ts": {
       "commit": "e18e130e2188348070f98d92b98c0ea481c4a086"
+    },
+    "rx/rx.d.ts": {
+      "commit": "6f6e5c7dd9effe21fee14eb65fe340ecbbc8580a"
+    },
+    "angular2/angular2.d.ts": {
+      "commit": "6f6e5c7dd9effe21fee14eb65fe340ecbbc8580a"
+    },
+    "rx/rx-lite.d.ts": {
+      "commit": "6f6e5c7dd9effe21fee14eb65fe340ecbbc8580a"
     }
   }
 }
