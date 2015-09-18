@@ -45,28 +45,35 @@ export class RegistryPage extends polymer.Base {
 @component("labrad-page-grapher")
 export class GrapherPage extends polymer.Base {
   @property({type: Array})
-  breadcrumbs: Array<any>;
+  breadcrumbs: Array<{name: string; isLink: boolean; url: string}>;
 
   @property({type: Array})
   path: Array<string>;
 
   @property({type: Array})
-  datavaultDirs: Array<any>;
+  datavaultDirs: Array<{name: string; url: string}>;
 
   @property({type: Array})
-  datavaultDatasets: Array<any>;
+  datavaultDatasets: Array<{name: string; url: string}>;
 
-  constructor(path: Array<string>, breadcrumbs: Array<any>, dirs: Array<any>, datasets: Array<any>) {
+  constructor() {
     super();
-    //this.path = path;
-    //this.breadcrumbs = breadcrumbs;
-    //this.datavaultDirs = dirs;
-    //this.datavaultDatasets = datasets;
+  }
+
+  static init(
+    path: Array<string>,
+    breadcrumbs: Array<{name: string; isLink: boolean; url: string}>,
+    dirs: Array<{name: string; url: string}>,
+    datasets: Array<{name: string; url: string}>
+  ): GrapherPage {
+    var inst = <GrapherPage> GrapherPage.create();
+    inst.path = path;
+    inst.breadcrumbs = breadcrumbs;
+    inst.datavaultDirs = dirs;
+    inst.datavaultDatasets = datasets;
+    return inst;
   }
 }
-
-
-console.log('Component', ng.Component);
 
 @ng.Component({
   selector: 'labrad-page-dataset-ng'

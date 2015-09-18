@@ -164,13 +164,7 @@ window.addEventListener('WebComponentsReady', function() {
 
       app.route = 'grapher';
 
-      var elem = <pages.GrapherPage> pages.GrapherPage.create();
-      elem.breadcrumbs = breadcrumbs;
-      elem.path = path;
-      elem.datavaultDirs = dirs;
-      elem.datavaultDatasets = datasets;
-
-      //var elem = new pages.GrapherPageNg(path, breadcrumbs, dirs, datasets)
+      var elem = pages.GrapherPage.init(path, breadcrumbs, dirs, datasets);
       setContent(elem);
     });
   }
