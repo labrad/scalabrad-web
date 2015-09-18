@@ -1,0 +1,119 @@
+<dom-module id="app">
+  <template>
+    <paper-drawer-panel id="paperDrawerPanel" forceNarrow>
+      <div drawer>
+        <!-- Drawer Toolbar -->
+        <paper-toolbar id="drawerToolbar">
+          <span>LabRAD</span>
+        </paper-toolbar>
+
+        <!-- Drawer Content -->
+        <paper-menu class="list" attr-for-selected="data-route" selected="{{route}}" on-iron-select="onMenuSelect">
+          <a data-route="manager" href="/">
+            <iron-icon icon="home"></iron-icon>
+            <span>Manager</span>
+          </a>
+
+          <a data-route="nodes" href="/nodes">
+            <iron-icon icon="hardware:device-hub"></iron-icon>
+            <span>Nodes</span>
+          </a>
+
+          <a data-route="registry" href="/registry">
+            <iron-icon icon="description"></iron-icon>
+            <span>Registry</span>
+          </a>
+
+          <a data-route="grapher" href="/grapher">
+            <iron-icon icon="editor:insert-chart"></iron-icon>
+            <span>Grapher</span>
+          </a>
+        </paper-menu>
+      </div>
+
+      <paper-header-panel main mode="standard">
+        <!-- Main Toolbar -->
+        <paper-toolbar id="mainToolbar">
+          <button tabindex="1" id="paperToggle" paper-drawer-toggle>
+            <iron-icon icon="menu" paper-drawer-toggle></iron-icon>
+          </button>
+          <span class="flex"></span>
+
+          <!-- Application name -->
+          <div class="appname bottom paper-font-display2">LabRAD - <span>{{route}}</span></div>
+
+          <!--<paper-tabs attr-for-selected="data-route" selected="{{route}}">
+            <paper-tab data-route="manager">Manager</paper-tab>
+            <paper-tab data-route="nodes">Nodes</paper-tab>
+            <paper-tab data-route="registry">Registry</paper-tab>
+            <paper-tab data-route="grapher">Grapher</paper-tab>
+          </paper-tabs>-->
+        </paper-toolbar>
+
+
+        <!-- Main Content -->
+        <iron-pages attr-for-selected="data-route" selected="{{route}}">
+
+          <section data-route="manager">
+            <paper-material elevation="0">
+              <labrad-manager connections={{connections}}>
+              </labrad-manager>
+            </paper-material>
+          </section>
+
+          <section data-route="server">
+            <paper-material elevation="0">
+              <labrad-server info={{serverInfo}}>
+              </labrad-server>
+            </paper-material>
+          </section>
+
+          <section data-route="nodes">
+            <paper-material elevation="0">
+              <labrad-nodes
+                  info={{nodesInfo}}
+                  api={{nodeApi}}
+                  manager-api={{managerApi}}>
+              </labrad-nodes>
+            </paper-material>
+          </section>
+
+          <section data-route="registry">
+            <paper-material elevation="0">
+
+              <labrad-breadcrumbs breadcrumbs={{breadcrumbs}}></labrad-breadcrumbs>
+              <labrad-registry
+                  path={{path}}
+                  dirs={{registryDirs}}
+                  keys={{registryKeys}}
+                  socket={{reg}}>
+              </labrad-registry>
+            </paper-material>
+          </section>
+
+          <section data-route="grapher">
+            <paper-material elevation="0">
+              <labrad-breadcrumbs breadcrumbs={{breadcrumbs}}></labrad-breadcrumbs>
+              <labrad-grapher
+                  path={{path}}
+                  dirs={{datavaultDirs}}
+                  datasets={{datavaultDatasets}}>
+              </labrad-grapher>
+            </paper-material>
+          </section>
+
+          <section data-route="dataset">
+            <paper-material elevation="0">
+            <labrad-grapher-dataset
+                path={{path}}
+                dataset={{dataset}}
+                parent-url={{parentUrl}}>
+              </labrad-grapher-dataset>
+            </paper-material>
+          </section>
+
+        </iron-pages>
+      </paper-header-panel>
+    </paper-drawer-panel>
+  </template>
+</dom-module>

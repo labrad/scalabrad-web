@@ -1,9 +1,7 @@
 /// <reference path="../../typings/tsd.d.ts" />
 
-//import 'zone.js';
 import 'reflect-metadata';
 
-import ng from 'angular2/angular2';
 import page from "page";
 
 import * as manager from "./manager";
@@ -14,6 +12,7 @@ import * as rpc from "./rpc";
 
 import {LabradNodes, LabradInstanceController, LabradNodeController} from "../elements/labrad-nodes";
 import {LabradRegistry} from "../elements/labrad-registry";
+import * as pages from "../elements/labrad-pages";
 
 // autobinding template which is the main ui container
 var app: any = document.querySelector('#app');
@@ -26,29 +25,20 @@ app.onMenuSelect = function() {
   }
 };
 
-@ng.Component({
-  selector: 'my-app'
-})
-@ng.View({
-  template: '<h1>Hello {{ name }}</h1>'
-})
-// Component controller
-class MyAppComponent {
-  name: string;
-  constructor() {
-    this.name = 'Alice';
-  }
-}
-
 window.addEventListener('WebComponentsReady', function() {
   // register our custom elements with polymer
   LabradRegistry.register();
   LabradNodes.register();
   LabradInstanceController.register();
   LabradNodeController.register();
+  pages.ManagerPage.register();
+  pages.ServerPage.register();
+  pages.NodesPage.register();
+  pages.RegistryPage.register();
+  pages.GrapherPage.register();
+  pages.DatasetPage.register();
 
-  ng.bootstrap(MyAppComponent);
-  return;
+  //ng.bootstrap(MyAppComponent);
 
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
@@ -76,6 +66,16 @@ window.addEventListener('WebComponentsReady', function() {
   var reg = new registry.RegistryServiceJsonRpc(socket);
   var dv = new datavault.DataVaultService(socket);
   var node = new nodeApi.NodeService(socket);
+
+  function setContent(elem): void {
+    var content = app.$.content;
+    console.log('container', content);
+    console.log('contents', elem);
+    while (content.firstChild) {
+      content.removeChild(content.firstChild);
+    }
+    content.appendChild(elem);
+  }
 
   function pathStr(path: Array<string>, dir?: string): string {
     var url = '';
@@ -120,12 +120,13 @@ window.addEventListener('WebComponentsReady', function() {
       }
 
       app.route = 'registry';
-      app.breadcrumbs = breadcrumbs;
-      app.path = path;
-      app.registryDirs = dirs;
-      app.registryKeys = keys;
-      app.reg = reg;
-      console.log(dirs);
+      var elem = <pages.RegistryPage> pages.RegistryPage.create();
+      elem.breadcrumbs = breadcrumbs;
+      elem.path = path;
+      elem.registryDirs = dirs;
+      elem.registryKeys = keys;
+      elem.reg = reg;
+      setContent(elem);
     });
   }
 
@@ -162,20 +163,28 @@ window.addEventListener('WebComponentsReady', function() {
       }
 
       app.route = 'grapher';
-      app.breadcrumbs = breadcrumbs;
-      app.path = path;
-      app.datavaultDirs = dirs;
-      app.datavaultDatasets = datasets;
+
+      var elem = <pages.GrapherPage> pages.GrapherPage.create();
+      elem.breadcrumbs = breadcrumbs;
+      elem.path = path;
+      elem.datavaultDirs = dirs;
+      elem.datavaultDatasets = datasets;
+
+      //var elem = new pages.GrapherPageNg(path, breadcrumbs, dirs, datasets)
+      setContent(elem);
     });
   }
 
-  function loadDataset(path: Array<string>, dataset: String) {
+  function loadDataset(path: Array<string>, dataset: string) {
     console.log('loading dataset:', path, dataset);
     dv.dir(path).then((listing) => {
       app.route = 'dataset';
-      app.path = path;
-      app.dataset = dataset;
-      app.parentUrl = '/grapher/' + pathStr(path);
+
+      var elem = <pages.DatasetPage> pages.DatasetPage.create();
+      elem.path = path;
+      elem.dataset = dataset;
+      elem.parentUrl = '/grapher/' + pathStr(path);
+      setContent(elem);
     });
   }
 
@@ -190,23 +199,29 @@ window.addEventListener('WebComponentsReady', function() {
         return x;
       });
       app.route = 'manager';
-      app.connections = connsWithUrl;
+      var elem = <pages.ManagerPage> pages.ManagerPage.create();
+      elem.connections = connsWithUrl;
+      setContent(elem);
     });
   });
 
   page('/server/:name', (ctx, next) => {
     mgr.serverInfo(ctx.params['name']).then((info) => {
       app.route = 'server';
-      app.serverInfo = info;
+      var elem = <pages.ServerPage> pages.ServerPage.create();
+      elem.serverInfo = info;
+      setContent(elem);
     });
   });
 
   page('/nodes', () => {
     node.allNodes().then((nodesInfo) => {
       app.route = 'nodes';
-      app.nodesInfo = nodesInfo;
-      app.nodeApi = node;
-      app.managerApi = mgr;
+      var elem = <pages.NodesPage> pages.NodesPage.create();
+      elem.nodesInfo = nodesInfo;
+      elem.nodeApi = node;
+      elem.managerApi = mgr;
+      setContent(elem);
     });
   });
 

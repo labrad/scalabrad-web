@@ -43,10 +43,7 @@
 </head>
 
 <body unresolved class="fullbleed layout vertical">
-  <my-app></my-app>
-
-  <!-- <template is="dom-bind" id="app"> -->
-  <template id="app">
+  <template is="dom-bind" id="app">
 
     <paper-drawer-panel id="paperDrawerPanel" forceNarrow>
       <div drawer>
@@ -98,69 +95,9 @@
           </paper-tabs>-->
         </paper-toolbar>
 
-
         <!-- Main Content -->
-        <iron-pages attr-for-selected="data-route" selected="{{route}}">
+        <div id="content"></div>
 
-          <section data-route="manager">
-            <paper-material elevation="0">
-              <labrad-manager connections={{connections}}>
-              </labrad-manager>
-            </paper-material>
-          </section>
-
-          <section data-route="server">
-            <paper-material elevation="0">
-              <labrad-server info={{serverInfo}}>
-              </labrad-server>
-            </paper-material>
-          </section>
-
-          <section data-route="nodes">
-            <paper-material elevation="0">
-              <labrad-nodes
-                  info={{nodesInfo}}
-                  api={{nodeApi}}
-                  manager-api={{managerApi}}>
-              </labrad-nodes>
-            </paper-material>
-          </section>
-
-          <section data-route="registry">
-            <paper-material elevation="0">
-
-              <labrad-breadcrumbs breadcrumbs={{breadcrumbs}}></labrad-breadcrumbs>
-              <labrad-registry
-                  path={{path}}
-                  dirs={{registryDirs}}
-                  keys={{registryKeys}}
-                  socket={{reg}}>
-              </labrad-registry>
-            </paper-material>
-          </section>
-
-          <section data-route="grapher">
-            <paper-material elevation="0">
-              <labrad-breadcrumbs breadcrumbs={{breadcrumbs}}></labrad-breadcrumbs>
-              <labrad-grapher
-                  path={{path}}
-                  dirs={{datavaultDirs}}
-                  datasets={{datavaultDatasets}}>
-              </labrad-grapher>
-            </paper-material>
-          </section>
-
-          <section data-route="dataset">
-            <paper-material elevation="0">
-            <labrad-grapher-dataset
-                path={{path}}
-                dataset={{dataset}}
-                parent-url={{parentUrl}}>
-              </labrad-grapher-dataset>
-            </paper-material>
-          </section>
-
-        </iron-pages>
       </paper-header-panel>
     </paper-drawer-panel>
   </template>
