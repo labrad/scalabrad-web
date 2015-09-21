@@ -119,10 +119,9 @@ export class LabradRegistry extends polymer.Base {
    */
   @listen('iron-form-submit')
   updateKey(event) {
-    console.log('iron-form-submit', event);
     var self = this;
-    var selKey = Object.keys(event.detail)[0];
-    var newVal = event.detail[selKey];
+    var selKey = event.detail.key;
+    var newVal = event.detail.value;
     this.socket.set({path: this.path, key: selKey, value: newVal}).then(
       (resp) => {
         self.repopulateList(resp);
@@ -312,19 +311,4 @@ export class LabradRegistry extends polymer.Base {
       );
     }
   }
-
-  @listen('iron-form-submit')
-  updateKey(event) {
-    var self = this;
-    var selKey = event.detail.key;
-    var newVal = event.detail.value;
-    this.socket.set({path: this.path, key: selKey, value: newVal}).then(
-      (resp) => {
-        self.repopulateList(resp);
-        self.selKey = null;
-      },
-      (reason) => self.handleError(reason)
-    );
-  }
-
 }
