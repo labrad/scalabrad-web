@@ -11,8 +11,8 @@
 
     #reg-menu {
       position: fixed;
-      top: 140px;
-      left: 33px;
+      top: var(--maintoolbar-height);
+      transform: translateY(50%);
       @apply(--shadow-elevation-2dp);
       padding-top: 5px;
       padding-bottom: 5px;
@@ -20,8 +20,7 @@
     }
 
     #reg-area {
-      margin-top: 85px;
-      padding-top: 12px;
+      margin-top: 5em;
       background-color: white;
       display: inline-block;
       @apply(--shadow-elevation-2dp);
@@ -31,16 +30,18 @@
     .iron-selected {
       background-color: #ddd;
     }
+
     .iron-selector {
       width: 100%;
       display: block;
       border: 1px solid #ccc;
       border-top: none;
     }
-    
+
     table {
       width: 100%;
     }
+
     tbody {
       display:table-header-group;
     }
