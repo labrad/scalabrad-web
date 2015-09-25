@@ -4,6 +4,10 @@ body {
   color: #333;
 }
 
+#mainToolbar {
+  font-size: 20px;
+}
+
 th {
   @apply(--paper-font-body1);
   color: var(--secondary-text-color);

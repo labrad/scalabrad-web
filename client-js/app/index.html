@@ -82,10 +82,16 @@
           <button tabindex="1" id="paperToggle" paper-drawer-toggle>
             <iron-icon icon="menu" paper-drawer-toggle></iron-icon>
           </button>
-          <span class="flex"></span>
 
           <!-- Application name -->
-          <div class="appname bottom paper-font-display2">LabRAD - <span>{{route}}</span></div>
+          <div>Labrad -
+            <template is="dom-if" if="{{!hasBreadcrumbs}}">
+              <span>{{route}}</span>
+            </template>
+            <template is="dom-if" if="{{hasBreadcrumbs}}">
+              <labrad-breadcrumbs breadcrumbs={{breadcrumbs}} style="display: inline"></labrad-breadcrumbs>
+            </template>
+          </div>
 
           <!--<paper-tabs attr-for-selected="data-route" selected="{{route}}">
             <paper-tab data-route="manager">Manager</paper-tab>

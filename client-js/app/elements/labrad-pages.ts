@@ -93,9 +93,6 @@ export class RegistryPage extends polymer.Base {
 @component("labrad-page-grapher")
 export class GrapherPage extends polymer.Base {
   @property({type: Array})
-  breadcrumbs: Array<{name: string; isLink: boolean; url: string}>;
-
-  @property({type: Array})
   path: Array<string>;
 
   @property({type: Array})
@@ -106,13 +103,11 @@ export class GrapherPage extends polymer.Base {
 
   static init(
     path: Array<string>,
-    breadcrumbs: Array<{name: string; isLink: boolean; url: string}>,
     dirs: Array<{name: string; url: string}>,
     datasets: Array<{name: string; url: string}>
   ): GrapherPage {
     var inst = <GrapherPage> GrapherPage.create();
     inst.path = path;
-    inst.breadcrumbs = breadcrumbs;
     inst.dirs = dirs;
     inst.datasets = datasets;
     return inst;

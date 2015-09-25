@@ -3,6 +3,7 @@
 <dom-module id="labrad-breadcrumbs">
   <style>
     ul {
+      display: inline-block;
       padding: 0;
     }
     li {
@@ -11,17 +12,19 @@
     li:before {
       content: "/";
     }
+    a {
+      color: white;
+    }
   </style>
   <template>
     <ul>
-      <span class="paper-font-body1">Current Path: </span>
       <template is="dom-repeat" items="{{breadcrumbs}}">
         <li>
           <template is="dom-if" if="{{item.isLink}}">
-            <a is="app-link" path="{{item.url}}" href="{{item.url}}"><span class="paper-font-body1">{{item.name}}</span></a>
+            <a is="app-link" path="{{item.url}}" href="{{item.url}}"><span>{{item.name}}</span></a>
           </template>
           <template is="dom-if" if="{{!item.isLink}}">
-            <span class="paper-font-body1">{{item.name}}</span>
+            <span>{{item.name}}</span>
           </template>
         </li>
       </template>

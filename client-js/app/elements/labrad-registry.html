@@ -12,15 +12,12 @@
     #reg-menu {
       position: fixed;
       top: var(--maintoolbar-height);
-      transform: translateY(50%);
+      width: 100%;
       @apply(--shadow-elevation-2dp);
-      padding-top: 5px;
-      padding-bottom: 5px;
-      background-color: white;
     }
 
     #reg-area {
-      margin-top: 5em;
+      margin-top: var(--maintoolbar-height);
       background-color: white;
       display: inline-block;
       @apply(--shadow-elevation-2dp);
@@ -58,6 +55,10 @@
     .label-wide {
       width: 100%;
     }
+    paper-toolbar {
+      background-color: #EEEEEE;
+      color: black;
+    }
 
     paper-dialog.size-position {
       position: fixed;
@@ -76,11 +77,13 @@
     }
     #search-bar {
       padding: 0px 10px;
+      flex-grow: 1;
+      text-align: right;
     }
     #search-bar input {
       font-family: var(--primary-font-family);
       font-size: 15px;
-      width: 50%;
+      width: calc(100% - 50px);
       padding: 10px;
       border: 0;
       border-radius: 2px;
@@ -89,10 +92,6 @@
   </style>
   <template>
     <div id="reg-area">
-      <div id="search-bar">
-        <iron-icon icon="search"></iron-icon>
-        <input type="search" id="search" value="{{filterText::input}}" placeholder="search registry">
-      </div> 
       <table>
         <tbody is="selectable-table" attr-for-selected="name" selected="{{selDir}}" on-tap="selectDir">
           <template id="dirList" is="dom-repeat" items="{{dirs}}" filter="filterFunc">
@@ -121,16 +120,35 @@
       </table>
     </div>
     <div id="reg-menu">
-      <section>
-        <menu-button on-click="newKeyClicked" name="new key" icon-name="create"></menu-button>
-        <menu-button on-click="newFolderClicked" name="new folder" icon-name="folder-open"></menu-button>
-        <menu-button on-click="copyClicked" name="copy" icon-name="content-copy" disabled={{!selected}}></menu-button>
-        <menu-button on-click="renameClicked" name="rename" icon-name="code" disabled={{!selected}}></menu-button>
-        <menu-button on-click="deleteClicked" name="delete" icon-name="delete" disabled={{!selected}}></menu-button>
-      </section>
+      <paper-toolbar>
+        <paper-button on-click="newKeyClicked">
+          <iron-icon icon="create"></iron-icon>
+          new key
+        </paper-button>
+        <paper-button on-click="newFolderClicked">
+          <iron-icon icon="folder-open"></iron-icon>
+          new dir
+        </paper-button>
+        <paper-button on-click="copyClicked" disabled="{{!selected}}">
+          <iron-icon icon="content-copy"></iron-icon>
+          copy
+        </paper-button>
+        <paper-button on-click="renameClicked" disabled="{{!selected}}">
+          <iron-icon icon="code"></iron-icon>
+          rename
+        </paper-button>
+        <paper-button on-click="deleteClicked" disabled="{{!selected}}">
+          <iron-icon icon="delete"></iron-icon>
+          delete
+        </paper-button>
+        <div id="search-bar">
+          <iron-icon icon="search"></iron-icon>
+          <input type="search" id="search" value="{{filterText::input}}" placeholder="search registry">
+        </div>
+      </paper-toolbar>
     </div>
-    <!-- Dialogs for various registry operations -->
 
+    <!-- Dialogs for various registry operations -->
     <paper-dialog id="newKeyDialog" modal>
       <h1>Create new key</h1>
 

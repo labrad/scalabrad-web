@@ -116,6 +116,8 @@ window.addEventListener('WebComponentsReady', function() {
       }
 
       app.route = 'registry';
+      app.hasBreadcrumbs = true;
+      app.breadcrumbs = breadcrumbs;
       setContent(pages.RegistryPage.init(breadcrumbs, path, dirs, keys, reg));
     });
   }
@@ -153,7 +155,9 @@ window.addEventListener('WebComponentsReady', function() {
       }
 
       app.route = 'grapher';
-      setContent(pages.GrapherPage.init(path, breadcrumbs, dirs, datasets));
+      app.hasBreadcrumbs = true;
+      app.breadcrumbs = breadcrumbs;
+      setContent(pages.GrapherPage.init(path, dirs, datasets));
     });
   }
 
@@ -161,6 +165,7 @@ window.addEventListener('WebComponentsReady', function() {
     console.log('loading dataset:', path, dataset);
     dv.dir(path).then((listing) => {
       app.route = 'dataset';
+      app.hasBreadcrumbs = false;
       var parentUrl = '/grapher/' + pathStr(path);
       setContent(pages.DatasetPage.init(path, dataset, parentUrl));
     });
@@ -177,6 +182,7 @@ window.addEventListener('WebComponentsReady', function() {
         return x;
       });
       app.route = 'manager';
+      app.hasBreadcrumbs = false;
       setContent(pages.ManagerPage.init(connsWithUrl));
     });
   });
@@ -184,6 +190,7 @@ window.addEventListener('WebComponentsReady', function() {
   page('/server/:name', (ctx, next) => {
     mgr.serverInfo(ctx.params['name']).then((info) => {
       app.route = 'server';
+      app.hasBreadcrumbs = false;
       setContent(pages.ServerPage.init(info));
     });
   });
@@ -191,6 +198,7 @@ window.addEventListener('WebComponentsReady', function() {
   page('/nodes', () => {
     node.allNodes().then((nodesInfo) => {
       app.route = 'nodes';
+      app.hasBreadcrumbs = false;
       setContent(pages.NodesPage.init(nodesInfo, node, mgr));
     });
   });
