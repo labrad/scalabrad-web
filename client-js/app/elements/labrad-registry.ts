@@ -135,6 +135,86 @@ export class LabradRegistry extends polymer.Base {
   /**
    * Launch new key dialog.
    */
+convertToXML(params: {path: Array<string>, name: string, xml: Object}): Promise<Object>;
+
+  @listen('dragstart')
+  startDragging(event) {
+    var path = this.path.slice(0);
+    
+    console.log('dragstart', event.target.name, path);
+    var XML = document.createElement("dir");
+    this.convertToXML(path, event.target.name, XML).then(
+    (result) => event.dataTransfer.setData("text/plain",new XMLSerializer().serializeToString(result) )
+        );
+    //evedataTransfer.setData("text/plain", );
+    //console.log("done",XML);
+    
+      
+//       var XML2 = document.createElement("dir");
+//      var Node = document.createElement("testing");
+//Node.appendChild( document.createElement("testingOne") );
+//Node.appendChild( document.createElement("TestingTwo") );
+//Node.appendChild( document.createElement("TestingThree") );
+//XML2.appendChild(Node);
+//
+//alert(XML2.innerHTML);
+//    alert(XML.innerHTML);
+      //(new XMLSerializer()).serializeToString(XML)
+  }
+
+  convertToXML(path, name, XML) {
+    path.push(name);
+    console.log(path);
+    var Node = document.createElement(name);
+    
+    this.socket.dir({path: path}).then(
+        (resp) => this.handleResp(resp, path, Node)
+        );
+    
+    XML.appendChild(Node);
+    return XML;
+  }
+    
+  handleResp(resp, path, Node) {
+      console.log(resp);
+      var key;
+      var name:
+      val: string;
+    for (var i in resp.keys) {
+      key = Node.appendChild( document.createElement( "key" ));
+      name = key.appendChild( document.createElement( "name" ));
+      val = key.appendChild( document.createElement( "value" ));
+      name.appendChild( document.createTextNode( resp.keys[i] )); //;
+      val.appendChild( document.createTextNode( resp.vals[i] )); //;
+     // Node.appendChild( document.createElement(resp.keys[i]));
+     // Node.appendChile( document.setAttribute(resp.keys[i], resp.vals[i]));
+    }
+    for (var j in resp.dirs) {
+      //console.log(path, resp.dirs[i]);
+      //Node.appendChild( document.createElement( resp.dirs[j] ));
+      this.convertToXML(path, resp.dirs[j], Node);
+    }
+  }
+
+   
+    
+//  reallyConvertToXML(resp, path) {
+//      console.log(resp);
+//      var path: Array;
+//      
+//      crawl(XML,resp,path);
+//  }
+//  crawl(XML, resp, path) {
+//      for (var i in resp.dirs) {
+//        console.log(resp.dirs[i]);
+//        var Node = document.createElement(resp.dirs[i]);
+//        path.push(resp.dirs[i]);
+//        this.socket.dir({path: path}).then(
+//        (resp) => this.reallyConvertToXML(resp)
+//        );
+//      }
+//      XML.appendChild(Node);
+//  }
   newKeyClicked(event) {
     var dialog = this.$.newKeyDialog,
         newKeyElem = this.$.newKeyInput,

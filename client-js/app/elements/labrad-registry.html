@@ -96,7 +96,7 @@
       <table>
         <tbody is="selectable-table" attr-for-selected="name" selected="{{selDir}}" on-tap="selectDir">
           <template id="dirList" is="dom-repeat" items="{{dirs}}" filter="filterFunc">
-            <tr name="{{item.name}}">
+            <tr name="{{item.name}}" draggable="true">
               <td>
                 <a is="app-link" path="{{item.url}}" href="{{item.url}}">
                   <dir-item kind="folder">{{item.name}}</dir-item>
