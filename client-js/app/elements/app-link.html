@@ -10,7 +10,7 @@
     },
 
     onClick: function(e) {
-      if (e.ctrlKey || e.metaKey) {
+      if (e.ctrlKey || e.metaKey || e.button !== 0) {
         return true;
       }
       this.fire('app-link-click', {path: this.path});
