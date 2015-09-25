@@ -26,10 +26,10 @@ export class LabradRegistry extends polymer.Base {
 
   @property({type: String, notify: true, value: null})
   selectType: string;
-    
+
   @property({type: String, notify: true, value: ''})
   filterText: string;
-  
+
   regex: RegExp; //regular expression for string comparison
 
   //Helper Functions
@@ -48,8 +48,6 @@ export class LabradRegistry extends polymer.Base {
     this.regex = new RegExp(this.filterText, 'i');
     this.$.dirList.render();
     this.$.keyList.render();
-
-
   }
 
   filterFunc(item) {
@@ -164,6 +162,46 @@ export class LabradRegistry extends polymer.Base {
     }
   }
 
+  /**
+   * Launch the value edit dialog.
+   */
+  editValueClicked(event) {
+    var dialog = this.$.editValueDialog,
+        editValueElem = this.$.editValueInput,
+        name = event.target.keyName,
+        value: string = null,
+        found = false;
+    for (let item of this.keys) {
+      if (item.name == name) {
+        value = item.value;
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      return;
+    }
+    editValueElem.value = value;
+    dialog.keyName = name;
+    dialog.open();
+    window.setTimeout(() => editValueElem.$.input.$.textarea.focus(), 0);
+  }
+
+  /**
+   * Submit the edited value to the server.
+   */
+  doEditValue() {
+    var self = this,
+        key = this.$.editValueDialog.keyName,
+        newVal = this.$.editValueInput.value;
+    this.socket.set({path: this.path, key: key, value: newVal}).then(
+      (resp) => {
+        self.repopulateList(resp);
+        self.selKey = null;
+      },
+      (reason) => self.handleError(reason)
+    );
+  }
 
   /**
    * Launch new folder dialog.

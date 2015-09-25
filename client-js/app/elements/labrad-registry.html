@@ -113,11 +113,7 @@
                 <dir-item kind="key">{{item.name}}</dir-item>
               </td>
               <td class="label-wide">
-                <form is="iron-form" id="{{item.name}}">
-                  <iron-a11y-keys keys="tab" on-keys-pressed="incrementSelector">
-                      <expandable-input name="{{item.name}}" value="{{item.value}}"></expandable-input>
-                  </iron-a11y-keys>
-                </form>
+                <paper-item key-name="{{item.name}}" on-dblclick="editValueClicked">{{item.value}}</paper-item>
               </td>
             </tr>
           </template>
@@ -144,6 +140,17 @@
       </form>
       <div class="buttons"> 
         <paper-button on-click="doNewKey" dialog-confirm>OK</paper-button>
+        <paper-button dialog-dismiss>CANCEL</paper-button>
+      </div>
+    </paper-dialog>
+
+    <paper-dialog id="editValueDialog" modal>
+      <h1>Edit <span>{{selKey}}</span></h1>
+      <form>
+        <paper-textarea id="editValueInput" label="Value"></paper-textarea>
+      </form>
+      <div class="buttons">
+        <paper-button on-click="doEditValue" dialog-confirm autofocus>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
