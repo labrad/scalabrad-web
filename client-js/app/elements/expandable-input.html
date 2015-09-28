@@ -68,7 +68,7 @@ event.detail
     },
     keyPressed: function(event) {
       // swallow shift-enter, which is used for submitting a value
-      if (event.shiftKey && event.keyCode == 13) {
+      if (event.shiftKey && event.keyCode === 13) {
         event.preventDefault();
       }
     },
