@@ -27,9 +27,11 @@ class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi)(impli
 
   private var nextMessageId: Long = 1L
 
-  private val cxn = makeClient
-  handleConnectionEvents(cxn)
-  startConnection(cxn)
+  def login(username: String, password: String): Unit = {
+    val cxn = new Client("Browser", password = password.toCharArray)
+    handleConnectionEvents(cxn)
+    cxn.connect()
+  }
 
   def get: Connection = {
     cxnOpt.getOrElse { sys.error("not connected") }
@@ -45,10 +47,6 @@ class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi)(impli
     try cxnOpt.foreach(_.close()) catch { case e: Throwable => }
   }
 
-  private def makeClient = {
-    new Client("Browser")
-  }
-
   /**
    * Handle connection and disconnection events on our client
    */
@@ -61,16 +59,16 @@ class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi)(impli
         client.connected(cxn.host)
 
       case false =>
-        log.info("disconnected.  will reconnect in 10 seconds")
+        log.info(s"disconnected. will reconnect in $RECONNECT_TIMEOUT")
         this.cxnOpt = None
         client.disconnected(cxn.host)
 
         if (live) {
           // reconnect after some delay
-          val cxn = makeClient
-          handleConnectionEvents(cxn)
+          val newCxn = new Client("Browser", host = cxn.host, port = cxn.port, password = cxn.password)
+          handleConnectionEvents(newCxn)
           doLater(RECONNECT_TIMEOUT) {
-            startConnection(cxn)
+            startConnection(newCxn)
           }
         }
     }
@@ -102,10 +100,10 @@ class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi)(impli
       subscribeToServerConnectMessages(pkt)
       subscribeToServerDisconnectMessages(pkt)
 
-      subscribeToNodeServerMessage(pkt, "node.server_starting", "STARTING") //InstanceStatus.STARTING)
-      subscribeToNodeServerMessage(pkt, "node.server_started", "STARTED") //InstanceStatus.STARTED)
-      subscribeToNodeServerMessage(pkt, "node.server_stopping", "STOPPING") //InstanceStatus.STOPPING)
-      subscribeToNodeServerMessage(pkt, "node.server_stopped", "STOPPED") //InstanceStatus.STOPPED)
+      subscribeToNodeServerMessage(pkt, "node.server_starting", "STARTING")
+      subscribeToNodeServerMessage(pkt, "node.server_started", "STARTED")
+      subscribeToNodeServerMessage(pkt, "node.server_stopping", "STOPPING")
+      subscribeToNodeServerMessage(pkt, "node.server_stopped", "STOPPED")
 
       subscribeToNodeStatusMessages(pkt)
       Await.result(pkt.send(), 10.seconds)
@@ -165,7 +163,7 @@ class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi)(impli
     }
   }
 
-  private def subscribeToNodeServerMessage(mgr: ManagerServer, messageName: String, status: String /*InstanceStatus*/) {
+  private def subscribeToNodeServerMessage(mgr: ManagerServer, messageName: String, status: String) {
     addSubscription(mgr, messageName) {
       case Message(_, _, _, data) =>
         val map = parseNodeMessage(data)

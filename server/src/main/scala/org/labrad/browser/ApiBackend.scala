@@ -49,6 +49,8 @@ class ApiBackend(implicit ec: ExecutionContext) extends Backend {
     registryApi = new RegistryApi(cxn, registryClient)
 
     routes = JsonRpc.routes("""
+      CALL  org.labrad.manager.login  cxn.login
+
       CALL  org.labrad.datavault.dir          datavaultApi.dir
       CALL                      .datasetInfo              .datasetInfo
       CALL                      .data                     .data

@@ -8,23 +8,25 @@ import * as datavault from "./datavault";
 import * as nodeApi from "./node";
 import * as rpc from "./rpc";
 
+import {LabradApp} from "../elements/labrad-app";
 import {LabradNodes, LabradInstanceController, LabradNodeController} from "../elements/labrad-nodes";
 import {LabradRegistry} from "../elements/labrad-registry";
 import * as pages from "../elements/labrad-pages";
 
-// autobinding template which is the main ui container
-var app: any = document.querySelector('#app');
 
-// Close drawer after menu item is selected if drawerPanel is narrow
-app.onMenuSelect = function() {
-  var drawerPanel: any = document.querySelector('#paperDrawerPanel');
-  if (drawerPanel.narrow) {
-    drawerPanel.closeDrawer();
-  }
-};
+/**
+ * Object containing login credentials.
+ */
+interface Creds {
+  username: string;
+  password: string;
+}
 
-window.addEventListener('WebComponentsReady', function() {
+
+window.addEventListener('WebComponentsReady', () => {
+
   // register our custom elements with polymer
+  LabradApp.register();
   LabradRegistry.register();
   LabradNodes.register();
   LabradInstanceController.register();
@@ -41,6 +43,9 @@ window.addEventListener('WebComponentsReady', function() {
   body.addEventListener('app-link-click', (e: any) => {
     page(e.detail.path);
   });
+
+  var app = <LabradApp> LabradApp.create();
+  body.appendChild(<any> app);
 
   // Construct a websocket url relative to this page based on window.location
   // Note that window.location.protocol includes a trailing colon, but
@@ -63,10 +68,15 @@ window.addEventListener('WebComponentsReady', function() {
   var dv = new datavault.DataVaultService(socket);
   var node = new nodeApi.NodeService(socket);
 
-  function setContent(elem): void {
+  function setContent(elem, route: string, breadcrumbs?: Array<{name: string; isLink: boolean; url?: string}>): void {
+    app.route = route;
+    if (breadcrumbs) {
+      app.hasBreadcrumbs = true;
+      app.breadcrumbs = breadcrumbs;
+    } else {
+      app.hasBreadcrumbs = false;
+    }
     var content = app.$.content;
-    console.log('container', content);
-    console.log('contents', elem);
     while (content.firstChild) {
       content.removeChild(content.firstChild);
     }
@@ -115,10 +125,7 @@ window.addEventListener('WebComponentsReady', function() {
         });
       }
 
-      app.route = 'registry';
-      app.hasBreadcrumbs = true;
-      app.breadcrumbs = breadcrumbs;
-      setContent(pages.RegistryPage.init(breadcrumbs, path, dirs, keys, reg));
+      setContent(pages.RegistryPage.init(breadcrumbs, path, dirs, keys, reg), 'registry', breadcrumbs);
     });
   }
 
@@ -154,20 +161,15 @@ window.addEventListener('WebComponentsReady', function() {
         });
       }
 
-      app.route = 'grapher';
-      app.hasBreadcrumbs = true;
-      app.breadcrumbs = breadcrumbs;
-      setContent(pages.GrapherPage.init(path, dirs, datasets));
+      setContent(pages.GrapherPage.init(path, dirs, datasets), 'grapher', breadcrumbs);
     });
   }
 
   function loadDataset(path: Array<string>, dataset: string) {
     console.log('loading dataset:', path, dataset);
     dv.dir(path).then((listing) => {
-      app.route = 'dataset';
-      app.hasBreadcrumbs = false;
       var parentUrl = '/grapher/' + pathStr(path);
-      setContent(pages.DatasetPage.init(path, dataset, parentUrl));
+      setContent(pages.DatasetPage.init(path, dataset, parentUrl), 'dataset');
     });
   }
 
@@ -181,25 +183,19 @@ window.addEventListener('WebComponentsReady', function() {
         }
         return x;
       });
-      app.route = 'manager';
-      app.hasBreadcrumbs = false;
-      setContent(pages.ManagerPage.init(connsWithUrl));
+      setContent(pages.ManagerPage.init(connsWithUrl), 'manager');
     });
   });
 
   page('/server/:name', (ctx, next) => {
     mgr.serverInfo(ctx.params['name']).then((info) => {
-      app.route = 'server';
-      app.hasBreadcrumbs = false;
-      setContent(pages.ServerPage.init(info));
+      setContent(pages.ServerPage.init(info), 'server');
     });
   });
 
   page('/nodes', () => {
     node.allNodes().then((nodesInfo) => {
-      app.route = 'nodes';
-      app.hasBreadcrumbs = false;
-      setContent(pages.NodesPage.init(nodesInfo, node, mgr));
+      setContent(pages.NodesPage.init(nodesInfo, node, mgr), 'nodes');
     });
   });
 
@@ -263,12 +259,95 @@ window.addEventListener('WebComponentsReady', function() {
     mkDvRoutes(i);
   }
 
-  // add #! before urls
-  page({
-    hashbang: false
-  });
+  /**
+   * Launch a dialog box to let the user log in to labrad.
+   */
+  function loginWithDialog() {
+    app.$.loginButton.addEventListener('click', (event) => {
+      var username = '',
+          password = app.$.passwordInput.value,
+          rememberPassword = app.$.rememberPassword.checked;
+      mgr.login({username: username, password: password}).then(
+        (result) => {
+          var creds = {username: username, password: password};
+          var storage = rememberPassword ? window.localStorage : window.sessionStorage;
+          storage.setItem('labrad-credentials', JSON.stringify(creds));
+          app.$.loginDialog.close();
+          page({
+            hashbang: false
+          });
+        },
+        (error) => {
+          app.loginError = error.message || error;
+          loginWithDialog();
+        }
+      );
+    });
+    app.$.loginDialog.open();
+    setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
+  }
 
-  // Ensure the drawer is hidden on desktop/tablet
-  var drawerPanel: any = document.querySelector('#paperDrawerPanel');
-  drawerPanel.forceNarrow = true;
+  /**
+   * Load credentials from the given Storage object (session or local).
+   *
+   * If valid credentials are not found, return null.
+   */
+  function loadCreds(storage: Storage): Creds {
+    try {
+      var creds = JSON.parse(storage.getItem('labrad-credentials'));
+      if (creds.hasOwnProperty('username') &&
+          creds.hasOwnProperty('password')) {
+        return {
+          username: creds.username,
+          password: creds.password
+        };
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  /**
+   * Attempt to login to labrad using credentials saved in the given Storage.
+   *
+   * If the login fails due to an invalid password, we clear the credentials
+   * from this storage object.
+   */
+  function attemptLogin(storage: Storage): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      var creds = loadCreds(storage);
+      if (creds === null) {
+        reject('no credentials');
+      } else {
+        mgr.login({
+          username: creds.username,
+          password: creds.password
+        }).then(
+          (result) => {
+            resolve(result);
+          },
+          (error) => {
+            var errStr = String(error.message || error);
+            if (errStr.indexOf('password') >= 0) {
+              // if we had credentials, clear them out
+              storage.removeItem('labrad-credentials');
+            }
+            reject(error);
+          }
+        );
+      }
+    });
+  }
+
+  // Login using credentials from session and then local storage.
+  // If no valid credentials are found, prompt user with login dialog.
+  var creds: Creds = loadCreds(window.sessionStorage) || loadCreds(window.localStorage);
+
+  attemptLogin(window.sessionStorage)
+    .catch(
+      error => attemptLogin(window.localStorage)
+    )
+    .then(
+      success => page({hashbang: true}),
+      error => loginWithDialog()
+    );
 });
