@@ -127,6 +127,94 @@ export class LabradRegistry extends polymer.Base {
       .catch((reason) => this.handleError(reason));
   }
 
+  //Drag and drop
+  @listen('dragenter')
+  @listen('dragover')
+  suppressBehaviour(event) {
+    //change colors of cells to indicate target
+    event.preventDefault(); //I don't understand this.
+    event.target.closest('td').classList.add('over');
+  }
+
+  @listen('dragleave')
+  leaveDrag(event) {
+    //change colors of cells back to normal
+    event.preventDefault(); //I don't understand this.
+    event.target.closest('td').classList.remove('over');
+  }
+
+  @listen('dragstart')
+  startDrag(event) {
+    //detect start of drag event, grab info about target
+    var data: any; //I tried enum, but kept getting errors...
+    data = {path: this.path, name: event.target.name};
+    //console.log('drag started', this.path);
+    event.dataTransfer.setData('text', JSON.stringify(data));
+    event.dataTransfer.effectAllowed = 'move';
+    if (event.ctrlKey) {
+      this.$.toastText.text = "copy item...";
+      this.$.toastText.show();
+    }
+    else {
+      this.$.toastText.text = "move... not implemented yet :/ ctrl+click to copy";
+      this.$.toastText.show();
+    }
+  }
+
+  @listen('dragend')
+  endDrag(event) {
+    console.log('drag ended',event);
+  }
+
+  @listen('drop')
+  handleDrop(event) {
+    event.preventDefault();
+    var data: any;
+    data = JSON.parse(event.dataTransfer.getData('text'));
+    event.target.closest('td').classList.remove('over');
+
+    if (event.ctrlKey) {
+      //console.log('dropped on', event.target.closest('td').name, 'with data', data ); 
+      if (event.target.closest('td').className.includes('dir')) {
+        //place folder into new folder
+        //I don't know if .closest('td') is too fragile but it works
+        var newPath: string[] = this.path.splice(0);
+        var oldFullPath: string[] = data.path;
+        newPath.push(event.target.closest('td').name);
+        var dialog = this.$.dragCopyDialog,
+            copyOriginName = this.$.originName,
+            copyOriginPath = this.$.originPath,
+            copyNameElem = this.$.dragCopyNameInput,
+            copyPathElem = this.$.dragCopyPathInput;
+        copyNameElem.value = data.name;
+        copyOriginName.textContent = data.name;
+        copyOriginPath.textContent = JSON.stringify(data.path);
+        copyPathElem.value = this.pathToString(newPath);
+        dialog.open();
+        window.setTimeout(() => copyNameElem.$.input.focus(), 0);
+      }
+      else if (JSON.stringify(this.path) != JSON.stringify(data.path)){
+        //copying into window by dropping not on a folder, but 
+        //can't copy into the same path
+        console.log('copying into window', this.path, data.path);
+        var newPath: string[] = this.path.splice(0);
+        var oldFullPath: string[] = data.path;
+
+        var dialog = this.$.dragCopyDialog,
+            copyOriginName = this.$.originName,
+            copyOriginPath = this.$.originPath,
+            copyNameElem = this.$.dragCopyNameInput,
+            copyPathElem = this.$.dragCopyPathInput;
+        copyNameElem.value = data.name;
+        copyOriginName.textContent = data.name;
+        copyOriginPath.textContent = JSON.stringify(data.path);
+        copyPathElem.value = this.pathToString(newPath);
+        dialog.open();
+        window.setTimeout(() => copyNameElem.$.input.focus(), 0);
+      }
+    }
+  }
+
 
   /**
    * Launch new key dialog.
@@ -252,6 +340,24 @@ export class LabradRegistry extends polymer.Base {
         .then(() => this.repopulateList())
         .catch((reason) => this.handleError(reason));
     }
+  }
+
+  doDragCopy() {
+    var self = this;
+    var newName =  this.$.dragCopyNameInput.value;
+    var newPath = JSON.parse(this.$.dragCopyPathInput.value);
+    var oldPath = JSON.parse(this.$.originPath.textContent);
+    var oldName = this.$.originName.textContent;
+
+    this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName}).then(
+      (resp) => {
+        self.repopulateList(resp);
+        this.$.toastText.text = "Directory Copied Successfully!";
+        this.$.toastText.show();
+      },
+      (reason) => self.handleError(reason)
+    );
+
   }
 
 

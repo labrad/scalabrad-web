@@ -1,4 +1,5 @@
 <link rel="import" href="../bower_components/paper-input/paper-textarea.html">
+<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="app-link.html">
 <link rel="import" href="dir-item.html">
 
@@ -41,6 +42,10 @@
 
     tbody {
       display:table-header-group;
+    }
+    
+    td.dir.over {
+      background-color: #93d4d4;
     }
 
     .table-header {
@@ -97,11 +102,11 @@
     <div id="reg-area">
       <table>
         <tbody is="selectable-table" attr-for-selected="name" selected="{{selDir}}" on-tap="selectDir">
-          <template id="dirList" is="dom-repeat" items="{{dirs}}" filter="filterFunc">
+          <template id="dirList" is="dom-repeat" items="{{dirs}}" filter="filterFunc"> 
             <tr name="{{item.name}}">
-              <td>
+              <td class="dir" name="{{item.name}}" draggable="true">
                 <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-                  <dir-item kind="folder">{{item.name}}</dir-item>
+                  <dir-item kind="folder" >{{item.name}}</dir-item>
                 </a>
               </td>
               <td class="label-wide"></td>
@@ -110,7 +115,7 @@
         </tbody>
         <tbody is="selectable-table" attr-for-selected="name"  selected="{{selKey}}" on-tap="selectKey">
           <template id="keyList" is="dom-repeat" items="{{keys}}" filter="filterFunc">
-            <tr name="{{item.name}}">
+            <tr class="key" name="{{item.name}}">
               <td>
                 <dir-item kind="key">{{item.name}}</dir-item>
               </td>
@@ -152,9 +157,12 @@
     </div>
 
     <!-- Dialogs for various registry operations -->
+    <paper-dialog id="dropTarget">
+      <h1>Drop here to place in this folder</h1>
+    </paper-dialog>
+    
     <paper-dialog id="newKeyDialog" modal>
       <h1>Create new key</h1>
-
       <form>
         <paper-input id="newKeyInput" label="Key"></paper-input>
         <paper-textarea id="newValueInput" label="Value"></paper-textarea>
@@ -183,6 +191,18 @@
       </form>
       <div class="buttons">
         <paper-button on-click="doNewFolder" dialog-confirm autofocus>OK</paper-button>
+        <paper-button dialog-dismiss>CANCEL</paper-button>
+      </div>
+    </paper-dialog>
+    
+     <paper-dialog id="dragCopyDialog" modal>
+      <h1>Copy "<span id="originName"></span>" from <span id="originPath"></span></h1>
+      <form>
+        <paper-input id="dragCopyNameInput" label="New Name" always-float-label></paper-input>
+        <paper-input id="dragCopyPathInput" label="New Path" always-float-label></paper-input>
+      </form>
+      <div class="buttons">
+        <paper-button on-click="doDragCopy" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -217,5 +237,7 @@
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
+    
+    <paper-toast id="toastText" text="tada"></paper-toast>
   </template>
 </dom-module>
