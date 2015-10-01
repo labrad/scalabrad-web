@@ -117,15 +117,14 @@ export class LabradRegistry extends polymer.Base {
    */
   @listen('iron-form-submit')
   updateKey(event) {
-    var self = this;
     var selKey = event.detail.key;
     var newVal = event.detail.value;
     this.socket.set({path: this.path, key: selKey, value: newVal}).then(
       (resp) => {
-        self.repopulateList(resp);
-        self.selKey = null;
+        this.repopulateList(resp);
+        this.selKey = null;
       },
-      (reason) => self.handleError(reason)
+      (reason) => this.handleError(reason)
     );
   }
 
@@ -147,14 +146,13 @@ export class LabradRegistry extends polymer.Base {
    * Create new key.
    */
   doNewKey() {
-    var self = this;
     var newKey = this.$.newKeyInput.value;
     var newVal = this.$.newValueInput.value;
 
     if (newKey) {
       this.socket.set({path: this.path, key: newKey, value: newVal}).then(
-        (resp) => self.repopulateList(resp),
-        (reason) => self.handleError(reason)
+        (resp) => this.repopulateList(resp),
+        (reason) => this.handleError(reason)
       );
     }
     else {
@@ -191,15 +189,14 @@ export class LabradRegistry extends polymer.Base {
    * Submit the edited value to the server.
    */
   doEditValue() {
-    var self = this,
-        key = this.$.editValueDialog.keyName,
+    var key = this.$.editValueDialog.keyName,
         newVal = this.$.editValueInput.value;
     this.socket.set({path: this.path, key: key, value: newVal}).then(
       (resp) => {
-        self.repopulateList(resp);
-        self.selKey = null;
+        this.repopulateList(resp);
+        this.selKey = null;
       },
-      (reason) => self.handleError(reason)
+      (reason) => this.handleError(reason)
     );
   }
 
@@ -218,13 +215,12 @@ export class LabradRegistry extends polymer.Base {
    * Create new folder.
    */
   doNewFolder() {
-    var self = this,
-        newFolder = this.$.newFolderInput.value;
+    var newFolder = this.$.newFolderInput.value;
 
     if (newFolder) {
       this.socket.mkDir({path: this.path, dir: newFolder}).then(
-        (resp) => self.repopulateList(resp),
-        (reason) => self.handleError(reason)
+        (resp) => this.repopulateList(resp),
+        (reason) => this.handleError(reason)
       );
     }
     else {
@@ -250,20 +246,19 @@ export class LabradRegistry extends polymer.Base {
    * Copy the selected key or folder.
    */
   doCopy() {
-    var self = this;
     var newName =  this.$.copyNameInput.value;
     var newPath = JSON.parse(this.$.copyPathInput.value);
 
     if (this.selectType === 'dir') {
       this.socket.copyDir({path: this.path, dir: this.selDir, newPath: newPath, newDir: newName}).then(
-        (resp) => self.repopulateList(resp),
-        (reason) => self.handleError(reason)
+        (resp) => this.repopulateList(resp),
+        (reason) => this.handleError(reason)
       );
     }
     else if (this.selectType === 'key') {
       this.socket.copy({path: this.path, key: this.selKey, newPath: newPath, newKey: newName}).then(
-        (resp) => self.repopulateList(resp),
-        (reason) => self.handleError(reason)
+        (resp) => this.repopulateList(resp),
+        (reason) => this.handleError(reason)
       );
     }
   }
@@ -292,8 +287,7 @@ export class LabradRegistry extends polymer.Base {
    * Rename the selected key or folder.
    */
   doRename() {
-    var self = this,
-        newName = this.$.renameInput.value;
+    var newName = this.$.renameInput.value;
 
     var name: string;
     switch (this.selectType) {
@@ -306,14 +300,14 @@ export class LabradRegistry extends polymer.Base {
     if (newName) {
       if (this.selectType === 'dir') {
         this.socket.renameDir({path: this.path, dir: name, newDir: newName}).then(
-          (resp) => self.repopulateList(resp),
-          (reason) => self.handleError(reason)
+          (resp) => this.repopulateList(resp),
+          (reason) => this.handleError(reason)
         );
       }
       else if (this.selectType === 'key') {
         this.socket.rename({path: this.path, key: name, newKey: newName}).then(
-          (resp) => self.repopulateList(resp),
-          (reason) => self.handleError(reason)
+          (resp) => this.repopulateList(resp),
+          (reason) => this.handleError(reason)
         );
       }
     }
@@ -334,18 +328,16 @@ export class LabradRegistry extends polymer.Base {
    * Delete the selected key or folder.
    */
   doDelete() {
-    var self = this;
-
     if (this.selectType === 'dir') {
       this.socket.rmDir({path: this.path, dir: this.selDir}).then(
-        (resp) => self.repopulateList(resp),
-        (reason) => self.handleError(reason)
+        (resp) => this.repopulateList(resp),
+        (reason) => this.handleError(reason)
       );
     }
     else if (this.selectType === 'key') {
       this.socket.del({path: this.path, key: this.selKey}).then(
-        (resp) => self.repopulateList(resp),
-        (reason) => self.handleError(reason)
+        (resp) => this.repopulateList(resp),
+        (reason) => this.handleError(reason)
       );
     }
   }

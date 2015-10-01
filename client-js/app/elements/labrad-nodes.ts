@@ -81,8 +81,7 @@ export class LabradInstanceController extends polymer.Base {
    * state of this particular server instance.
    */
   updateButtonState(status: string) {
-    var self = this,
-        options = {info: false, start: false, stop: false, restart: false};
+    var options = {info: false, start: false, stop: false, restart: false};
     switch (status) {
       case 'STOPPED': this.active = false; options.start = true; break;
       case 'STARTING': this.active = true; break;
@@ -90,8 +89,8 @@ export class LabradInstanceController extends polymer.Base {
       case 'STOPPING': this.active = true; break;
       default: break;
     }
-    function updateButton(name: string) {
-      var button = self.$[name];
+    var updateButton = (name: string): void => {
+      var button = this.$[name];
       if (options[name]) {
         button.removeAttribute('disabled');
       } else {
@@ -118,11 +117,10 @@ export class LabradNodeController extends polymer.Base {
 
   @listen('refresh.click')
   onRefresh() {
-    var self = this;
     this.active = true;
     this.api.refreshNode(this.name).then(
-      (result) => { self.active = false; },
-      (error) => { self.active = false; }
+      (result) => { this.active = false; },
+      (error) => { this.active = false; }
     );
   }
 }
@@ -168,8 +166,8 @@ export class LabradNodes extends polymer.Base {
   apiChanged(newApi: NodeApi, oldApi: NodeApi) {
     console.log('apiChanged', newApi, oldApi);
     if (this.defined(newApi)) {
-      newApi.nodeStatus.add(this.onNodeStatus.bind(this), this.lifetime);
-      newApi.serverStatus.add(this.onServerStatus.bind(this), this.lifetime);
+      newApi.nodeStatus.add((msg) => this.onNodeStatus(msg), this.lifetime);
+      newApi.serverStatus.add((msg) => this.onServerStatus(msg), this.lifetime);
     }
   }
 
@@ -177,7 +175,7 @@ export class LabradNodes extends polymer.Base {
   managerChanged(newManager: ManagerApi, oldManager: ManagerApi) {
     console.log('managerChanged', newManager, oldManager);
     if (this.defined(newManager)) {
-      newManager.serverDisconnected.add(this.onServerDisconnected.bind(this), this.lifetime);
+      newManager.serverDisconnected.add((msg) => this.onServerDisconnected(msg), this.lifetime);
     }
   }
 

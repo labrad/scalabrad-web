@@ -23,7 +23,7 @@ export class Observable<A> {
   add(callback: (A) => void, lifetime?: Lifetime): (A) => void {
     this.callbacks.add(callback);
     if (lifetime) {
-      lifetime.defer((() => this.remove(callback)).bind(this));
+      lifetime.defer(() => this.remove(callback));
     }
     return callback;
   }
