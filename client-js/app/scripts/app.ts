@@ -347,7 +347,7 @@ window.addEventListener('WebComponentsReady', () => {
       error => attemptLogin(window.localStorage)
     )
     .then(
-      success => page({hashbang: true}),
+      success => page({hashbang: false}),
       error => loginWithDialog()
     );
 });
