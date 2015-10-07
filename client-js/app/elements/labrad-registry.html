@@ -104,7 +104,12 @@
         <tbody is="selectable-table" attr-for-selected="name" selected="{{selDir}}" on-tap="selectDir">
           <template id="dirList" is="dom-repeat" items="{{dirs}}" filter="filterFunc"> 
             <tr name="{{item.name}}">
-              <td class="dir" name="{{item.name}}" draggable="true">
+              <td class="dir" 
+                  name="{{item.name}}" 
+                  draggable="true" 
+                  ondragover="classList.add('over')" 
+                  ondragleave="classList.remove('over')" 
+                  on-drop="dirDrop">
                 <a is="app-link" path="{{item.url}}" href="{{item.url}}">
                   <dir-item kind="folder" >{{item.name}}</dir-item>
                 </a>
@@ -157,10 +162,7 @@
     </div>
 
     <!-- Dialogs for various registry operations -->
-    <paper-dialog id="dropTarget">
-      <h1>Drop here to place in this folder</h1>
-    </paper-dialog>
-    
+
     <paper-dialog id="newKeyDialog" modal>
       <h1>Create new key</h1>
       <form>

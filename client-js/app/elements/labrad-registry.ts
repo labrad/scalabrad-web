@@ -129,18 +129,26 @@ export class LabradRegistry extends polymer.Base {
 
   //Drag and drop
   @listen('dragenter')
-  @listen('dragover')
-  suppressBehaviour(event) {
-    //change colors of cells to indicate target
+  overBehaviour(event) {
     event.preventDefault(); //I don't understand this.
-    event.target.closest('td').classList.add('over');
+  }
+
+  @listen('dragover')
+  changeBehaviour(event) {
+    //allows the ctrl key to be pressed to change cursor between copy/move
+    event.preventDefault(); //I don't understand this. But needs to be here
+
+    if (event.ctrlKey) {
+      event.dataTransfer.dropEffect = "copy";
+    }
+    else {
+      event.dataTransfer.dropEffect = "move";
+    }
   }
 
   @listen('dragleave')
   leaveDrag(event) {
-    //change colors of cells back to normal
-    event.preventDefault(); //I don't understand this.
-    event.target.closest('td').classList.remove('over');
+    event.preventDefault(); //I don't understand this. But it needs to be here
   }
 
   @listen('dragstart')
@@ -148,17 +156,10 @@ export class LabradRegistry extends polymer.Base {
     //detect start of drag event, grab info about target
     var data: any; //I tried enum, but kept getting errors...
     data = {path: this.path, name: event.target.name};
-    //console.log('drag started', this.path);
     event.dataTransfer.setData('text', JSON.stringify(data));
-    event.dataTransfer.effectAllowed = 'move';
-    if (event.ctrlKey) {
-      this.$.toastText.text = "copy item...";
-      this.$.toastText.show();
-    }
-    else {
-      this.$.toastText.text = "move... not implemented yet :/ ctrl+click to copy";
-      this.$.toastText.show();
-    }
+    event.dataTransfer.effectAllowed = 'copyMove';
+    this.$.toastText.text = "drag to move, hold ctrl to copy";
+    this.$.toastText.show();
   }
 
   @listen('dragend')
@@ -166,40 +167,46 @@ export class LabradRegistry extends polymer.Base {
     console.log('drag ended',event);
   }
 
+  dirDrop(event) {
+    //behaviour for dropping on folders
+    console.log(event);
+    var data: any;
+    data = JSON.parse(event.dataTransfer.getData('text'));
+    console.log('dirDrop');
+    event.target.closest('td').classList.remove('over');
+    if (event.ctrlKey) {
+      console.log('dropped on', event.target.closest('td').name, 'with data', data ); 
+      console.log(event.target);
+      var newPath: string[] = this.path.splice(0);
+      var oldFullPath: string[] = data.path;
+      newPath.push(event.target.closest('td').name);
+      var dialog = this.$.dragCopyDialog,
+          copyOriginName = this.$.originName,
+          copyOriginPath = this.$.originPath,
+          copyNameElem = this.$.dragCopyNameInput,
+          copyPathElem = this.$.dragCopyPathInput;
+      copyNameElem.value = data.name;
+      copyOriginName.textContent = data.name;
+      copyOriginPath.textContent = JSON.stringify(data.path);
+      copyPathElem.value = this.pathToString(newPath);
+      dialog.open();
+      window.setTimeout(() => copyNameElem.$.input.focus(), 0);
+    }
+  }
+
   @listen('drop')
   handleDrop(event) {
+    //handles folders dropped not on other folders
     event.preventDefault();
     var data: any;
     data = JSON.parse(event.dataTransfer.getData('text'));
-    event.target.closest('td').classList.remove('over');
-
+    console.log('dropped', event.dataTransfer);
     if (event.ctrlKey) {
-      //console.log('dropped on', event.target.closest('td').name, 'with data', data ); 
-      if (event.target.closest('td').className.includes('dir')) {
-        //place folder into new folder
-        //I don't know if .closest('td') is too fragile but it works
-        var newPath: string[] = this.path.splice(0);
-        var oldFullPath: string[] = data.path;
-        newPath.push(event.target.closest('td').name);
-        var dialog = this.$.dragCopyDialog,
-            copyOriginName = this.$.originName,
-            copyOriginPath = this.$.originPath,
-            copyNameElem = this.$.dragCopyNameInput,
-            copyPathElem = this.$.dragCopyPathInput;
-        copyNameElem.value = data.name;
-        copyOriginName.textContent = data.name;
-        copyOriginPath.textContent = JSON.stringify(data.path);
-        copyPathElem.value = this.pathToString(newPath);
-        dialog.open();
-        window.setTimeout(() => copyNameElem.$.input.focus(), 0);
-      }
-      else if (JSON.stringify(this.path) != JSON.stringify(data.path)){
+      if (JSON.stringify(this.path) != JSON.stringify(data.path)){
         //copying into window by dropping not on a folder, but 
-        //can't copy into the same path
+        //can't copy into the same path. Comparing string is lame, I know
         console.log('copying into window', this.path, data.path);
-        var newPath: string[] = this.path.splice(0);
         var oldFullPath: string[] = data.path;
-
         var dialog = this.$.dragCopyDialog,
             copyOriginName = this.$.originName,
             copyOriginPath = this.$.originPath,
@@ -208,8 +215,8 @@ export class LabradRegistry extends polymer.Base {
         copyNameElem.value = data.name;
         copyOriginName.textContent = data.name;
         copyOriginPath.textContent = JSON.stringify(data.path);
-        copyPathElem.value = this.pathToString(newPath);
-        dialog.open();
+        copyPathElem.value = this.pathToString(this.path);
+        this.$.dragCopyDialog.open();
         window.setTimeout(() => copyNameElem.$.input.focus(), 0);
       }
     }
