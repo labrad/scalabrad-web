@@ -1,5 +1,5 @@
 declare module polymer {
-    class PolymerBase {
+    class PolymerBase extends HTMLElement {
         $: any;
         $$: any;
         root: HTMLElement;
@@ -88,7 +88,7 @@ declare module polymer {
         type?: any;
         value?: any;
         reflectToAttribute?: boolean;
-        readonly?: boolean;
+        readOnly?: boolean;
         notify?: boolean;
         computed?: string;
         observer?: string;
@@ -96,6 +96,7 @@ declare module polymer {
     class Base extends polymer.PolymerBase implements polymer.Element {
         static create<T extends polymer.Base>(...args: any[]): T;
         static register(): void;
+        is: string;
     }
     function createEs6PolymerBase(): void;
     function prepareForRegistration(elementClass: Function): polymer.Element;
@@ -108,9 +109,9 @@ declare var Polymer: {
     (prototype: polymer.Element): FunctionConstructor;
     Class(prototype: polymer.Element): Function;
     dom: polymer.dom;
-    appendChild(node): HTMLElement;
-    insertBefore(node, beforeNode): HTMLElement;
-    removeChild(node): HTMLElement;
+    appendChild(node: HTMLElement): HTMLElement;
+    insertBefore(node: HTMLElement, beforeNode: HTMLElement): HTMLElement;
+    removeChild(node: HTMLElement): HTMLElement;
     updateStyles(): void;
     Base: any;
 };

@@ -68,7 +68,7 @@ window.addEventListener('WebComponentsReady', () => {
   var dv = new datavault.DataVaultService(socket);
   var node = new nodeApi.NodeService(socket);
 
-  function setContent(elem, route: string, breadcrumbs?: Array<{name: string; isLink: boolean; url?: string}>): void {
+  function setContent(elem: HTMLElement, route: string, breadcrumbs?: Array<{name: string; isLink: boolean; url?: string}>): void {
     app.route = route;
     if (breadcrumbs) {
       app.hasBreadcrumbs = true;

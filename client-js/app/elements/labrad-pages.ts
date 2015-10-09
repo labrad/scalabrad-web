@@ -116,11 +116,12 @@ export class GrapherPage extends polymer.Base {
 
 @component("labrad-page-dataset")
 export class DatasetPage extends polymer.Base {
+
   @property({type: Array})
   path: Array<string>;
 
   @property({type: String})
-  dataset: string;
+  datasetName: string;
 
   @property({type: String})
   parentUrl: string;
@@ -132,7 +133,7 @@ export class DatasetPage extends polymer.Base {
   ): DatasetPage {
     var inst = <DatasetPage> DatasetPage.create();
     inst.path = path;
-    inst.dataset = dataset;
+    inst.datasetName = dataset;
     inst.parentUrl = parentUrl;
     return inst;
   }
