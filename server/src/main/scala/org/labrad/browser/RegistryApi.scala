@@ -39,30 +39,27 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     pkt
   }
 
-  private def regDir(path: Seq[String]): Future[RegistryListing] = {
+  private def regDir(path: Seq[String]): Future[RegistryListing] = async {
     // get directory listing
     val pkt = startPacket(path)
     val dirF = pkt.dir()
     pkt.send()
-    dirF.flatMap { case (dirsRaw, keysRaw) =>
 
-      val dirs = dirsRaw.sorted
-      val keys = keysRaw.sorted
+    val (dirsRaw, keysRaw) = await { dirF }
+    val dirs = dirsRaw.sorted
+    val keys = keysRaw.sorted
 
-      val valsF = if (keys.size == 0) {
-        Future.successful(Seq.empty[String])
-      } else {
-        // get the values of all keys
-        val pkt = startPacket(path)
-        val fs = keys.map(key => pkt.get(key))
-        pkt.send()
-        Future.sequence(fs)
-      }
-
-      valsF.map { vals =>
-        RegistryListing(path, dirs, keys, vals.map(_.toString))
-      }
+    val vals = if (keys.size == 0) {
+      Seq()
+    } else {
+      // get the values of all keys
+      val pkt = startPacket(path)
+      val fs = keys.map(key => pkt.get(key))
+      pkt.send()
+      await { Future.sequence(fs) }
     }
+
+    RegistryListing(path, dirs, keys, vals.map(_.toString))
   }
 
   private def regDel(path: Seq[String], key: String): Future[Unit] = async {
@@ -104,45 +101,47 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
   }
 
   private def regCopyDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[Unit] = async {
-    // if newDir does not exist, create it
-    val listing = await { regDir(newPath) }
-    if (!listing.dirs.contains(newDir)) {
-      val pkt = startPacket(newPath)
-      pkt.mkDir(newDir)
-      await { pkt.send() }
-    }
+    if (absPath(path) != absPath(newPath) || dir != newDir) {
+      val srcPath = path :+ dir
+      val dstPath = newPath :+ newDir
 
-    val subpath = path :+ dir
-    val newSubpath = newPath :+ newDir
-    val subListing = await { regDir(subpath) }
+      // get listing of source directory
+      val srcListing = await { regDir(srcPath) }
 
-    // recursively copy all subdirectories
-    val dirCopies = subListing.dirs.map { subdir =>
-      regCopyDir(subpath, subdir, newSubpath, subdir)
-    }
-    await { Future.sequence(dirCopies) }
+      // create destination directory if needed
+      val listing = await { regDir(newPath) }
+      if (!listing.dirs.contains(newDir)) {
+        val pkt = startPacket(newPath)
+        pkt.mkDir(newDir)
+        await { pkt.send() }
+      }
 
-    // copy all keys
-    val keyCopies = subListing.keys.map { key =>
-      regCopy(subpath, key, newSubpath, key)
+      // recursively copy all subdirectories
+      val dirCopies = srcListing.dirs.map { subdir =>
+        regCopyDir(srcPath, subdir, dstPath, subdir)
+      }
+      await { Future.sequence(dirCopies) }
+
+      // copy all keys
+      val keyCopies = srcListing.keys.map { key =>
+        regCopy(srcPath, key, dstPath, key)
+      }
+      await { Future.sequence(keyCopies) }
     }
-    await { Future.sequence(keyCopies) }
   }
 
-  private def regMove(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[RegistryListing] = async {
+  private def regMove(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[Unit] = async {
     if (absPath(path) != absPath(newPath) || newKey != key) {
       await { regCopy(path, key, newPath, newKey) }
       await { regDel(path, key) }
     }
-    await { regDir(newPath) }
   }
 
-  private def regMoveDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[RegistryListing] = async {
+  private def regMoveDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[Unit] = async {
     if (absPath(path) != absPath(newPath) || newDir != dir) {
       await { regCopyDir(path, dir, newPath, newDir) }
       await { regRmdir(path, dir) }
     }
-    await { regDir(newPath) }
   }
 
 
@@ -156,66 +155,48 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     regDir(path)
   }
 
-  def set(path: Seq[String], key: String, value: String): Future[RegistryListing] = {
+  def set(path: Seq[String], key: String, value: String): Future[Unit] = {
     val data = Data.parse(value)
     val pkt = startPacket(path)
     pkt.set(key, data)
-    async {
-      await { pkt.send() }
-      await { regDir(path) }
-    }
+    pkt.send()
   }
 
-  def del(path: Seq[String], key: String): Future[RegistryListing] = {
-    async {
-      await { regDel(path, key) }
-      await { regDir(path) }
-    }
+  def del(path: Seq[String], key: String): Future[Unit] = {
+    regDel(path, key)
   }
 
-  def mkDir(path: Seq[String], dir: String): Future[RegistryListing] = {
+  def mkDir(path: Seq[String], dir: String): Future[Unit] = {
     val pkt = startPacket(path)
     pkt.mkDir(dir)
-    async {
-      await { pkt.send() }
-      await { regDir(path) }
-    }
+    pkt.send()
   }
 
-  def rmDir(path: Seq[String], dir: String): Future[RegistryListing] = {
-    async {
-      await { regRmdir(path, dir) }
-      await { regDir(path) }
-    }
+  def rmDir(path: Seq[String], dir: String): Future[Unit] = {
+    regRmdir(path, dir)
   }
 
-  def copy(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[RegistryListing] = {
-    async {
-      await { regCopy(path, key, newPath, newKey) }
-      await { regDir(newPath) }
-    }
+  def copy(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[Unit] = {
+    regCopy(path, key, newPath, newKey)
   }
 
-  def copyDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[RegistryListing] = {
-    async {
-      await { regCopyDir(path, dir, newPath, newDir) }
-      await { regDir(newPath) }
-    }
+  def copyDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[Unit] = {
+    regCopyDir(path, dir, newPath, newDir)
   }
 
-  def rename(path: Seq[String], key: String, newKey: String): Future[RegistryListing] = {
+  def rename(path: Seq[String], key: String, newKey: String): Future[Unit] = {
     regMove(path, key, path, newKey)
   }
 
-  def renameDir(path: Seq[String], dir: String, newDir: String): Future[RegistryListing] = {
+  def renameDir(path: Seq[String], dir: String, newDir: String): Future[Unit] = {
     regMoveDir(path, dir, path, newDir)
   }
 
-  def move(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[RegistryListing] = {
+  def move(path: Seq[String], key: String, newPath: Seq[String], newKey: String): Future[Unit] = {
     regMove(path, key, newPath, newKey)
   }
 
-  def moveDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[RegistryListing] = {
+  def moveDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[Unit] = {
     regMoveDir(path, dir, newPath, newDir)
   }
 

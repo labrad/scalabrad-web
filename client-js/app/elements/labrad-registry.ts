@@ -77,17 +77,20 @@ export class LabradRegistry extends polymer.Base {
     //TODO increment selected key on tab
   }
 
-  repopulateList(resp: RegistryListing) {
-    this.selDir = null;
-    this.splice('dirs', 0, this.dirs.length);
-    this.splice('keys', 0, this.keys.length);
+  repopulateList(): Promise<void> {
+    return this.socket.dir({path: this.path}).then((resp) => {
+      this.selKey = null;
+      this.selDir = null;
+      this.splice('dirs', 0, this.dirs.length);
+      this.splice('keys', 0, this.keys.length);
 
-    for (var i in resp.dirs) {
-      this.push('dirs', {name: resp.dirs[i], url: this.createUrl(resp.path, resp.dirs[i])});
-    }
-    for (var j in resp.keys) {
-      this.push('keys', {name: resp.keys[j], value: resp.vals[j]});
-    }
+      for (var i in resp.dirs) {
+        this.push('dirs', {name: resp.dirs[i], url: this.createUrl(resp.path, resp.dirs[i])});
+      }
+      for (var j in resp.keys) {
+        this.push('keys', {name: resp.keys[j], value: resp.vals[j]});
+      }
+    });
   }
 
   createUrl(path: Array<string>, dir: string): string {
@@ -119,13 +122,9 @@ export class LabradRegistry extends polymer.Base {
   updateKey(event) {
     var selKey = event.detail.key;
     var newVal = event.detail.value;
-    this.socket.set({path: this.path, key: selKey, value: newVal}).then(
-      (resp) => {
-        this.repopulateList(resp);
-        this.selKey = null;
-      },
-      (reason) => this.handleError(reason)
-    );
+    this.socket.set({path: this.path, key: selKey, value: newVal})
+      .then(() => this.repopulateList())
+      .catch((reason) => this.handleError(reason));
   }
 
 
@@ -150,10 +149,9 @@ export class LabradRegistry extends polymer.Base {
     var newVal = this.$.newValueInput.value;
 
     if (newKey) {
-      this.socket.set({path: this.path, key: newKey, value: newVal}).then(
-        (resp) => this.repopulateList(resp),
-        (reason) => this.handleError(reason)
-      );
+      this.socket.set({path: this.path, key: newKey, value: newVal})
+        .then(() => this.repopulateList())
+        .catch((reason) => this.handleError(reason));
     }
     else {
       this.handleError('Cannot create key with empty name');
@@ -191,13 +189,9 @@ export class LabradRegistry extends polymer.Base {
   doEditValue() {
     var key = this.$.editValueDialog.keyName,
         newVal = this.$.editValueInput.value;
-    this.socket.set({path: this.path, key: key, value: newVal}).then(
-      (resp) => {
-        this.repopulateList(resp);
-        this.selKey = null;
-      },
-      (reason) => this.handleError(reason)
-    );
+    this.socket.set({path: this.path, key: key, value: newVal})
+      .then(() => this.repopulateList())
+      .catch((reason) => this.handleError(reason));
   }
 
   /**
@@ -218,10 +212,9 @@ export class LabradRegistry extends polymer.Base {
     var newFolder = this.$.newFolderInput.value;
 
     if (newFolder) {
-      this.socket.mkDir({path: this.path, dir: newFolder}).then(
-        (resp) => this.repopulateList(resp),
-        (reason) => this.handleError(reason)
-      );
+      this.socket.mkDir({path: this.path, dir: newFolder})
+        .then(() => this.repopulateList())
+        .catch((reason) => this.handleError(reason));
     }
     else {
       this.handleError('Cannot create folder with empty name');
@@ -250,16 +243,14 @@ export class LabradRegistry extends polymer.Base {
     var newPath = JSON.parse(this.$.copyPathInput.value);
 
     if (this.selectType === 'dir') {
-      this.socket.copyDir({path: this.path, dir: this.selDir, newPath: newPath, newDir: newName}).then(
-        (resp) => this.repopulateList(resp),
-        (reason) => this.handleError(reason)
-      );
+      this.socket.copyDir({path: this.path, dir: this.selDir, newPath: newPath, newDir: newName})
+        .then(() => this.repopulateList())
+        .catch((reason) => this.handleError(reason));
     }
     else if (this.selectType === 'key') {
-      this.socket.copy({path: this.path, key: this.selKey, newPath: newPath, newKey: newName}).then(
-        (resp) => this.repopulateList(resp),
-        (reason) => this.handleError(reason)
-      );
+      this.socket.copy({path: this.path, key: this.selKey, newPath: newPath, newKey: newName})
+        .then(() => this.repopulateList())
+        .catch((reason) => this.handleError(reason));
     }
   }
 
@@ -299,16 +290,14 @@ export class LabradRegistry extends polymer.Base {
     if (newName === null || newName === name) return;
     if (newName) {
       if (this.selectType === 'dir') {
-        this.socket.renameDir({path: this.path, dir: name, newDir: newName}).then(
-          (resp) => this.repopulateList(resp),
-          (reason) => this.handleError(reason)
-        );
+        this.socket.renameDir({path: this.path, dir: name, newDir: newName})
+          .then(() => this.repopulateList())
+          .catch((reason) => this.handleError(reason));
       }
       else if (this.selectType === 'key') {
-        this.socket.rename({path: this.path, key: name, newKey: newName}).then(
-          (resp) => this.repopulateList(resp),
-          (reason) => this.handleError(reason)
-        );
+        this.socket.rename({path: this.path, key: name, newKey: newName})
+          .then(() => this.repopulateList())
+          .catch((reason) => this.handleError(reason));
       }
     }
     else {
@@ -329,16 +318,14 @@ export class LabradRegistry extends polymer.Base {
    */
   doDelete() {
     if (this.selectType === 'dir') {
-      this.socket.rmDir({path: this.path, dir: this.selDir}).then(
-        (resp) => this.repopulateList(resp),
-        (reason) => this.handleError(reason)
-      );
+      this.socket.rmDir({path: this.path, dir: this.selDir})
+        .then(() => this.repopulateList())
+        .catch((reason) => this.handleError(reason));
     }
     else if (this.selectType === 'key') {
-      this.socket.del({path: this.path, key: this.selKey}).then(
-        (resp) => this.repopulateList(resp),
-        (reason) => this.handleError(reason)
-      );
+      this.socket.del({path: this.path, key: this.selKey})
+        .then(() => this.repopulateList())
+        .catch((reason) => this.handleError(reason));
     }
   }
 }
