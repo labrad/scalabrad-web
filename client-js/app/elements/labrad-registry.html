@@ -102,16 +102,16 @@
     <div id="reg-area">
       <table>
         <tbody is="selectable-table" attr-for-selected="name" selected="{{selDir}}" on-tap="selectDir">
-          <template id="dirList" is="dom-repeat" items="{{dirs}}" filter="filterFunc"> 
+          <template id="dirList" is="dom-repeat" items="{{dirs}}" filter="filterFunc">
             <tr name="{{item.name}}">
               <td class="dir" 
                   name="{{item.name}}" 
                   draggable="true" 
-                  ondragover="classList.add('over')" 
-                  ondragleave="classList.remove('over')" 
+                  on-dragover="onDirDragOver" 
+                  on-dragleave="onDirDragLeave" 
                   on-drop="dirDrop">
                 <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-                  <dir-item kind="folder" >{{item.name}}</dir-item>
+                  <dir-item kind="folder">{{item.name}}</dir-item>
                 </a>
               </td>
               <td class="label-wide"></td>
