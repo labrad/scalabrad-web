@@ -125,6 +125,15 @@ export class LabradNodeController extends polymer.Base {
   }
 }
 
+/**
+ * Information about a server running on one or more nodes
+ */
+interface ServerInfo {
+  name: string;
+  version: string;
+  nodes: Array<{name: string, exists: boolean, status?: string, instanceName?: string}>;
+}
+
 @component('labrad-nodes')
 export class LabradNodes extends polymer.Base {
   @property({type: Array, notify: true})
@@ -269,20 +278,39 @@ export class LabradNodes extends polymer.Base {
     return statusMap;
   }
 
+  private _versionMap(info: Array<NodeStatus>): Map<string, Array<string>> {
+    var versionMap = new Map<string, Array<string>>();
+    for (let nodeStatus of info) {
+      for (let {name, version} of nodeStatus.servers) {
+        if (!versionMap.has(name)) {
+          versionMap.set(name, []);
+        }
+        versionMap.get(name).push(version);
+      }
+    }
+    return versionMap;
+  }
+
   @computed()
   nodeNames(info: Array<NodeStatus>, kick: number): Array<string> {
     return this._nodeNames(info)
   }
 
   @computed()
-  globalServers(info: Array<NodeStatus>, kick: number): Array<{name: string, nodes: Array<{name: string, exists: boolean, status?: string, instanceName?: string}>}> {
+  globalServers(info: Array<NodeStatus>, kick: number): Array<ServerInfo> {
     var nodeNames = this._nodeNames(info);
     var serverNames = this._serverNames(info, {global: true});
     var statusMap = this._statusMap(info);
+    var versionMap = this._versionMap(info);
 
     return serverNames.map((server) => {
+      var versions = versionMap.get(server);
+      var versionSet = new Set(versions);
+      var version = versionSet.size === 1 ? versions[0] : 'version conflict!';
+
       return {
         name: server,
+        version: version,
         nodes: nodeNames.map((node) => {
           var status = statusMap.get(node).get(server);
           if (typeof status === 'undefined') {
@@ -301,14 +329,20 @@ export class LabradNodes extends polymer.Base {
   }
 
   @computed()
-  localServers(info: Array<NodeStatus>, kick: number): Array<{name: string, nodes: Array<{name: string, exists: boolean, status?: string, instanceName?: string}>}> {
+  localServers(info: Array<NodeStatus>, kick: number): Array<ServerInfo> {
     var nodeNames = this._nodeNames(info);
     var serverNames = this._serverNames(info, {global: false});
     var statusMap = this._statusMap(info);
+    var versionMap = this._versionMap(info);
 
     return serverNames.map((server) => {
+      var versions = versionMap.get(server);
+      var versionSet = new Set(versions);
+      var version = versionSet.size === 1 ? versions[0] : 'version conflict!';
+
       return {
         name: server,
+        version: version,
         nodes: nodeNames.map((node) => {
           var status = statusMap.get(node).get(server);
           if (typeof status === 'undefined') {
