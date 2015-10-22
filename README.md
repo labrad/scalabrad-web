@@ -7,6 +7,7 @@ The web server is written in scala (http://scala-lang.org) and built with sbt (h
 
 To run the server in production mode, download and extract a pre-built binary package from bintray: https://bintray.com/labrad/generic/scalabrad-web.
 The extracted archive includes a startup script in its `bin/` directory.
+This will start a webserver which you can see by browsing to `localhost:7667`.
 
 To run the server in development mode, you'll first need to install sbt, then from the repository root run
 
