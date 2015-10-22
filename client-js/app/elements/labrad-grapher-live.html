@@ -1,0 +1,37 @@
+<link rel="import" href="app-link.html">
+
+<dom-module id="labrad-grapher-live">
+  <template>
+    <style>
+      :host {
+        display: block;
+        height: 100%;
+      }
+      #plots {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+    </style>
+    <div id="plots"></div>
+  </template>
+</dom-module>
+
+<dom-module id="labrad-labeled-plot">
+  <template>
+    <style>
+      :host {
+        width: 100%;
+        flex-grow: 0.33;
+        display: flex;
+        flex-direction: column;
+      }
+      #plot {
+        flex-grow: 1;
+        display: flex;
+      }
+    </style>
+    <a is="app-link" path="{{url}}" href="{{url}}">{{name}}</a>
+    <div id="plot"></div>
+  </template>
+</dom-module>

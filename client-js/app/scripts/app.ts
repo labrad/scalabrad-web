@@ -13,6 +13,7 @@ import * as rpc from "./rpc";
 
 import {LabradApp} from "../elements/labrad-app";
 import {LabradGrapher} from "../elements/labrad-grapher";
+import {LabradGrapherLive, LabeledPlot} from "../elements/labrad-grapher-live";
 import {LabradManager} from "../elements/labrad-manager";
 import {LabradNodes, LabradInstanceController, LabradNodeController} from "../elements/labrad-nodes";
 import {LabradRegistry} from "../elements/labrad-registry";
@@ -64,6 +65,7 @@ window.addEventListener('WebComponentsReady', () => {
   // register our custom elements with polymer
   LabradApp.register();
   LabradGrapher.register();
+  LabradGrapherLive.register();
   LabradManager.register();
   LabradRegistry.register();
   LabradNodes.register();
@@ -72,6 +74,7 @@ window.addEventListener('WebComponentsReady', () => {
   LabradServer.register();
   Plot1D.register();
   Plot2D.register();
+  LabeledPlot.register();
 
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
@@ -115,6 +118,7 @@ window.addEventListener('WebComponentsReady', () => {
       if (state.breadcrumbs) {
         app.hasBreadcrumbs = true;
         app.breadcrumbs = state.breadcrumbs;
+        app.breadcrumbExtras = state.breadcrumbExtras;
       } else {
         app.hasBreadcrumbs = false;
       }
@@ -207,6 +211,10 @@ window.addEventListener('WebComponentsReady', () => {
           url: grapherUrl(this.path.slice(0, i))
         });
       }
+      var breadcrumbExtras = [
+        { name: 'dir view', isLink: false, url: '' },
+        { name: 'live view', isLink: true, url: grapherUrl(this.path) + '?live' }
+      ];
 
       this.elem = <LabradGrapher> LabradGrapher.create();
       this.elem.path = this.path;
@@ -216,7 +224,8 @@ window.addEventListener('WebComponentsReady', () => {
       return {
         elem: this.elem,
         route: 'grapher',
-        breadcrumbs: breadcrumbs
+        breadcrumbs: breadcrumbs,
+        breadcrumbExtras: breadcrumbExtras
       };
     }
 
@@ -247,17 +256,106 @@ window.addEventListener('WebComponentsReady', () => {
     }
   }
 
+  class DatavaultLiveActivity implements Activity {
+    path: Array<string>;
+
+    private elem: LabradGrapherLive;
+    private plots: Array<Plot> = [];
+
+    private api: datavault.DataVaultApi;
+    private lifetime = new Lifetime();
+    private activities: Array<DatasetActivity> = [];
+
+    constructor(api: datavault.DataVaultApi, path: Array<string>) {
+      this.api = api;
+      this.path = path;
+    }
+
+    async start(): Promise<ActivityState> {
+      this.api.newDataset.add(item => this.onNewDataset(item.name), this.lifetime);
+      var listing = await dv.dir(this.path);
+      var datasets = listing.datasets.slice(-3);
+
+      var breadcrumbs = [];
+      for (var i = 0; i <= this.path.length; i++) {
+        breadcrumbs.push({
+          name: (i == 0) ? 'grapher' : this.path[i-1],
+          isLink: i < this.path.length,
+          url: grapherUrl(this.path.slice(0, i))
+        });
+      }
+      var breadcrumbExtras = [
+        { name: 'dir view', isLink: true, url: grapherUrl(this.path) },
+        { name: 'live view', isLink: false }
+      ];
+
+      this.elem = <LabradGrapherLive> LabradGrapherLive.create();
+      this.elem.path = this.path;
+
+      this.addInitialDatasets(datasets);
+
+      return {
+        elem: this.elem,
+        route: 'grapher',
+        breadcrumbs: breadcrumbs,
+        breadcrumbExtras: breadcrumbExtras
+      };
+    }
+
+    onNewDataset(name: string) {
+      this.addDataset(name);
+    }
+
+    private async addInitialDatasets(datasets: Array<string>) {
+      for (let dataset of datasets) {
+        await this.addDataset(dataset);
+      }
+    }
+
+    private async addDataset(name: string) {
+      var numStr = name.split(" - ")[0];
+      var num = Number(numStr);
+      var activity = new DatasetActivity(this.api, this.path, num);
+      var state = await activity.start();
+      var plot = state.elem;
+      var labeled = <LabeledPlot> LabeledPlot.create();
+      labeled.name = name;
+      labeled.url = datasetUrl(this.path, numStr);
+      labeled.$.plot.appendChild(plot);
+      this.elem.addPlot(labeled);
+      this.activities.push(activity);
+      while (this.activities.length > 3) {
+        var activity = this.activities.shift();
+        activity.stop();
+        this.elem.removeLastPlot();
+      }
+    }
+
+    async stop(): Promise<void> {
+      this.lifetime.close();
+      var stops = this.activities.map(activity => activity.stop());
+      await Promise.all(stops);
+    }
+
+    private getDatasets(listing: datavault.DataVaultListing) {
+      return listing.datasets.map(name => {
+        return {name: name, url: datasetUrl(this.path, name.slice(0, 5))};
+      });
+    }
+  }
+
   class DatasetActivity implements Activity {
     path: Array<string>;
     dataset: number;
 
-    private api: datavault.DataVaultService
+    private api: datavault.DataVaultApi
     private lifetime = new Lifetime();
     private dataAvailable = new AsyncQueue<void>();
+    private token = String(Math.random());
 
     private plot: Plot;
 
-    constructor(api: datavault.DataVaultService, path: Array<string>, dataset: number) {
+    constructor(api: datavault.DataVaultApi, path: Array<string>, dataset: number) {
       this.api = api;
       this.path = path;
       this.dataset = dataset;
@@ -266,7 +364,9 @@ window.addEventListener('WebComponentsReady', () => {
 
     async start(): Promise<ActivityState> {
       console.log('loading dataset:', this.path, this.dataset);
-      this.api.dataAvailable.add(x => this.dataAvailable.offer(null), this.lifetime);
+      this.api.dataAvailable.add(msg => {
+        if (msg.token === this.token) this.dataAvailable.offer(null);
+      }, this.lifetime);
       this.api.newParameter.add(x => this.onNewParameter(), this.lifetime);
       var info = await this.api.datasetInfo({path: this.path, dataset: this.dataset});
       var breadcrumbs = [];
@@ -308,6 +408,11 @@ window.addEventListener('WebComponentsReady', () => {
           break;
       }
 
+      await this.api.dataStreamOpen({
+        token: this.token,
+        path: this.path,
+        dataset: this.dataset
+      });
       this.requestData();
 
       return {
@@ -320,22 +425,23 @@ window.addEventListener('WebComponentsReady', () => {
     onNewParameter(): void {
     }
 
-    requestData(): void {
-      this.api.data({limit: 100, startOver: false}).then(data => {
-        this.addData(data);
-        this.dataAvailable.take().then(
-          (success) => this.requestData(),
-          (error) => {} // queue closed; do nothing
-        );
-      });
-    }
-
-    addData(data: Array<Array<number>>): void {
-      this.plot.addData(data);
+    async requestData() {
+      var addedData = false
+      var done = false;
+      while (!done) {
+        var data = await this.api.dataStreamGet({token: this.token, limit: 100});
+        this.plot.addData(data);
+        try {
+          await this.dataAvailable.take();
+        } catch (error) {
+          done = true; // queue closed
+        }
+      }
     }
 
     async stop(): Promise<void> {
       this.lifetime.close();
+      await this.api.dataStreamClose({token: this.token});
     }
   }
 
@@ -455,12 +561,21 @@ window.addEventListener('WebComponentsReady', () => {
     mkRegRoute(i);
   }
 
-  page('/grapher', function () {
-    activate(new DatavaultActivity(dv, []));
+  page('/grapher', function (ctx) {
+    if (ctx.querystring === "live") {
+      activate(new DatavaultLiveActivity(dv, []));
+    } else {
+      activate(new DatavaultActivity(dv, []));
+    }
   });
   function mkDvRoutes(n: number) {
     page('/grapher/' + pathRoute(n), (ctx, next) => {
-      activate(new DatavaultActivity(dv, getPath(ctx)));
+      var path = getPath(ctx);
+      if (ctx.querystring === "live") {
+        activate(new DatavaultLiveActivity(dv, path));
+      } else {
+        activate(new DatavaultActivity(dv, path));
+      }
     });
     page('/dataset/' + pathRoute(n) + ':dataset', (ctx, next) => {
       activate(new DatasetActivity(dv, getPath(ctx), Number(ctx.params['dataset'])));

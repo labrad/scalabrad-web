@@ -5,6 +5,7 @@ import org.labrad._
 import org.labrad.data._
 import org.labrad.util.Logging
 import play.api.libs.json._
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 
@@ -100,45 +101,63 @@ object VaultApi {
       case path => "" +: path
     }
   }
+
+  /**
+   * Message ID numbers that we use for messages of various types from the
+   * data vault server. We are free to choose these however we want, since we
+   * tell the server to send particular messages with these IDs.
+   */
+  object MessageIds {
+    val NEW_DIR = 1111
+    val NEW_DATASET = 2222
+    val TAGS_UPDATED = 3333
+    val DATA_AVAILABLE = 4444
+    val NEW_PARAMETER = 5555
+    val COMMENTS_AVAILABLE = 6666
+  }
 }
 
 class VaultApi(cxn: LabradConnection, client: VaultClientApi)(implicit ec: ExecutionContext) extends Logging {
 
   import VaultApi._
 
+  private val dataStreamsByToken = mutable.Map.empty[String, Context]
+  private val dataStreamsByContext = mutable.Map.empty[Context, String]
+
   // set up message listeners for various signals
   cxn.onConnect { c =>
     c.addMessageListener {
-      case Message(_, _, 1111, Str(name)) =>
+      case Message(_, _, MessageIds.NEW_DIR, Str(name)) =>
         client.newDir(name)
 
-      case Message(_, _, 2222, Str(name)) =>
+      case Message(_, _, MessageIds.NEW_DATASET, Str(name)) =>
         client.newDataset(name)
 
-      case Message(_, _, 3333, Cluster(dirTags, datasetTags)) =>
+      case Message(_, _, MessageIds.TAGS_UPDATED, Cluster(dirTags, datasetTags)) =>
         client.tagsUpdated(
           dirTags.get[Seq[(String, Seq[String])]].toMap,
           datasetTags.get[Seq[(String, Seq[String])]].toMap
         )
 
-      case Message(_, _, 4444, Data.NONE) =>
-        client.dataAvailable()
+      case Message(_, context, MessageIds.DATA_AVAILABLE, Data.NONE) =>
+        for (token <- dataStreamsByContext.get(context)) {
+          client.dataAvailable(token)
+        }
 
-      case Message(_, _, 5555, Data.NONE) =>
+      case Message(_, _, MessageIds.NEW_PARAMETER, Data.NONE) =>
         client.newParameter()
 
-      case Message(_, _, 6666, Data.NONE) =>
+      case Message(_, _, MessageIds.COMMENTS_AVAILABLE, Data.NONE) =>
         client.commentsAvailable()
     }
 
     val dv = new VaultServerProxy(c)
     val pkt = dv.packet()
-    pkt.signalNewDir(1111)
-    pkt.signalNewDataset(2222)
-    pkt.signalTagsUpdated(3333)
-    pkt.signalDataAvailable(4444)
-    pkt.signalNewParameter(5555)
-    pkt.signalCommentsAvailable(6666)
+    pkt.signalNewDir(MessageIds.NEW_DIR)
+    pkt.signalNewDataset(MessageIds.NEW_DATASET)
+    pkt.signalTagsUpdated(MessageIds.TAGS_UPDATED)
+    pkt.signalNewParameter(MessageIds.NEW_PARAMETER)
+    pkt.signalCommentsAvailable(MessageIds.COMMENTS_AVAILABLE)
     pkt.send().onFailure { case e =>
       log.error("failed to register for datavault messages", e)
     }
@@ -146,9 +165,12 @@ class VaultApi(cxn: LabradConnection, client: VaultClientApi)(implicit ec: Execu
 
   // vault utility functions
 
-  private def startPacket(path: Seq[String]) = {
+  private def startPacket(path: Seq[String], context: Option[Context] = None) = {
     val dv = new VaultServerProxy(cxn.get)
-    val pkt = dv.packet()
+    val pkt = context match {
+      case None => dv.packet()
+      case Some(context) => dv.packet(context)
+    }
     pkt.cd(absPath(path))
     pkt
   }
@@ -199,9 +221,35 @@ class VaultApi(cxn: LabradConnection, client: VaultClientApi)(implicit ec: Execu
     }
   }
 
+  def dataStreamOpen(token: String, path: Seq[String], dataset: Either[String, Int]): Future[Unit] = {
+    val context = cxn.get.newContext
+    dataStreamsByToken += token -> context
+    dataStreamsByContext += context -> token
+
+    val p = startPacket(path, Some(context))
+    p.signalDataAvailable(MessageIds.DATA_AVAILABLE)
+    dataset match {
+      case Left(name) => p.open(name)
+      case Right(num) => p.open(num)
+    }
+    p.send()
+  }
+
   // TODO: JsonRpc does not work with default values of type Int
-  def data(limit: Int, startOver: Boolean): Future[Array[Array[Double]]] = {
-    new VaultServerProxy(cxn.get).get(limit, startOver)
+  def dataStreamGet(token: String, limit: Int): Future[Array[Array[Double]]] = {
+    val context = dataStreamsByToken(token)
+    new VaultServerProxy(cxn.get, context = context).get(limit, startOver = false)
+  }
+
+  def dataStreamClose(token: String): Future[Unit] = {
+    dataStreamsByToken.remove(token) match {
+      case Some(context) =>
+        dataStreamsByContext.remove(context)
+        cxn.get.send("Manager", context, "Expire Context" -> Data.NONE).map(_ => ())
+
+      case None =>
+        Future.successful(())
+    }
   }
 }
 
@@ -212,7 +260,7 @@ trait VaultClientApi {
   def tagsUpdated(dirTags: Map[String, Seq[String]], datasetTags: Map[String, Seq[String]]): Unit
 
   // messages related to the current dataset
-  def dataAvailable(): Unit
+  def dataAvailable(token: String): Unit
   def newParameter(): Unit
   def commentsAvailable(): Unit
 }

@@ -63,7 +63,7 @@ export class Plot2D extends polymer.Base implements Plot {
     while (this.firstChild) {
       this.removeChild(this.firstChild);
     }
-    this.createPlot(Math.max(rect.width, 320), Math.max(rect.height, 200));
+    this.createPlot(Math.max(rect.width, 400), Math.max(rect.height, 400));
     this.plotData(this.data);
   }
 

@@ -137,15 +137,14 @@ export class JsonRpcSocket {
    * the remote party, whether notification was delivered successfully
    * or not.
    */
-  notify(method: string, params: Array<string> | Object): void {
-    this.openPromise.then((ignored) => {
-      var message = {
-        jsonrpc: "2.0",
-        method: method,
-        params: params
-      };
-      this.socket.send(JSON.stringify(message));
-    });
+  async notify(method: string, params: Array<string> | Object) {
+    await this.openPromise;
+    var message = {
+      jsonrpc: "2.0",
+      method: method,
+      params: params
+    };
+    this.socket.send(JSON.stringify(message));
   }
 
   /**

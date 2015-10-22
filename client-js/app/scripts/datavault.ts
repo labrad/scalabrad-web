@@ -26,13 +26,16 @@ export interface DataVaultApi {
   newDataset: Observable<{name: string}>;
   tagsUpdated: Observable<TagsMessage>;
 
-  dataAvailable: Observable<void>;
+  dataAvailable: Observable<{token: string}>;
   newParameter: Observable<void>;
   commentsAvailable: Observable<void>;
 
   dir(path: Array<string>): Promise<DataVaultListing>;
   datasetInfo(params: {path: Array<string>; dataset: number}): Promise<DatasetInfo>;
-  data(params: {limit: number, startOver: boolean}): Promise<Array<Array<number>>>;
+
+  dataStreamOpen(params: {token: string; path: Array<string>; dataset: number}): Promise<void>;
+  dataStreamGet(params: {token: string; limit?: number}): Promise<Array<Array<number>>>;
+  dataStreamClose(params: {token: string}): Promise<void>;
 }
 
 export class DataVaultService extends rpc.RpcService implements DataVaultApi {
@@ -41,7 +44,7 @@ export class DataVaultService extends rpc.RpcService implements DataVaultApi {
   newDataset = new Observable<{name: string}>();
   tagsUpdated = new Observable<TagsMessage>();
 
-  dataAvailable = new Observable<void>();
+  dataAvailable = new Observable<{token: string}>();
   newParameter = new Observable<void>();
   commentsAvailable = new Observable<void>();
 
@@ -63,8 +66,16 @@ export class DataVaultService extends rpc.RpcService implements DataVaultApi {
     return this.call<DatasetInfo>('datasetInfo', params);
   }
 
-  data(params: {limit?: number, startOver: boolean}): Promise<Array<Array<number>>> {
+  dataStreamOpen(params: {token: string; path: Array<string>; dataset: number}): Promise<void> {
+    return this.call<void>('dataStreamOpen', params);
+  }
+
+  dataStreamGet(params: {token: string; limit?: number}): Promise<Array<Array<number>>> {
     params.limit = params.limit || 1000;
-    return this.call<Array<Array<number>>>('data', params);
+    return this.call<Array<Array<number>>>('dataStreamGet', params);
+  }
+
+  dataStreamClose(params: {token: string}): Promise<void> {
+    return this.call<void>('dataStreamClose', params);
   }
 }

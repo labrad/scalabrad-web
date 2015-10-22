@@ -63,7 +63,9 @@ class ApiBackend(implicit ec: ExecutionContext) extends Backend {
 
       CALL  org.labrad.datavault.dir          datavaultApi.dir
       CALL                      .datasetInfo              .datasetInfo
-      CALL                      .data                     .data
+      CALL                      .dataStreamOpen           .dataStreamOpen
+      CALL                      .dataStreamGet            .dataStreamGet
+      CALL                      .dataStreamClose          .dataStreamClose
 
       CALL  org.labrad.manager.connections       managerApi.connections
       CALL                    .connection_close            .connectionClose

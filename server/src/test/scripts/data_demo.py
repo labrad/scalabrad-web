@@ -64,17 +64,18 @@ def main(dv):
 
     raw_input('Starting demo {}. Press [Enter] to continue. '.format(path))
 
-    print 'demo_1d_simple'
-    demo_1d_simple(dv)
+    while True:
+        print 'demo_1d_simple'
+        demo_1d_simple(dv)
 
-    print 'demo_1d_multi'
-    demo_1d_multi(dv)
+        print 'demo_1d_multi'
+        demo_1d_multi(dv)
 
-    print 'demo_2d_simple'
-    demo_2d_simple(dv)
+        print 'demo_2d_simple'
+        demo_2d_simple(dv)
 
-    print 'demo_2d_vargrid'
-    demo_2d_vargrid(dv)
+        print 'demo_2d_vargrid'
+        demo_2d_vargrid(dv)
 
 
 if __name__ == '__main__':
