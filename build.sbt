@@ -1,5 +1,5 @@
 lazy val commonSettings = Seq(
-  version := "1.0.0-M1",
+  version := "1.0.0-M2",
   scalaVersion := "2.11.7",
   resolvers += "bintray" at "http://jcenter.bintray.com",
   resolvers += "bintray-maffoo" at "http://dl.bintray.com/maffoo/maven"
