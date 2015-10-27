@@ -141,54 +141,55 @@ window.addEventListener('WebComponentsReady', () => {
 
   class RegistryActivity implements Activity {
     path: Array<string>;
+    private elem: LabradRegistry;
 
-    constructor(path: Array<string>) {
+    private api: registry.RegistryApi;
+    private lifetime = new Lifetime();
+
+    constructor(api: registry.RegistryApi, path: Array<string>) {
+      this.api = api;
       this.path = path;
     }
 
     start(): Promise<ActivityState> {
+      this.api.newItem.add(() => this.onNewItem(), this.lifetime);
       console.log('loading registry:', this.path);
-      return reg.dir({path: this.path}).then((listing) => {
-        var breadcrumbs = [];
-        for (var i = 0; i <= this.path.length; i++) {
-          breadcrumbs.push({
-            name: (i == 0) ? 'registry' : this.path[i-1],
-            isLink: i < this.path.length,
-            url: registryUrl(this.path.slice(0, i))
-          });
-        }
+      return this.api.watch({path: this.path}).then(() => {
+        return this.api.dir({path: this.path}).then((listing) => {
+          var breadcrumbs = [];
+          for (var i = 0; i <= this.path.length; i++) {
+            breadcrumbs.push({
+              name: (i == 0) ? 'registry' : this.path[i-1],
+              isLink: i < this.path.length,
+              url: registryUrl(this.path.slice(0, i))
+            });
+          }
 
-        var dirs = [];
-        for (var i = 0; i < listing.dirs.length; i++) {
-          var dir = listing.dirs[i];
-          dirs.push({
-            name: dir,
-            url: registryUrl(this.path, dir)
-          });
-        }
-        var keys = [];
-        for (var i = 0; i < listing.keys.length; i++) {
-          keys.push({
-            name: listing.keys[i],
-            value: listing.vals[i]
-          });
-        }
-        var elem = <LabradRegistry> LabradRegistry.create();
-        elem.path = this.path;
-        elem.dirs = dirs;
-        elem.keys = keys;
-        elem.socket = reg;
+          var elem = <LabradRegistry> LabradRegistry.create();
 
-        return {
-          elem: elem,
-          route: 'registry',
-          breadcrumbs: breadcrumbs
-        };
-      });
+          elem.path = this.path;
+          elem.dirs = [];
+          elem.keys = [];
+          elem.socket = this.api;
+          elem.repopulateList();
+
+          this.elem = elem;
+
+          return {
+            elem: elem,
+            route: 'registry',
+            breadcrumbs: breadcrumbs
+          };
+        });
+     });
+    }
+
+    onNewItem() {
+      this.elem.repopulateList();
     }
 
     stop(): Promise<void> {
-      return Promise.resolve(null);
+      return this.api.unwatch({path: this.path});
     }
   }
 
@@ -470,11 +471,11 @@ window.addEventListener('WebComponentsReady', () => {
   }
 
   page('/registry', () => {
-    activate(new RegistryActivity([]));
+    activate(new RegistryActivity(reg, []));
   });
   function mkRegRoute(n: number) {
     page('/registry/' + pathRoute(n), (ctx, next) => {
-      activate(new RegistryActivity(getPath(ctx)));
+      activate(new RegistryActivity(reg, getPath(ctx)));
     })
   }
   for (var i = 0; i <= 20; i++) {

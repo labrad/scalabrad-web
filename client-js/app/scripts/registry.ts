@@ -1,3 +1,4 @@
+import {Observable} from './observable';
 import * as rpc from "./rpc";
 
 export interface RegistryListing {
@@ -8,6 +9,8 @@ export interface RegistryListing {
 }
 
 export interface RegistryApi {
+  newItem: Observable<{name: string}>;
+
   dir(params: {path: Array<string>}): Promise<RegistryListing>;
   set(params: {path: Array<string>; key: string; value: string}): Promise<void>;
   del(params: {path: Array<string>; key: string}): Promise<void>;
@@ -29,8 +32,14 @@ export interface RegistryApi {
 
 export class RegistryServiceJsonRpc extends rpc.RpcService implements RegistryApi {
 
+  newItem = new Observable<{name: string}>();
+
   constructor(socket: rpc.JsonRpcSocket) {
     super(socket, "org.labrad.registry.");
+    this.connect('org.labrad.registry.keyChanged', this.newItem);
+    this.connect('org.labrad.registry.keyRemoved', this.newItem);
+    this.connect('org.labrad.registry.dirChanged', this.newItem);
+    this.connect('org.labrad.registry.dirRemoved', this.newItem);
   }
 
   dir(params: {path: Array<string>}): Promise<RegistryListing> {
