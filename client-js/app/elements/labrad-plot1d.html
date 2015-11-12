@@ -1,11 +1,34 @@
+<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
+
 <dom-module id="labrad-plot1d">
   <style>
     :host {
       height: 100%;
       display: flex;
+      flex-direction: row;
+    }
+    #plot {
+      flex-grow: 1;
+    }
+    #buttons {
+      display: flex;
+      flex-direction: column;
+      width: 40px;
+      text-align: center;
+    }
+    #rect {
+      margin-top: 40px;
+    }
+    #home {
+      margin-top: 20px;
     }
   </style>
   <template>
-    <div id="area"></div>
+    <div id="plot"></div>
+    <div id="buttons">
+      <paper-icon-button icon="tab-unselected" id="rect" on-click="rectMode" title="drag to zoom"></paper-icon-button>
+      <paper-icon-button icon="open-with" id="pan" on-click="panMode" title="drag to pan"></paper-icon-button>
+      <paper-icon-button icon="home" id="home" on-click="reset" title="zoom out"></paper-icon-button>
+    </div>
   </template>
 </dom-module>

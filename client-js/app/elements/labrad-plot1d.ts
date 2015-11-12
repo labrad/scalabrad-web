@@ -22,12 +22,15 @@ export class Plot1D extends polymer.Base implements Plot {
   private svg: any;
   private chartBody: any;
   private clip: any;
+  private width: number;
+  private height: number;
   private xAxis: any;
   private yAxis: any;
   private xScale: any;
   private yScale: any;
   private line: any;
   private zoom: any;
+  private zoomToRect: boolean = true;
   private limits = {xMin: 0, xMax: 1, yMin: 0, yMax: 1};
   private dataLimits = {xMin: NaN, xMax: NaN, yMin: NaN, yMax: NaN};
   private margin: {top: number; right: number; bottom: number; left: number};
@@ -35,6 +38,7 @@ export class Plot1D extends polymer.Base implements Plot {
   private plot: any;
 
   attached() {
+    this.$.pan.style.color = '#AAAAAA';
     this.redraw();
     window.addEventListener('resize', (event) => this.redraw());
   }
@@ -54,21 +58,25 @@ export class Plot1D extends polymer.Base implements Plot {
   }
 
   private redraw() {
-    var rect = this.getBoundingClientRect();
-    while (this.firstChild) {
-      this.removeChild(this.firstChild);
+    var area = this.$.plot,
+        rect = area.getBoundingClientRect();
+    while (area.firstChild) {
+      area.removeChild(area.firstChild);
     }
-    this.createPlot(Math.max(rect.width, 400), Math.max(rect.height, 400));
+    this.createPlot(area, Math.max(rect.width, 400), Math.max(rect.height, 400));
     this.plotData(this.data);
   }
 
-  private createPlot(totWidth: number = 1000, totHeight: number = 500): void {
+  private createPlot(area: HTMLElement, totWidth: number = 1000, totHeight: number = 500): void {
     var p = this;
     p.limits = {xMin: 0, xMax: 100, yMin: 0, yMax: 100};
-    p.margin = {top: 50, right: 50, bottom: 50, left: 40};
+    p.margin = {top: 50, right: 10, bottom: 50, left: 40};
 
     var width = totWidth - p.margin.left - p.margin.right;
     var height = totHeight - p.margin.top - p.margin.bottom;
+
+    p.width = width;
+    p.height = height;
 
     p.xScale = d3.scale.linear()
             .domain([p.limits.xMin, p.limits.xMax])
@@ -99,13 +107,15 @@ export class Plot1D extends polymer.Base implements Plot {
             .on('zoom', p.handleZoom.bind(p));
 
     // plot area
-    p.svg = d3.select(this)
+    p.svg = d3.select(area)
             .append('svg:svg')
             .attr('width', width + p.margin.left + p.margin.right)
             .attr('height', height + p. margin.top + p.margin.bottom)
-            .append('svg:g')
+            .append('g')
             .attr('transform', `translate(${p.margin.left}, ${p.margin.top})`)
-            .call(p.zoom);
+            .call(p.zoom)
+            .append('g')
+            .on('mousedown', p.zoomRectangle.bind(this));
 
     // background rectangle
     p.svg.append('rect')
@@ -215,13 +225,7 @@ export class Plot1D extends polymer.Base implements Plot {
     }
 
     // fit to the data (TODO: only if user has not zoomed or panned somewhere else)
-    this.xScale.domain([this.limits.xMin, this.limits.xMax]);
-    this.yScale.domain([this.limits.yMin, this.limits.yMax]);
-    this.xAxis.scale(this.xScale);
-    this.yAxis.scale(this.yScale);
-    this.zoom.x(this.xScale);
-    this.zoom.y(this.yScale);
-    this.handleZoom();
+    this.reset();
   }
 
   private safeMin(a: number, b: number): number {
@@ -250,6 +254,66 @@ export class Plot1D extends polymer.Base implements Plot {
       svg.selectAll(`.line${k}`)
          .attr('class', `line${k}`)
          .attr('d', this.line);
+    }
+  }
+
+  // Reset to original windown size after zoom-in
+  private reset() {
+    this.xScale.domain([this.limits.xMin, this.limits.xMax]);
+    this.yScale.domain([this.limits.yMin, this.limits.yMax]);
+    this.xAxis.scale(this.xScale);
+    this.yAxis.scale(this.yScale);
+    this.zoom.x(this.xScale);
+    this.zoom.y(this.yScale);
+    this.handleZoom();
+  }
+
+  private panMode() {
+    this.zoomToRect = false;
+    this.$.pan.style.color = 'black';
+    this.$.rect.style.color = '#AAAAAA';
+  }
+
+  private rectMode() {
+    this.zoomToRect = true;
+    this.$.pan.style.color = '#AAAAAA';
+    this.$.rect.style.color = 'black';
+  }
+
+  // Zoom into a selected rectangular region on the graph
+  private zoomRectangle() {
+    if (this.zoomToRect) {
+      var [originX, originY] = d3.mouse(this),
+          rect = this.svg.append('rect')
+                         .attr('stroke', 'red')
+                         .attr('fill-opacity', 0.5);
+      originX -= this.margin.left;
+      originY -= this.margin.top;
+      d3.select(window).on('mousemove.zoomRect', () => {
+          var [x, y] = d3.mouse(this);
+          x -= this.margin.left;
+          y -= this.margin.top;
+          x = Math.max(0, Math.min(this.width, x));
+          y = Math.max(0, Math.min(this.height, y));
+          rect.attr('x', Math.min(originX, x))
+              .attr('y', Math.min(originY, y))
+              .attr('width', Math.abs(x - originX))
+              .attr('height', Math.abs(y - originY));
+        })
+        .on('mouseup.zoomRect', () => {
+            d3.select(window).on('mousemove.zoomRect', null).on('mouseup.zoomRect', null);
+            var [x, y] = d3.mouse(this);
+            x = Math.max(0, Math.min(this.width, x));
+            y = Math.max(0, Math.min(this.height, y));
+            if (x !== originX && y !== originY) {
+              this.zoom.x(this.xScale.domain([originX, x].map(this.xScale.invert).sort()))
+                  .y(this.yScale.domain([originY, y].map(this.yScale.invert).sort()));
+            }
+            rect.remove();
+            this.handleZoom();
+        }, true);
+      d3.event.preventDefault();
+      d3.event.stopPropagation();
     }
   }
 }
