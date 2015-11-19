@@ -57,7 +57,60 @@ gulp.task('compile-ts', function () {
   ]);
 });
 
-// create a single executable js file using systemjs-builder
+gulp.task('compile-test', function () {
+  var tsResult = gulp.src(['app/**/*.ts','test/**/*.ts', 'typings/**/*.ts'])
+    .pipe(sourcemaps.init())
+    .pipe(tsc({
+      typescript: require('typescript'),
+      target: 'ES6',
+      declarationFiles: false,
+      noExternalResolve: true,
+      experimentalDecorators: true,
+      emitDecoratorMetadata: true
+    }));
+
+  return merge([
+    tsResult.dts.pipe(gulp.dest('.tmp/testing/')),
+    tsResult.js.pipe(sourcemaps.write('.')).pipe(gulp.dest('.tmp/testing/'))
+  ]);
+});
+//
+//gulp.task('compile-test', function () {
+//  var tsResult = gulp.src(['lib/*.ts', 'spec/*.ts', 'typings/jasmine/*.ts'])
+//  .pipe(sourcemaps.init())
+//  .pipe(tsc({
+//    typescript: require('typescript'),
+//    target: 'ES5',
+//    declarationFiles: false,
+//    noExternalResolve: true,
+//    experimentalDecorators: true,
+//    emitDecoratorMetadata: true
+//  }));
+//  
+//  var tsResult2 = gulp.src(['spec/*.ts', 'lib/*.ts', 'typings/jasmine/*.ts'])
+//  .pipe(sourcemaps.init())
+//  .pipe(tsc({
+//    typescript: require('typescript'),
+//    target: 'ES5',
+//    declarationFiles: false,
+//    noExternalResolve: true,
+//    experimentalDecorators: true,
+//    emitDecoratorMetadata: true
+//  }));
+//  
+//  return merge([
+//    tsResult.dts.pipe(gulp.dest('lib/')),
+//    //tsResult.js.pipe(sourcemaps.write('.')).pipe(gulp.dest('lib/')),
+//    
+//    tsResult2.dts.pipe(gulp.dest('spec/')),
+//    //tsResult2.js.pipe(sourcemaps.write('.')).pipe(gulp.dest('spec/'))
+//    ]);
+//});
+
+/*
+ * create a single executable js file using systemjs-builder
+ * configurations are found in /config.js 
+ */
 gulp.task('bundle', ['compile-ts'], function(cb) {
   var cmd = 'node_modules/.bin/jspm bundle-sfx scripts/app .tmp/scripts/bundle.js --skip-source-maps';
   exec(cmd, function (err, stdout, stderr) {
@@ -66,6 +119,20 @@ gulp.task('bundle', ['compile-ts'], function(cb) {
     cb(err);
   });
 });
+
+/*
+ * create a single executable js file using systemjs-builder
+ * configurations are found in /config.js 
+ */
+gulp.task('bundle-test', ['compile-test'], function(cb) {
+  var cmd = 'node_modules/.bin/jspm bundle-sfx testing/spec/tsTestSpec .tmp/testing/specBundle.js --skip-source-maps';
+  exec(cmd, function (err, stdout, stderr) {
+    console.log(stdout);
+    console.log(stderr);
+    cb(err);
+  });
+});
+
 
 var styleTask = function (stylesPath, srcs) {
   return gulp.src(srcs.map(function(src) {
