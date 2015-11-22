@@ -18,6 +18,9 @@ var url = require('url');
 var glob = require('glob');
 var merge = require('merge2');
 var exec = require('child_process').exec;
+var gulp = require('gulp');
+var jasmineBrowser = require('gulp-jasmine-browser');
+
 
 var AUTOPREFIXER_BROWSERS = [
   'ie >= 10',
@@ -52,8 +55,8 @@ gulp.task('compile-ts', function () {
     }));
 
   return merge([
-    tsResult.dts.pipe(gulp.dest('.tmp/')),
-    tsResult.js.pipe(sourcemaps.write('.')).pipe(gulp.dest('.tmp/'))
+    tsResult.dts.pipe(gulp.dest('.tmp/app')),
+    tsResult.js.pipe(sourcemaps.write('.')).pipe(gulp.dest('.tmp/app'))
   ]);
 });
 
@@ -70,49 +73,22 @@ gulp.task('compile-test', function () {
     }));
 
   return merge([
-    tsResult.dts.pipe(gulp.dest('.tmp/testing/')),
-    tsResult.js.pipe(sourcemaps.write('.')).pipe(gulp.dest('.tmp/testing/'))
+    tsResult.dts.pipe(gulp.dest('.tmp/')),
+    tsResult.js.pipe(sourcemaps.write('.')).pipe(gulp.dest('.tmp/'))
   ]);
 });
-//
-//gulp.task('compile-test', function () {
-//  var tsResult = gulp.src(['lib/*.ts', 'spec/*.ts', 'typings/jasmine/*.ts'])
-//  .pipe(sourcemaps.init())
-//  .pipe(tsc({
-//    typescript: require('typescript'),
-//    target: 'ES5',
-//    declarationFiles: false,
-//    noExternalResolve: true,
-//    experimentalDecorators: true,
-//    emitDecoratorMetadata: true
-//  }));
-//  
-//  var tsResult2 = gulp.src(['spec/*.ts', 'lib/*.ts', 'typings/jasmine/*.ts'])
-//  .pipe(sourcemaps.init())
-//  .pipe(tsc({
-//    typescript: require('typescript'),
-//    target: 'ES5',
-//    declarationFiles: false,
-//    noExternalResolve: true,
-//    experimentalDecorators: true,
-//    emitDecoratorMetadata: true
-//  }));
-//  
-//  return merge([
-//    tsResult.dts.pipe(gulp.dest('lib/')),
-//    //tsResult.js.pipe(sourcemaps.write('.')).pipe(gulp.dest('lib/')),
-//    
-//    tsResult2.dts.pipe(gulp.dest('spec/')),
-//    //tsResult2.js.pipe(sourcemaps.write('.')).pipe(gulp.dest('spec/'))
-//    ]);
-//});
 
+gulp.task('jasmine', ['bundle-test'], function() {
+  return gulp.src(['.tmp/testing/specBundle.js'])
+    .pipe(jasmineBrowser.specRunner())
+    .pipe(jasmineBrowser.server({port: 8888}));
+});
 /*
  * create a single executable js file using systemjs-builder
  * configurations are found in /config.js 
  */
 gulp.task('bundle', ['compile-ts'], function(cb) {
-  var cmd = 'node_modules/.bin/jspm bundle-sfx scripts/app .tmp/scripts/bundle.js --skip-source-maps';
+  var cmd = 'node_modules/.bin/jspm bundle-sfx app/scripts/app .tmp/scripts/bundle.js --skip-source-maps';
   exec(cmd, function (err, stdout, stderr) {
     console.log(stdout);
     console.log(stderr);
@@ -124,8 +100,8 @@ gulp.task('bundle', ['compile-ts'], function(cb) {
  * create a single executable js file using systemjs-builder
  * configurations are found in /config.js 
  */
-gulp.task('bundle-test', ['compile-test'], function(cb) {
-  var cmd = 'node_modules/.bin/jspm bundle-sfx testing/spec/tsTestSpec .tmp/testing/specBundle.js --skip-source-maps';
+gulp.task('bundle-test', ['compile-test','compile-ts'], function(cb) {
+  var cmd = 'node_modules/.bin/jspm bundle-sfx spec/tsTestSpec .tmp/testing/specBundle.js --skip-source-maps';
   exec(cmd, function (err, stdout, stderr) {
     console.log(stdout);
     console.log(stderr);

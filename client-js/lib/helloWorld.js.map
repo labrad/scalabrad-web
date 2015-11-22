@@ -1,1 +1,0 @@
-{"version":3,"sources":["helloWorld.ts"],"names":["Agent","Agent.helloWorld"],"mappings":"AAAA;IACEA,UAAUA;QACRC,MAAMA,CAACA,cAAcA,CAACA;IACxBA,CAACA;AAEHD,CAACA;AAAA","file":"helloWorld.js","sourcesContent":["export class Agent {\n  helloWorld() {\n    return \"Hello world!\";\n  }\n\n}\n"],"sourceRoot":"/source/"}
