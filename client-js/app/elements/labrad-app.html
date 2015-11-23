@@ -116,14 +116,14 @@
 
     <paper-dialog id="loginDialog" modal>
       <h1>Login to Labrad</h1>
-      <form>
+      <form id="loginForm">
         <paper-input id="passwordInput" label="password" always-float-label type="password"></paper-input>
         <paper-checkbox id="rememberPassword">Remember password</paper-checkbox>
       </form>
       <div>
         <span>{{loginError}}</span>
       </div>
-      <div>
+      <div class="buttons">
         <paper-button id="loginButton">Login</paper-button>
       </div>
     </paper-dialog>

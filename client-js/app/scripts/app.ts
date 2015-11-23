@@ -501,7 +501,7 @@ window.addEventListener('WebComponentsReady', () => {
    * Launch a dialog box to let the user log in to labrad.
    */
   function loginWithDialog() {
-    app.$.loginButton.addEventListener('click', (event) => {
+    function doLogin() {
       var username = '',
           password = app.$.passwordInput.value,
           rememberPassword = app.$.rememberPassword.checked;
@@ -517,9 +517,15 @@ window.addEventListener('WebComponentsReady', () => {
         },
         (error) => {
           app.loginError = error.message || error;
-          loginWithDialog();
+          setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
         }
       );
+    }
+    app.$.loginButton.addEventListener('click', (event) => doLogin());
+    app.$.loginForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      doLogin();
     });
     app.$.loginDialog.open();
     setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
