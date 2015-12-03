@@ -1,4 +1,5 @@
 import {Observable} from "./observable";
+import {Obligation, obligate} from "./obligation";
 
 /**
  * Implements the JSON-RPC 2.0 protocol over websockets.
@@ -10,7 +11,7 @@ import {Observable} from "./observable";
  */
 export class JsonRpcSocket {
   url: string;
-  calls: { [id: number]: { reject: (any) => void; resolve: (error?: any) => void } };
+  calls: { [id: number]: Obligation<any> };
   nextId: number;
   socket: WebSocket;
   prefix: string;
@@ -36,15 +37,11 @@ export class JsonRpcSocket {
     this.callables = {};
     this.notifiables = {};
 
-    var resolveOpen: (any) => void = null;
-    var rejectOpen: (any?) => void = null;
-    this.openPromise = new Promise<void>((resolve, reject) => {
-      resolveOpen = resolve;
-      rejectOpen = reject;
-    });
+    var { obligation, promise } = obligate<any>();
+    this.openPromise = promise;
 
-    this.socket.onopen = (message) => { console.log("onopen", message); resolveOpen(null); }
-    this.socket.onerror = (message) => { console.log("onerror", message); rejectOpen(message); }
+    this.socket.onopen = (message) => { console.log("onopen", message); obligation.resolve(null); }
+    this.socket.onerror = (message) => { console.log("onerror", message); obligation.reject(message); }
 
     this.socket.onmessage = (message) => {
       var json = JSON.parse(message.data);
@@ -71,8 +68,8 @@ export class JsonRpcSocket {
         var method = json["method"];
         var sock = this.socket;
         if (this.callables.hasOwnProperty(method)) {
-          new Promise((resolve, reject) => {
-            this.callables[method](json["params"]).then(resolve, reject);
+          Promise.resolve().then(() => {
+            this.callables[method](json["params"]);
           }).then(
             (result) => {
               var message = {
@@ -114,7 +111,7 @@ export class JsonRpcSocket {
    * when we receive a success or error response, respectively.
    */
   call(method: string, params: Array<string> | Object): Promise<any> {
-    return this.openPromise.then((ignored) => new Promise<any>((resolve, reject) => {
+    return this.openPromise.then((ignored) => {
       var id = this.nextId;
       this.nextId += 1;
       var message = {
@@ -124,11 +121,10 @@ export class JsonRpcSocket {
         params: params
       };
       this.socket.send(JSON.stringify(message));
-      this.calls[id] = {
-        resolve: resolve,
-        reject: reject
-      };
-    }));
+      var { obligation, promise } = obligate<any>();
+      this.calls[id] = obligation;
+      return promise;
+    });
   }
 
   /**

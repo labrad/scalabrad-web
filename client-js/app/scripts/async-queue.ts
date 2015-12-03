@@ -1,3 +1,5 @@
+import {Obligation, obligate} from './obligation';
+
 /**
  * An asynchronous queue of items of some type. Taking from the queue returns
  * a Promise that will fire when an item is ready (this Promise may already
@@ -5,14 +7,14 @@
  */
 export class AsyncQueue<A> {
   private items: Array<A> = [];
-  private promises: Array<{resolve: (A) => void; reject: (any) => void}> = [];
+  private waiters: Array<Obligation<A>> = [];
 
   /**
    * Add an item to the queue.
    */
   offer(a: A): void {
-    if (this.promises.length > 0) {
-      this.promises.shift().resolve(a);
+    if (this.waiters.length > 0) {
+      this.waiters.shift().resolve(a);
     } else {
       this.items.push(a);
     }
@@ -26,10 +28,9 @@ export class AsyncQueue<A> {
     if (this.items.length > 0) {
       return Promise.resolve(this.items.shift());
     } else {
-      var promises = this.promises;
-      return new Promise((resolve, reject) => {
-        promises.push({resolve: resolve, reject: reject});
-      });
+      var { obligation, promise } = obligate<A>();
+      this.waiters.push(obligation);
+      return promise;
     }
   }
 
@@ -38,8 +39,8 @@ export class AsyncQueue<A> {
    * containing the given reason.
    */
   close(reason: string = 'queue closed'): void {
-    while (this.promises.length > 0) {
-      this.promises.shift().reject(new Error(reason));
+    while (this.waiters.length > 0) {
+      this.waiters.shift().reject(new Error(reason));
     }
   }
 }
