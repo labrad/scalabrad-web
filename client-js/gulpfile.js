@@ -18,9 +18,8 @@ var url = require('url');
 var glob = require('glob');
 var merge = require('merge2');
 var exec = require('child_process').exec;
-var gulp = require('gulp');
 var jasmineBrowser = require('gulp-jasmine-browser');
-
+var jasmine = require('gulp-jasmine');
 
 var AUTOPREFIXER_BROWSERS = [
   'ie >= 10',
@@ -78,7 +77,7 @@ gulp.task('compile-test', function () {
   ]);
 });
 
-gulp.task('jasmine', ['bundle-test'], function() {
+gulp.task('jasmine-browser', ['bundle-test'], function() {
   return gulp.src(['.tmp/testing/specBundle.js'])
     .pipe(jasmineBrowser.specRunner())
     .pipe(jasmineBrowser.server({port: 8888}));
@@ -101,7 +100,7 @@ gulp.task('bundle', ['compile-ts'], function(cb) {
  * configurations are found in /config.js 
  */
 gulp.task('bundle-test', ['compile-test','compile-ts'], function(cb) {
-  var cmd = 'node_modules/.bin/jspm bundle-sfx spec/tsTestSpec .tmp/testing/specBundle.js --skip-source-maps';
+  var cmd = 'node_modules/.bin/jspm bundle-sfx spec/ts-test-spec .tmp/testing/spec-bundle.js --skip-source-maps';
   exec(cmd, function (err, stdout, stderr) {
     console.log(stdout);
     console.log(stderr);
@@ -297,6 +296,21 @@ gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'elements', 'images
   gulp.watch(['app/{scripts,elements}/**/*.js'], ['jshint', reload]);
   gulp.watch(['app/{scripts,elements}/**/*.ts'], ['bundle', reload]);
   gulp.watch(['app/images/**/*'], reload);
+});
+//
+gulp.task('jasmine-cmd',['bundle-test'], function() {
+  return gulp.src('.tmp/testing/spec-bundle.js')
+ .pipe(jasmine());
+});
+
+gulp.task('watch', function () {
+  watch('**/*.js', batch(function (events, done) {
+      gulp.start('build', done);
+  }));
+});
+
+gulp.task('test-watch', function () {
+  gulp.watch(['app/{scripts,elements}/**/*.ts'], ['jasmine-cmd']);
 });
 
 // Build and serve the output from the dist build
