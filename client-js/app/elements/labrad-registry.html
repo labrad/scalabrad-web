@@ -239,7 +239,11 @@
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
-    
-    <paper-toast id="toastText" text="tada"></paper-toast>
+
+    <paper-dialog id="pendingDialog" modal>
+      <h1 id="pendingOp"></h1> 
+    </paper-dialog>
+
+    <paper-toast id="toastTextSuccess" text="Directory Copied Successfully!" duration=3000></paper-toast>
   </template>
 </dom-module>

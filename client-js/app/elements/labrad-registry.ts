@@ -82,6 +82,7 @@ export class LabradRegistry extends polymer.Base {
     //TODO increment selected key on tab
   }
 
+<<<<<<< HEAD
   async repopulateList(): Promise<void> {
     var resp = await this.socket.dir({path: this.path});
     this.selKey = null;
@@ -95,6 +96,7 @@ export class LabradRegistry extends polymer.Base {
     for (var j in resp.keys) {
       this.push('keys', {name: resp.keys[j], value: resp.vals[j]});
     }
+    this.$.pendingDialog.close()
   }
 
   createUrl(path: Array<string>, dir: string): string {
@@ -169,8 +171,6 @@ export class LabradRegistry extends polymer.Base {
     console.log('drag started', data);
     event.dataTransfer.setData('text', JSON.stringify(data));
     event.dataTransfer.effectAllowed = 'copyMove';
-//    this.$.toastText.text = "drag to move, hold ctrl to copy";
-//    this.$.toastText.show();
   }
 
   onDirDragOver(event) {
@@ -365,8 +365,11 @@ export class LabradRegistry extends polymer.Base {
     var newName =  this.$.copyNameInput.value;
     var newPath = JSON.parse(this.$.copyPathInput.value);
 
+
     try {
       if (this.selectType === 'dir') {
+        this.$.pendingDialog.open();
+        this.$.pendingOp.innerText = "Copying...";
         await this.socket.copyDir({path: this.path, dir: this.selDir, newPath: newPath, newDir: newName});
       }
       else if (this.selectType === 'key') {
@@ -384,11 +387,14 @@ export class LabradRegistry extends polymer.Base {
     var oldPath = JSON.parse(this.$.originPath.textContent);
     var oldName = this.$.originName.textContent;
 
+    this.$.pendingDialog.open();
+    this.$.pendingOp.innerText = "Copying...";
+
     try {
       var resp = await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
       console.log(resp)//this.repopulateList();
-      this.$.toastText.text = "Directory Copied Successfully!";
-      this.$.toastText.show();
+      this.$.pendingDialog.close()
+      this.$.toastTextSuccess.show();
     } catch (error) {
       this.handleError(error);
     }
@@ -460,6 +466,8 @@ export class LabradRegistry extends polymer.Base {
   async doDelete() {
     try {
       if (this.selectType === 'dir') {
+        this.$.pendingDialog.open();
+        this.$.pendingOp.innerText = "Deleting...";
         await this.socket.rmDir({path: this.path, dir: this.selDir});
       }
       else if (this.selectType === 'key') {
