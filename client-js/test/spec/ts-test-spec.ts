@@ -25,16 +25,15 @@ describe("Hello world", function() {
 
 describe("observable test", function() {
   var observable: Observable<any>;
-  var lifetime = new Lifetime();
 
   it("calls added callbacks asynchronously", function(done) {
-  var observable = new Observable<string>();
-  observable.add((msg) => {
-    expect(msg).toEqual("foo");
-    done();
+    var observable = new Observable<string>();
+    observable.add((msg) => {
+      expect(msg).toEqual("foo");
+      done();
+    });
+    observable.call("foo");
   });
-  observable.call("foo");
-});
 
 });
 

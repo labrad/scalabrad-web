@@ -82,6 +82,7 @@ gulp.task('jasmine-browser', ['bundle-test'], function() {
     .pipe(jasmineBrowser.specRunner())
     .pipe(jasmineBrowser.server({port: 8888}));
 });
+
 /*
  * create a single executable js file using systemjs-builder
  * configurations are found in /config.js 
@@ -297,7 +298,7 @@ gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'elements', 'images
   gulp.watch(['app/{scripts,elements}/**/*.ts'], ['bundle', reload]);
   gulp.watch(['app/images/**/*'], reload);
 });
-//
+
 gulp.task('jasmine-cmd',['bundle-test'], function() {
   return gulp.src('.tmp/testing/spec-bundle.js')
  .pipe(jasmine());

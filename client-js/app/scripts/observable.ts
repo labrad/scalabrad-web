@@ -37,7 +37,7 @@ export class Observable<A> {
 
   call(value: A): void {
     for (let callback of this.callbacks) {
-      window.setTimeout(() => callback(value), 0);
+      setTimeout(() => callback(value), 0);
     }
   }
 }
