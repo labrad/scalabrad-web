@@ -101,7 +101,7 @@ gulp.task('bundle', ['compile-ts'], function(cb) {
  * configurations are found in /config.js 
  */
 gulp.task('bundle-test', ['compile-test','compile-ts'], function(cb) {
-  var cmd = 'node_modules/.bin/jspm bundle-sfx spec/ts-test-spec .tmp/testing/spec-bundle.js --skip-source-maps';
+  var cmd = 'node_modules/.bin/jspm bundle-sfx spec/main .tmp/testing/spec-bundle.js --skip-source-maps';
   exec(cmd, function (err, stdout, stderr) {
     console.log(stdout);
     console.log(stderr);
