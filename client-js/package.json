@@ -30,7 +30,7 @@
     "gulp-useref": "^1.1.2",
     "gulp-util": "^3.0.5",
     "gulp-vulcanize": "^6.0.0",
-    "jasmine": "2.3.4",
+    "jasmine": "2.4.1",
     "jshint-stylish": "^2.0.0",
     "jspm": "^0.15.7",
     "merge-stream": "^0.1.7",
