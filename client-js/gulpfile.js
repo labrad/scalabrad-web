@@ -47,6 +47,7 @@ gulp.task('compile-ts', function () {
     .pipe(tsc({
       typescript: require('typescript'),
       target: 'ES6',
+      module: 'ES6',
       declarationFiles: false,
       noExternalResolve: true,
       experimentalDecorators: true,
@@ -65,6 +66,7 @@ gulp.task('compile-test', function () {
     .pipe(tsc({
       typescript: require('typescript'),
       target: 'ES6',
+      module: 'ES6',
       declarationFiles: false,
       noExternalResolve: true,
       experimentalDecorators: true,
