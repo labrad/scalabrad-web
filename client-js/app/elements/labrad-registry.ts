@@ -82,20 +82,19 @@ export class LabradRegistry extends polymer.Base {
     //TODO increment selected key on tab
   }
 
-  repopulateList(): Promise<void> {
-    return this.socket.dir({path: this.path}).then((resp) => {
-      this.selKey = null;
-      this.selDir = null;
-      this.splice('dirs', 0, this.dirs.length);
-      this.splice('keys', 0, this.keys.length);
+  async repopulateList(): Promise<void> {
+    var resp = await this.socket.dir({path: this.path});
+    this.selKey = null;
+    this.selDir = null;
+    this.splice('dirs', 0, this.dirs.length);
+    this.splice('keys', 0, this.keys.length);
 
-      for (var i in resp.dirs) {
-        this.push('dirs', {name: resp.dirs[i], url: this.createUrl(resp.path, resp.dirs[i])});
-      }
-      for (var j in resp.keys) {
-        this.push('keys', {name: resp.keys[j], value: resp.vals[j]});
-      }
-    });
+    for (var i in resp.dirs) {
+      this.push('dirs', {name: resp.dirs[i], url: this.createUrl(resp.path, resp.dirs[i])});
+    }
+    for (var j in resp.keys) {
+      this.push('keys', {name: resp.keys[j], value: resp.vals[j]});
+    }
   }
 
   createUrl(path: Array<string>, dir: string): string {
@@ -124,12 +123,15 @@ export class LabradRegistry extends polymer.Base {
    * Update a key in response to change in the inline form submission.
    */
   @listen('iron-form-submit')
-  updateKey(event) {
+  async updateKey(event) {
     var selKey = event.detail.key;
     var newVal = event.detail.value;
-    this.socket.set({path: this.path, key: selKey, value: newVal})
-      .then(() => this.repopulateList())
-      .catch((reason) => this.handleError(reason));
+    try {
+      await this.socket.set({path: this.path, key: selKey, value: newVal});
+      this.repopulateList();
+    } catch (error) {
+      this.handleError(error);
+    }
   }
 
   /**
@@ -256,14 +258,17 @@ export class LabradRegistry extends polymer.Base {
   /**
    * Create new key.
    */
-  doNewKey() {
+  async doNewKey() {
     var newKey = this.$.newKeyInput.value;
     var newVal = this.$.newValueInput.value;
 
     if (newKey) {
-      this.socket.set({path: this.path, key: newKey, value: newVal})
-        .then(() => this.repopulateList())
-        .catch((reason) => this.handleError(reason));
+      try {
+        await this.socket.set({path: this.path, key: newKey, value: newVal});
+        this.repopulateList();
+      } catch (error) {
+        this.handleError(error);
+      }
     }
     else {
       this.handleError('Cannot create key with empty name');
@@ -298,12 +303,15 @@ export class LabradRegistry extends polymer.Base {
   /**
    * Submit the edited value to the server.
    */
-  doEditValue() {
+  async doEditValue() {
     var key = this.$.editValueDialog.keyName,
         newVal = this.$.editValueInput.value;
-    this.socket.set({path: this.path, key: key, value: newVal})
-      .then(() => this.repopulateList())
-      .catch((reason) => this.handleError(reason));
+    try {
+      await this.socket.set({path: this.path, key: key, value: newVal});
+      this.repopulateList();
+    } catch (error) {
+      this.handleError(error);
+    }
   }
 
   /**
@@ -320,13 +328,16 @@ export class LabradRegistry extends polymer.Base {
   /**
    * Create new folder.
    */
-  doNewFolder() {
+  async doNewFolder() {
     var newFolder = this.$.newFolderInput.value;
 
     if (newFolder) {
-      this.socket.mkDir({path: this.path, dir: newFolder})
-        .then(() => this.repopulateList())
-        .catch((reason) => this.handleError(reason));
+      try {
+        await this.socket.mkDir({path: this.path, dir: newFolder})
+        this.repopulateList();
+      } catch (error) {
+        this.handleError(error);
+      }
     }
     else {
       this.handleError('Cannot create folder with empty name');
@@ -350,38 +361,37 @@ export class LabradRegistry extends polymer.Base {
   /**
    * Copy the selected key or folder.
    */
-  doCopy() {
+  async doCopy() {
     var newName =  this.$.copyNameInput.value;
     var newPath = JSON.parse(this.$.copyPathInput.value);
 
-    if (this.selectType === 'dir') {
-      this.socket.copyDir({path: this.path, dir: this.selDir, newPath: newPath, newDir: newName})
-        .then(() => this.repopulateList())
-        .catch((reason) => this.handleError(reason));
-    }
-    else if (this.selectType === 'key') {
-      this.socket.copy({path: this.path, key: this.selKey, newPath: newPath, newKey: newName})
-        .then(() => this.repopulateList())
-        .catch((reason) => this.handleError(reason));
+    try {
+      if (this.selectType === 'dir') {
+        await this.socket.copyDir({path: this.path, dir: this.selDir, newPath: newPath, newDir: newName});
+      }
+      else if (this.selectType === 'key') {
+        await this.socket.copy({path: this.path, key: this.selKey, newPath: newPath, newKey: newName});
+      }
+      this.repopulateList();
+    } catch (error) {
+      this.handleError(error);
     }
   }
 
-  doDragCopy() {
-    var self = this;
+  async doDragCopy() {
     var newName =  this.$.dragCopyNameInput.value;
     var newPath = JSON.parse(this.$.dragCopyPathInput.value);
     var oldPath = JSON.parse(this.$.originPath.textContent);
     var oldName = this.$.originName.textContent;
 
-    this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName}).then(
-      (resp) => {
-        console.log(resp)//self.repopulateList();
-        this.$.toastText.text = "Directory Copied Successfully!";
-        this.$.toastText.show();
-      },
-      (reason) => self.handleError(reason)
-    );
-
+    try {
+      var resp = await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
+      console.log(resp)//this.repopulateList();
+      this.$.toastText.text = "Directory Copied Successfully!";
+      this.$.toastText.show();
+    } catch (error) {
+      this.handleError(error);
+    }
   }
 
 
@@ -407,7 +417,7 @@ export class LabradRegistry extends polymer.Base {
   /**
    * Rename the selected key or folder.
    */
-  doRename() {
+  async doRename() {
     var newName = this.$.renameInput.value;
 
     var name: string;
@@ -419,15 +429,16 @@ export class LabradRegistry extends polymer.Base {
 
     if (newName === null || newName === name) return;
     if (newName) {
-      if (this.selectType === 'dir') {
-        this.socket.renameDir({path: this.path, dir: name, newDir: newName})
-          .then(() => this.repopulateList())
-          .catch((reason) => this.handleError(reason));
-      }
-      else if (this.selectType === 'key') {
-        this.socket.rename({path: this.path, key: name, newKey: newName})
-          .then(() => this.repopulateList())
-          .catch((reason) => this.handleError(reason));
+      try {
+        if (this.selectType === 'dir') {
+          await this.socket.renameDir({path: this.path, dir: name, newDir: newName});
+        }
+        else if (this.selectType === 'key') {
+          await this.socket.rename({path: this.path, key: name, newKey: newName});
+        }
+        this.repopulateList();
+      } catch (error) {
+        this.handleError(error);
       }
     }
     else {
@@ -446,16 +457,17 @@ export class LabradRegistry extends polymer.Base {
   /**
    * Delete the selected key or folder.
    */
-  doDelete() {
-    if (this.selectType === 'dir') {
-      this.socket.rmDir({path: this.path, dir: this.selDir})
-        .then(() => this.repopulateList())
-        .catch((reason) => this.handleError(reason));
-    }
-    else if (this.selectType === 'key') {
-      this.socket.del({path: this.path, key: this.selKey})
-        .then(() => this.repopulateList())
-        .catch((reason) => this.handleError(reason));
+  async doDelete() {
+    try {
+      if (this.selectType === 'dir') {
+        await this.socket.rmDir({path: this.path, dir: this.selDir});
+      }
+      else if (this.selectType === 'key') {
+        await this.socket.del({path: this.path, key: this.selKey});
+      }
+      this.repopulateList();
+    } catch (error) {
+      this.handleError(error);
     }
   }
 }

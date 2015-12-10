@@ -116,12 +116,13 @@ export class LabradNodeController extends polymer.Base {
   active: boolean;
 
   @listen('refresh.click')
-  onRefresh() {
+  async onRefresh() {
     this.active = true;
-    this.api.refreshNode(this.name).then(
-      (result) => { this.active = false; },
-      (error) => { this.active = false; }
-    );
+    try {
+      await this.api.refreshNode(this.name);
+    } finally {
+      this.active = false;
+    }
   }
 }
 

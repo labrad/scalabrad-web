@@ -105,38 +105,28 @@ window.addEventListener('WebComponentsReady', () => {
 
   var activity: Activity = null;
 
-  function activate(newActivity: Activity): void {
-    var p: Promise<void> = Promise.resolve(null);
-    if (activity) {
-      p = activity.stop();
-    }
-    p.then(
-      (success) => {
-        newActivity.start().then(
-          (state) => {
-            app.route = state.route;
-            if (state.breadcrumbs) {
-              app.hasBreadcrumbs = true;
-              app.breadcrumbs = state.breadcrumbs;
-            } else {
-              app.hasBreadcrumbs = false;
-            }
-            var content = app.$.content;
-            while (content.firstChild) {
-              content.removeChild(content.firstChild);
-            }
-            content.appendChild(state.elem);
-            activity = newActivity;
-          },
-          (error) => {
-            console.log('error while starting activity', error);
-          }
-        )
-      },
-      (error) => {
-        console.log('error while shutting down activity', error);
+  async function activate(newActivity: Activity): Promise<void> {
+    try {
+      if (activity) {
+        await activity.stop();
       }
-    )
+      var state = await newActivity.start();
+      app.route = state.route;
+      if (state.breadcrumbs) {
+        app.hasBreadcrumbs = true;
+        app.breadcrumbs = state.breadcrumbs;
+      } else {
+        app.hasBreadcrumbs = false;
+      }
+      var content = app.$.content;
+      while (content.firstChild) {
+        content.removeChild(content.firstChild);
+      }
+      content.appendChild(state.elem);
+      activity = newActivity;
+    } catch (error) {
+      console.log('error while starting activity', error);
+    }
   }
 
   class RegistryActivity implements Activity {
@@ -151,44 +141,42 @@ window.addEventListener('WebComponentsReady', () => {
       this.path = path;
     }
 
-    start(): Promise<ActivityState> {
+    async start(): Promise<ActivityState> {
       this.api.newItem.add(() => this.onNewItem(), this.lifetime);
       console.log('loading registry:', this.path);
-      return this.api.watch({path: this.path}).then(() => {
-        return this.api.dir({path: this.path}).then((listing) => {
-          var breadcrumbs = [];
-          for (var i = 0; i <= this.path.length; i++) {
-            breadcrumbs.push({
-              name: (i == 0) ? 'registry' : this.path[i-1],
-              isLink: i < this.path.length,
-              url: registryUrl(this.path.slice(0, i))
-            });
-          }
-
-          var elem = <LabradRegistry> LabradRegistry.create();
-
-          elem.path = this.path;
-          elem.dirs = [];
-          elem.keys = [];
-          elem.socket = this.api;
-          elem.repopulateList();
-
-          this.elem = elem;
-
-          return {
-            elem: elem,
-            route: 'registry',
-            breadcrumbs: breadcrumbs
-          };
+      await this.api.watch({path: this.path});
+      var listing = await this.api.dir({path: this.path});
+      var breadcrumbs = [];
+      for (var i = 0; i <= this.path.length; i++) {
+        breadcrumbs.push({
+          name: (i == 0) ? 'registry' : this.path[i-1],
+          isLink: i < this.path.length,
+          url: registryUrl(this.path.slice(0, i))
         });
-     });
+      }
+
+      var elem = <LabradRegistry> LabradRegistry.create();
+
+      elem.path = this.path;
+      elem.dirs = [];
+      elem.keys = [];
+      elem.socket = this.api;
+      elem.repopulateList();
+
+      this.elem = elem;
+
+      return {
+        elem: elem,
+        route: 'registry',
+        breadcrumbs: breadcrumbs
+      };
     }
 
     onNewItem() {
       this.elem.repopulateList();
     }
 
-    stop(): Promise<void> {
+    async stop(): Promise<void> {
       return this.api.unwatch({path: this.path});
     }
   }
@@ -206,48 +194,44 @@ window.addEventListener('WebComponentsReady', () => {
       this.path = path;
     }
 
-    start(): Promise<ActivityState> {
+    async start(): Promise<ActivityState> {
       console.log('loading datavault:', this.path);
       this.api.newDir.add(x => this.onNewDir(), this.lifetime);
       this.api.newDataset.add(x => this.onNewDataset(), this.lifetime);
-      return dv.dir(this.path).then((listing) => {
-        var breadcrumbs = [];
-        for (var i = 0; i <= this.path.length; i++) {
-          breadcrumbs.push({
-            name: (i == 0) ? 'grapher' : this.path[i-1],
-            isLink: i < this.path.length,
-            url: grapherUrl(this.path.slice(0, i))
-          });
-        }
+      var listing = await dv.dir(this.path);
+      var breadcrumbs = [];
+      for (var i = 0; i <= this.path.length; i++) {
+        breadcrumbs.push({
+          name: (i == 0) ? 'grapher' : this.path[i-1],
+          isLink: i < this.path.length,
+          url: grapherUrl(this.path.slice(0, i))
+        });
+      }
 
-        this.elem = <LabradGrapher> LabradGrapher.create();
-        this.elem.path = this.path;
-        this.elem.dirs = this.getDirs(listing);
-        this.elem.datasets = this.getDatasets(listing);
+      this.elem = <LabradGrapher> LabradGrapher.create();
+      this.elem.path = this.path;
+      this.elem.dirs = this.getDirs(listing);
+      this.elem.datasets = this.getDatasets(listing);
 
-        return {
-          elem: this.elem,
-          route: 'grapher',
-          breadcrumbs: breadcrumbs
-        };
-      });
+      return {
+        elem: this.elem,
+        route: 'grapher',
+        breadcrumbs: breadcrumbs
+      };
     }
 
-    onNewDir() {
-      dv.dir(this.path).then(listing => {
-        this.elem.dirs = this.getDirs(listing);
-      });
+    async onNewDir() {
+      var listing = await dv.dir(this.path);
+      this.elem.dirs = this.getDirs(listing);
     }
 
-    onNewDataset() {
-      dv.dir(this.path).then(listing => {
-        this.elem.datasets = this.getDatasets(listing);
-      });
+    async onNewDataset() {
+      var listing = await dv.dir(this.path);
+      this.elem.datasets = this.getDatasets(listing);
     }
 
-    stop(): Promise<void> {
+    async stop(): Promise<void> {
       this.lifetime.close();
-      return Promise.resolve(null);
     }
 
     private getDirs(listing: datavault.DataVaultListing) {
@@ -280,58 +264,57 @@ window.addEventListener('WebComponentsReady', () => {
       this.lifetime.defer(() => this.dataAvailable.close());
     }
 
-    start(): Promise<ActivityState> {
+    async start(): Promise<ActivityState> {
       console.log('loading dataset:', this.path, this.dataset);
       this.api.dataAvailable.add(x => this.dataAvailable.offer(null), this.lifetime);
       this.api.newParameter.add(x => this.onNewParameter(), this.lifetime);
-      return this.api.datasetInfo({path: this.path, dataset: this.dataset}).then((info) => {
-        var breadcrumbs = [];
-        for (var i = 0; i <= this.path.length; i++) {
-          breadcrumbs.push({
-            name: (i == 0) ? 'grapher' : this.path[i-1],
-            isLink: true,
-            url: grapherUrl(this.path.slice(0, i))
-          });
-        }
+      var info = await this.api.datasetInfo({path: this.path, dataset: this.dataset});
+      var breadcrumbs = [];
+      for (var i = 0; i <= this.path.length; i++) {
         breadcrumbs.push({
-          name: info.name,
-          isLink: false,
-          url: datasetUrl(this.path, String(info.num))
+          name: (i == 0) ? 'grapher' : this.path[i-1],
+          isLink: true,
+          url: grapherUrl(this.path.slice(0, i))
         });
-
-        var elem: HTMLElement = null;
-        switch (info.independents.length) {
-          case 1:
-            let p1D = <Plot1D> Plot1D.create();
-            p1D.setAttribute('class', 'flex');
-            p1D.xLabel = info.independents[0];
-            p1D.yLabel = info.dependents[0];
-            this.plot = p1D;
-            elem = p1D;
-            break;
-
-          case 2:
-            let p2D = <Plot2D> Plot2D.create();
-            p2D.setAttribute('class', 'flex');
-            p2D.xLabel = info.independents[0];
-            p2D.yLabel = info.independents[1];
-            this.plot = p2D;
-            elem = p2D;
-            break;
-
-          default:
-            elem = document.createElement('div');
-            break;
-        }
-
-        this.requestData();
-
-        return {
-          elem: elem,
-          route: 'dataset',
-          breadcrumbs: breadcrumbs
-        };
+      }
+      breadcrumbs.push({
+        name: info.name,
+        isLink: false,
+        url: datasetUrl(this.path, String(info.num))
       });
+
+      var elem: HTMLElement = null;
+      switch (info.independents.length) {
+        case 1:
+          let p1D = <Plot1D> Plot1D.create();
+          p1D.setAttribute('class', 'flex');
+          p1D.xLabel = info.independents[0];
+          p1D.yLabel = info.dependents[0];
+          this.plot = p1D;
+          elem = p1D;
+          break;
+
+        case 2:
+          let p2D = <Plot2D> Plot2D.create();
+          p2D.setAttribute('class', 'flex');
+          p2D.xLabel = info.independents[0];
+          p2D.yLabel = info.independents[1];
+          this.plot = p2D;
+          elem = p2D;
+          break;
+
+        default:
+          elem = document.createElement('div');
+          break;
+      }
+
+      this.requestData();
+
+      return {
+        elem: elem,
+        route: 'dataset',
+        breadcrumbs: breadcrumbs
+      };
     }
 
     onNewParameter(): void {
@@ -351,34 +334,30 @@ window.addEventListener('WebComponentsReady', () => {
       this.plot.addData(data);
     }
 
-    stop(): Promise<void> {
+    async stop(): Promise<void> {
       this.lifetime.close();
-      return Promise.resolve(null);
     }
   }
 
   class ManagerActivity implements Activity {
-    start(): Promise<ActivityState> {
-      return mgr.connections().then((conns) => {
-        var connsWithUrl = conns.map((c) => {
-          var x = <any> c;
-          if (c.server) {
-            x['url'] = serverUrl(c.name);
-          }
-          return x;
-        });
-        var elem = <LabradManager> LabradManager.create();
-        elem.connections = connsWithUrl;
-        return {
-          elem: elem,
-          route: 'manager'
-        };
+    async start(): Promise<ActivityState> {
+      var conns = await mgr.connections();
+      var connsWithUrl = conns.map((c) => {
+        var x = <any> c;
+        if (c.server) {
+          x['url'] = serverUrl(c.name);
+        }
+        return x;
       });
+      var elem = <LabradManager> LabradManager.create();
+      elem.connections = connsWithUrl;
+      return {
+        elem: elem,
+        route: 'manager'
+      };
     }
 
-    stop(): Promise<void> {
-      return Promise.resolve(null);
-    }
+    async stop(): Promise<void> {}
   }
 
   class ServerActivity implements Activity {
@@ -388,39 +367,33 @@ window.addEventListener('WebComponentsReady', () => {
       this.name = name;
     }
 
-    start(): Promise<ActivityState> {
-      return mgr.serverInfo(this.name).then((info) => {
-        var elem = <LabradServer> LabradServer.create();
-        elem.info = info;
-        return {
-          elem: elem,
-          route: 'server'
-        }
-      });
+    async start(): Promise<ActivityState> {
+      var info = await mgr.serverInfo(this.name);
+      var elem = <LabradServer> LabradServer.create();
+      elem.info = info;
+      return {
+        elem: elem,
+        route: 'server'
+      };
     }
 
-    stop(): Promise<void> {
-      return Promise.resolve(null);
-    }
+    async stop(): Promise<void> {}
   }
 
   class NodesActivity implements Activity {
-    start(): Promise<ActivityState> {
-      return node.allNodes().then((nodesInfo) => {
-        var elem = <LabradNodes> LabradNodes.create();
-        elem.info = nodesInfo;
-        elem.api = node;
-        elem.managerApi = mgr;
-        return {
-          elem: elem,
-          route: 'nodes'
-        }
-      });
+    async start(): Promise<ActivityState> {
+      var nodesInfo = await node.allNodes();
+      var elem = <LabradNodes> LabradNodes.create();
+      elem.info = nodesInfo;
+      elem.api = node;
+      elem.managerApi = mgr;
+      return {
+        elem: elem,
+        route: 'nodes'
+      };
     }
 
-    stop(): Promise<void> {
-      return Promise.resolve(null);
-    }
+    async stop(): Promise<void> {}
   }
 
   // Set up page routing
@@ -501,25 +474,23 @@ window.addEventListener('WebComponentsReady', () => {
    * Launch a dialog box to let the user log in to labrad.
    */
   function loginWithDialog() {
-    function doLogin() {
+    async function doLogin() {
       var username = '',
           password = app.$.passwordInput.value,
           rememberPassword = app.$.rememberPassword.checked;
-      mgr.login({username: username, password: password}).then(
-        (result) => {
-          var creds = {username: username, password: password};
-          var storage = rememberPassword ? window.localStorage : window.sessionStorage;
-          storage.setItem('labrad-credentials', JSON.stringify(creds));
-          app.$.loginDialog.close();
-          page({
-            hashbang: false
-          });
-        },
-        (error) => {
-          app.loginError = error.message || error;
-          setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
-        }
-      );
+      try {
+        var result = await mgr.login({username: username, password: password});
+        var creds = {username: username, password: password};
+        var storage = rememberPassword ? window.localStorage : window.sessionStorage;
+        storage.setItem('labrad-credentials', JSON.stringify(creds));
+        app.$.loginDialog.close();
+        page({
+          hashbang: false
+        });
+      } catch (error) {
+        app.loginError = error.message || error;
+        setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
+      }
     }
     app.$.loginButton.addEventListener('click', (event) => doLogin());
     app.$.loginForm.addEventListener('submit', (event) => {
@@ -556,30 +527,25 @@ window.addEventListener('WebComponentsReady', () => {
    * If the login fails due to an invalid password, we clear the credentials
    * from this storage object.
    */
-  function attemptLogin(storage: Storage): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      var creds = loadCreds(storage);
-      if (creds === null) {
-        reject('no credentials');
-      } else {
-        mgr.login({
+  async function attemptLogin(storage: Storage): Promise<void> {
+    var creds = loadCreds(storage);
+    if (creds === null) {
+      throw new Error('no credentials');
+    } else {
+      try {
+        return mgr.login({
           username: creds.username,
           password: creds.password
-        }).then(
-          (result) => {
-            resolve(result);
-          },
-          (error) => {
-            var errStr = String(error.message || error);
-            if (errStr.indexOf('password') >= 0) {
-              // if we had credentials, clear them out
-              storage.removeItem('labrad-credentials');
-            }
-            reject(error);
-          }
-        );
+        });
+      } catch (error) {
+        var errStr = String(error.message || error);
+        if (errStr.indexOf('password') >= 0) {
+          // if we had credentials, clear them out
+          storage.removeItem('labrad-credentials');
+        }
+        throw error;
       }
-    });
+    }
   }
 
   // Login using credentials from session and then local storage.

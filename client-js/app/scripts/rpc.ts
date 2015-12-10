@@ -64,34 +64,7 @@ export class JsonRpcSocket {
       } else if (json.hasOwnProperty("id")) {
         // call
         console.log('call', json);
-        var id = json["id"];
-        var method = json["method"];
-        var sock = this.socket;
-        if (this.callables.hasOwnProperty(method)) {
-          Promise.resolve().then(() => {
-            this.callables[method](json["params"]);
-          }).then(
-            (result) => {
-              var message = {
-                jsonrpc: "2.0",
-                id: id,
-                result: result
-              };
-              sock.send(JSON.stringify(message));
-            },
-            (error) => {
-              var message = {
-                jsonrpc: "2.0",
-                id: id,
-                error: {
-                  code: 1,
-                  message: "oops!" // TODO: get this from error itself; also: data
-                }
-              };
-              sock.send(JSON.stringify(message));
-            }
-          );
-        }
+        this.callMethod(json);
       } else {
         // notification
         console.log('notification', json);
@@ -104,27 +77,56 @@ export class JsonRpcSocket {
   }
 
   /**
+   * Call a local method and send the response back to the remote party
+   */
+  private async callMethod(request: Object) {
+    var id = request["id"];
+    var response: Object;
+    try {
+      var method = request["method"]
+      if (!this.callables.hasOwnProperty(method)) {
+        throw new Error(`no such method: ${method}`);
+      }
+      var result = await this.callables[method](request["params"]);
+      response = {
+        jsonrpc: "2.0",
+        id: id,
+        result: result
+      };
+    } catch (error) {
+      response = {
+        jsonrpc: "2.0",
+        id: id,
+        error: {
+          code: 1,
+          message: "oops!" // TODO: get this from error itself; also: data
+        }
+      };
+    }
+    this.socket.send(JSON.stringify(response));
+  }
+
+  /**
    * Call the specified remote method.
    *
    * Params to the method can be given an array (positional) or object
    * (call by name). The returned Promise will be resolved or rejected
    * when we receive a success or error response, respectively.
    */
-  call(method: string, params: Array<string> | Object): Promise<any> {
-    return this.openPromise.then((ignored) => {
-      var id = this.nextId;
-      this.nextId += 1;
-      var message = {
-        jsonrpc: "2.0",
-        id: id,
-        method: method,
-        params: params
-      };
-      this.socket.send(JSON.stringify(message));
-      var { obligation, promise } = obligate<any>();
-      this.calls[id] = obligation;
-      return promise;
-    });
+  async call(method: string, params: Array<string> | Object): Promise<any> {
+    await this.openPromise;
+    var id = this.nextId;
+    this.nextId += 1;
+    var message = {
+      jsonrpc: "2.0",
+      id: id,
+      method: method,
+      params: params
+    };
+    this.socket.send(JSON.stringify(message));
+    var { obligation, promise } = obligate<any>();
+    this.calls[id] = obligation;
+    return promise;
   }
 
   /**

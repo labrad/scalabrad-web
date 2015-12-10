@@ -24,9 +24,9 @@ export class AsyncQueue<A> {
    * Take an item from the queue, returning a Promise that will fire when an
    * item is available.
    */
-  take(): Promise<A> {
+  async take(): Promise<A> {
     if (this.items.length > 0) {
-      return Promise.resolve(this.items.shift());
+      return this.items.shift();
     } else {
       var { obligation, promise } = obligate<A>();
       this.waiters.push(obligation);
