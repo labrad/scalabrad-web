@@ -53,6 +53,20 @@ object Message {
   }
 
   /**
+   * A summary of a message suitable for logging. Does not include Request
+   * or Notification params, since these may be large or contain sensitive
+   * information.
+   */
+  def summary(msg: Message): String = {
+    msg match {
+      case r: Request => s"Request(id=${r.id}, method=${r.method})"
+      case n: Notification => s"Notification(method=${n.method})"
+      case s: SuccessResponse => s"SuccessResponse(id=${s.id})"
+      case e: ErrorResponse => s"ErrorResponse(id=${e.id})"
+    }
+  }
+
+  /**
    * Convert a JsonRpc message into a JSON value, including the jsonrpc field.
    */
   def toJson(msg: Message): JsValue = {
@@ -124,12 +138,12 @@ class JsonRpcTransport(backend: Backend, send: String => Unit)(implicit ec: Exec
   backend.connect(endpoint)
 
   def receive(msg: String): Unit = {
-    println(s"got message: $msg")
     Message.unapply(Json.parse(msg)) match {
       case None =>
         sys.error(s"invalid jsonrpc message: $msg")
 
       case Some(msg) =>
+        println(s"got: ${Message.summary(msg)}")
         handle(msg)
     }
   }
@@ -170,7 +184,7 @@ class JsonRpcTransport(backend: Backend, send: String => Unit)(implicit ec: Exec
   }
 
   private def sendMsg(msg: Message): Unit = {
-    println(s"sending: ${Message.toJson(msg).toString}")
+    println(s"sending: ${Message.summary(msg)}")
     send(Message.toJson(msg).toString)
   }
 }
