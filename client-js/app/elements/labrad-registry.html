@@ -101,9 +101,9 @@
   <template>
     <div id="reg-area">
       <table>
-        <tbody is="selectable-table" attr-for-selected="name" selected="{{selDir}}" on-tap="selectDir">
+        <tbody is="selectable-table" id="combinedList" selected="{{selectedIdx}}">
           <template id="dirList" is="dom-repeat" items="{{dirs}}" filter="filterFunc">
-            <tr name="{{item.name}}">
+            <tr name="{{item.name}}" class="dir">
               <td class="dir" 
                   name="{{item.name}}" 
                   draggable="true" 
@@ -117,8 +117,6 @@
               <td class="label-wide"></td>
             </tr>
           </template>
-        </tbody>
-        <tbody is="selectable-table" attr-for-selected="name"  selected="{{selKey}}" on-tap="selectKey">
           <template id="keyList" is="dom-repeat" items="{{keys}}" filter="filterFunc">
             <tr class="key" name="{{item.name}}">
               <td>
@@ -196,7 +194,7 @@
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
-    
+
      <paper-dialog id="dragCopyDialog" modal>
       <h1>Copy "<span id="originName"></span>" from <span id="originPath"></span></h1>
       <form>
@@ -210,7 +208,7 @@
     </paper-dialog>
 
     <paper-dialog id="copyDialog" modal>
-      <h1>Copy <span>{{selectType}}</span> "<span>{{selDir}}</span><span>{{selKey}}</span>"</h1>
+      <h1>Copy <span>{{selectedType}}</span> "<span>{{selectedItem}}</span>"?</h1>
       <form>
         <paper-input id="copyNameInput" label="New Name" always-float-label></paper-input>
         <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
@@ -222,7 +220,7 @@
     </paper-dialog>
 
     <paper-dialog id="renameDialog" modal>
-      <h1>Rename <span>{{selectType}}</span> "<span>{{selDir}}</span><span>{{selKey}}</span>"</h1>
+      <h1>Rename <span>{{selectedType}}</span> "<span>{{selectedItem}}</span>"?</h1>
       <form>
         <paper-input id="renameInput" label="New Name" always-float-label></paper-input>
       </form>
@@ -233,17 +231,19 @@
     </paper-dialog>
 
     <paper-dialog id="deleteDialog" modal>
-      <h1>Delete <span>{{selectType}}</span> "<span>{{selDir}}</span><span>{{selKey}}</span>"?</h1>
+      <h1>Delete <span>{{selectedType}}</span> "<span>{{selectedItem}}</span>"?</h1>
       <div class="buttons">
         <paper-button on-click="doDelete" dialog-confirm autofocus>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
 
+
     <paper-dialog id="pendingDialog" modal>
       <h1 id="pendingOp"></h1> 
     </paper-dialog>
 
     <paper-toast id="toastTextSuccess" text="Directory Copied Successfully!" duration=3000></paper-toast>
+
   </template>
 </dom-module>

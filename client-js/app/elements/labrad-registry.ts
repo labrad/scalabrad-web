@@ -11,21 +11,15 @@ export class LabradRegistry extends polymer.Base {
 
   @property({type: Array, notify: true})
   path: Array<string>;
+  
+  @property({type: Array, notify: true})
+  selectedIdx: number;
 
   @property({type: Object})
   socket: RegistryApi;
 
   @property({type: String, notify: true})
   notify: string;
-
-  @property({type: String, notify: true, value: null})
-  selDir: string;
-
-  @property({type: String, notify: true, value: null})
-  selKey: string;
-
-  @property({type: String, notify: true, value: null})
-  selectType: string;
 
   @property({type: String, notify: true, value: ''})
   filterText: string;
@@ -37,9 +31,7 @@ export class LabradRegistry extends polymer.Base {
    */
   @observe('path')
   pathChanged(newPath: string[], oldPath: string[]) {
-    this.selDir = null;
-    this.selKey = null;
-    this.selectType = null;
+    this.selectedIdx = null;
     this.filterText = '';
   }
 
@@ -61,31 +53,41 @@ export class LabradRegistry extends polymer.Base {
     return item.name.match(this.regex);
   }
 
-  selectKey() {
-    this.selDir = null;
-    this.selectType = 'key';
-  }
-
-  selectDir() {
-    this.selKey = null;
-    this.selectType = 'dir';
-  }
-
   @computed()
-  selected(selectType: string, selDir: string, selKey: string): boolean {
-    console.log('selectType', selectType, 'selDir', selDir, 'selKey', selKey);
-    return (selectType === 'dir' && selDir != null) || (selectType === 'key' && selKey != null);
+  selected(selectedIdx: number): boolean {
+    if (selectedIdx !== null) {
+        return true;
+      } else {
+        return false;
+      }
+  }
+
+  @property({computed: '_computeSelectedType(selectedIdx)'})
+  selectedType: string;
+
+  @property({computed: '_computeSelectedItem(selectedIdx)'})
+  selectedItem: string;
+
+  _computeSelectedType(selectedIdx: number): string {
+    if (this.dirs && selectedIdx < this.dirs.length) {
+      return 'dir';
+    } else {
+      return 'key';
+    }
+  }
+
+  _computeSelectedItem(selectedIdx: number): string {
+    if (this.dirs) {
+      return this.dirs.concat(this.keys)[selectedIdx].name
+    }
   }
 
   incrementSelector() {
-    console.log(this.selKey);
     //TODO increment selected key on tab
   }
 
   async repopulateList(): Promise<void> {
     var resp = await this.socket.dir({path: this.path});
-    this.selKey = null;
-    this.selDir = null;
     this.splice('dirs', 0, this.dirs.length);
     this.splice('keys', 0, this.keys.length);
 
@@ -95,7 +97,10 @@ export class LabradRegistry extends polymer.Base {
     for (var j in resp.keys) {
       this.push('keys', {name: resp.keys[j], value: resp.vals[j]});
     }
+
     this.$.pendingDialog.close()
+    this.$.combinedList.selected = null;
+
   }
 
   createUrl(path: Array<string>, dir: string): string {
@@ -351,7 +356,7 @@ export class LabradRegistry extends polymer.Base {
     var dialog = this.$.copyDialog,
         copyNameElem = this.$.copyNameInput,
         copyPathElem = this.$.copyPathInput;
-    copyNameElem.value = this.selDir || this.selKey;
+    copyNameElem.value = this.selectedItem;
     copyPathElem.value = this.pathToString(this.path);
     dialog.open();
     window.setTimeout(() => copyNameElem.$.input.focus(), 0);
@@ -366,13 +371,13 @@ export class LabradRegistry extends polymer.Base {
 
 
     try {
-      if (this.selectType === 'dir') {
+      if (this.selectedType === 'dir') {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = "Copying...";
-        await this.socket.copyDir({path: this.path, dir: this.selDir, newPath: newPath, newDir: newName});
+        await this.socket.copyDir({path: this.path, dir: this.selectedItem, newPath: newPath, newDir: newName});
       }
-      else if (this.selectType === 'key') {
-        await this.socket.copy({path: this.path, key: this.selKey, newPath: newPath, newKey: newName});
+      else if (this.selectedType === 'key') {
+        await this.socket.copy({path: this.path, key: this.selectedItem, newPath: newPath, newKey: newName});
       }
       this.repopulateList();
     } catch (error) {
@@ -407,12 +412,7 @@ export class LabradRegistry extends polymer.Base {
     var dialog = this.$.renameDialog,
         renameElem = this.$.renameInput;
 
-    var name: string;
-    switch (this.selectType) {
-      case 'dir': name = this.selDir; break;
-      case 'key': name = this.selKey; break;
-      default: return;
-    }
+    var name = this.selectedItem;
 
     renameElem.value = name;
     dialog.open();
@@ -423,22 +423,18 @@ export class LabradRegistry extends polymer.Base {
    * Rename the selected key or folder.
    */
   async doRename() {
+    //TODO add pending modal dialog for renames since they are copy commands and take a long time
     var newName = this.$.renameInput.value;
 
-    var name: string;
-    switch (this.selectType) {
-      case 'dir': name = this.selDir; break;
-      case 'key': name = this.selKey; break;
-      default: return;
-    }
+    var name = this.selectedItem;
 
     if (newName === null || newName === name) return;
     if (newName) {
       try {
-        if (this.selectType === 'dir') {
+        if (this.selectedType === 'dir') {
           await this.socket.renameDir({path: this.path, dir: name, newDir: newName});
         }
-        else if (this.selectType === 'key') {
+        else if (this.selectedType === 'key') {
           await this.socket.rename({path: this.path, key: name, newKey: newName});
         }
         this.repopulateList();
@@ -447,7 +443,7 @@ export class LabradRegistry extends polymer.Base {
       }
     }
     else {
-      this.handleError(`Cannot rename ${this.selectType} to empty string`);
+      this.handleError(`Cannot rename ${this.selectedType} to empty string`);
     }
   }
 
@@ -464,13 +460,13 @@ export class LabradRegistry extends polymer.Base {
    */
   async doDelete() {
     try {
-      if (this.selectType === 'dir') {
+      if (this.selectedType === 'dir') {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = "Deleting...";
-        await this.socket.rmDir({path: this.path, dir: this.selDir});
+        await this.socket.rmDir({path: this.path, dir: this.selectedItem});
       }
-      else if (this.selectType === 'key') {
-        await this.socket.del({path: this.path, key: this.selKey});
+      else if (this.selectedType === 'key') {
+        await this.socket.del({path: this.path, key: this.selectedItem});
       }
       this.repopulateList();
     } catch (error) {
