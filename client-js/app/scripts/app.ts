@@ -18,8 +18,7 @@ import {LabradManager} from "../elements/labrad-manager";
 import {LabradNodes, LabradInstanceController, LabradNodeController} from "../elements/labrad-nodes";
 import {LabradRegistry} from "../elements/labrad-registry";
 import {LabradServer} from "../elements/labrad-server";
-import {Plot, Plot1D} from "../elements/labrad-plot1d";
-import {Plot2D} from "../elements/labrad-plot2d";
+import {Plot} from "../elements/labrad-plot";
 
 
 /**
@@ -72,8 +71,7 @@ window.addEventListener('WebComponentsReady', () => {
   LabradInstanceController.register();
   LabradNodeController.register();
   LabradServer.register();
-  Plot1D.register();
-  Plot2D.register();
+  Plot.register();
   LabeledPlot.register();
 
   var body = document.querySelector('body');
@@ -384,28 +382,18 @@ window.addEventListener('WebComponentsReady', () => {
       });
 
       var elem: HTMLElement = null;
-      switch (info.independents.length) {
-        case 1:
-          let p1D = <Plot1D> Plot1D.create();
-          p1D.setAttribute('class', 'flex');
-          p1D.xLabel = info.independents[0];
-          p1D.yLabel = info.dependents[0];
-          this.plot = p1D;
-          elem = p1D;
-          break;
-
-        case 2:
-          let p2D = <Plot2D> Plot2D.create();
-          p2D.setAttribute('class', 'flex');
-          p2D.xLabel = info.independents[0];
-          p2D.yLabel = info.independents[1];
-          this.plot = p2D;
-          elem = p2D;
-          break;
-
-        default:
-          elem = document.createElement('div');
-          break;
+      if (info.independents.length <= 2) {
+        let plot = <Plot> Plot.create();
+        plot.setAttribute('class', 'flex');
+        plot.xLabel = info.independents[0];
+        plot.yLabel = info.dependents[0];
+        plot.numIndeps = info.independents.length;
+        this.plot = plot;
+        elem = plot;
+      } else {
+        // TODO: do something more informative here, even if we can't plot
+        // the data in a meaningful way. For example, show data in a table.
+        elem = document.createElement('div');
       }
 
       await this.api.dataStreamOpen({
