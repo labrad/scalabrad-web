@@ -104,7 +104,7 @@ export class Plot1D extends polymer.Base implements Plot {
     p.zoom = d3.behavior.zoom()
             .x(p.xScale)
             .y(p.yScale)
-            .on('zoom', p.handleZoom.bind(p));
+            .on('zoom', () => this.handleZoom());
 
     // plot area
     p.svg = d3.select(area)
@@ -115,7 +115,7 @@ export class Plot1D extends polymer.Base implements Plot {
             .attr('transform', `translate(${p.margin.left}, ${p.margin.top})`)
             .call(p.zoom)
             .append('g')
-            .on('mousedown', p.zoomRectangle.bind(this));
+            .on('mousedown', () => this.zoomRectangle());
 
     // background rectangle
     p.svg.append('rect')
@@ -240,7 +240,8 @@ export class Plot1D extends polymer.Base implements Plot {
     return Math.max(a, b);
   }
 
-  private handleZoom() {
+  private handleZoom(force: boolean = false) {
+    if (this.zoomToRect && !force) return;
     var svg = this.svg,
         xAxis = this.xAxis,
         yAxis = this.yAxis;
@@ -265,7 +266,7 @@ export class Plot1D extends polymer.Base implements Plot {
     this.yAxis.scale(this.yScale);
     this.zoom.x(this.xScale);
     this.zoom.y(this.yScale);
-    this.handleZoom();
+    this.handleZoom(true);
   }
 
   private panMode() {
@@ -289,7 +290,8 @@ export class Plot1D extends polymer.Base implements Plot {
                          .attr('fill-opacity', 0.5);
       originX -= this.margin.left;
       originY -= this.margin.top;
-      d3.select(window).on('mousemove.zoomRect', () => {
+      d3.select(window)
+        .on('mousemove.zoomRect', () => {
           var [x, y] = d3.mouse(this);
           x -= this.margin.left;
           y -= this.margin.top;
@@ -301,16 +303,27 @@ export class Plot1D extends polymer.Base implements Plot {
               .attr('height', Math.abs(y - originY));
         })
         .on('mouseup.zoomRect', () => {
-            d3.select(window).on('mousemove.zoomRect', null).on('mouseup.zoomRect', null);
-            var [x, y] = d3.mouse(this);
-            x = Math.max(0, Math.min(this.width, x));
-            y = Math.max(0, Math.min(this.height, y));
-            if (x !== originX && y !== originY) {
-              this.zoom.x(this.xScale.domain([originX, x].map(this.xScale.invert).sort()))
-                  .y(this.yScale.domain([originY, y].map(this.yScale.invert).sort()));
-            }
-            rect.remove();
-            this.handleZoom();
+          d3.select(window)
+            .on('mousemove.zoomRect', null)
+            .on('mouseup.zoomRect', null);
+          var [x, y] = d3.mouse(this);
+          x = Math.max(0, Math.min(this.width, x));
+          y = Math.max(0, Math.min(this.height, y));
+          if (x !== originX && y !== originY) {
+            // Convert box limits from screen to data coordinates and make sure
+            // they are in the right order, regardless of which way the user
+            // dragged the box.
+            var xScale = this.xScale,
+                yScale = this.yScale,
+                xMin = Math.min(xScale.invert(originX), xScale.invert(x)),
+                xMax = Math.max(xScale.invert(originX), xScale.invert(x)),
+                yMin = Math.min(yScale.invert(originY), yScale.invert(y)),
+                yMax = Math.max(yScale.invert(originY), yScale.invert(y));
+            this.zoom.x(xScale.domain([xMin, xMax]))
+                     .y(yScale.domain([yMin, yMax]));
+          }
+          rect.remove();
+          this.handleZoom(true);
         }, true);
       d3.event.preventDefault();
       d3.event.stopPropagation();
