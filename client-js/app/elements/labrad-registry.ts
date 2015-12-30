@@ -82,7 +82,6 @@ export class LabradRegistry extends polymer.Base {
     //TODO increment selected key on tab
   }
 
-<<<<<<< HEAD
   async repopulateList(): Promise<void> {
     var resp = await this.socket.dir({path: this.path});
     this.selKey = null;
