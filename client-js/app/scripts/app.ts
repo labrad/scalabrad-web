@@ -385,9 +385,13 @@ window.addEventListener('WebComponentsReady', () => {
       if (info.independents.length <= 2) {
         let plot = <Plot> Plot.create();
         plot.setAttribute('class', 'flex');
-        plot.xLabel = info.independents[0];
-        plot.yLabel = info.dependents[0];
         plot.numIndeps = info.independents.length;
+        plot.xLabel = info.independents[0];
+        if (plot.numIndeps == 1) {
+          plot.yLabel = info.dependents[0];
+        } else {
+          plot.yLabel = info.independents[1];
+        }
         this.plot = plot;
         elem = plot;
       } else {
