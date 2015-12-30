@@ -1,10 +1,37 @@
 import 'd3';
 
+import {viridisData} from '../scripts/colormaps';
+
 
 /**
  * Colors for traces in 1D plots
  */
 var COLOR_LIST = ['red', 'blue', 'yellow', 'green', 'magenta'];
+
+
+/**
+ * Colors for 2D plots, using viridis colormap from matplotlib.
+ * We tack a duplicate extra value on the end of the list the simplify finding
+ * the right color value in the case when the value is equal to the upper end
+ * of the range.
+ */
+var COLOR_MAP = viridisData.map((rgb) => {
+  var [r, g, b] = rgb;
+  return d3.rgb(r*255, g*255, b*255);
+});
+COLOR_MAP[256] = COLOR_MAP[255];
+
+
+/**
+ * Get a color for the given value on a scale with the given min and max limits
+ */
+function getColor(z: number, zMin: number, zMax: number) {
+  var index = 128;
+  if (zMin !== zMax) {
+    index = Math.floor(256 * (z - zMin) / (zMax - zMin));
+  }
+  return COLOR_MAP[index];
+}
 
 
 function safeMin(a: number, b: number): number {
@@ -406,9 +433,7 @@ export class Plot extends polymer.Base {
             .attr('y', (d) => p.yScale(p.yNext[d[1]]))
             .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
             .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
-            .style('fill', (d) => d3.rgb(255 * (d[2] - zMin) / (zMax - zMin),
-                                         255 - 255 * (d[2] - zMin) / (zMax - zMin),
-                                         255));
+            .style('fill', (d) => getColor(d[2], zMin, zMax));
     }
   }
 
@@ -454,9 +479,7 @@ export class Plot extends polymer.Base {
         .attr('y', (d) => p.yScale(p.yNext[d[1]]))
         .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
         .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
-        .style('fill', (d) => d3.rgb(255 * (d[2] - zMin) / (zMax - zMin),
-                                     255 - 255 * (d[2] - zMin) / (zMax - zMin),
-                                     255));
+        .style('fill', (d) => getColor(d[2], zMin, zMax));
   }
 
   // Zoom into a selected rectangular region on the graph
