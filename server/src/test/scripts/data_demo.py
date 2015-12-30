@@ -16,16 +16,28 @@ def add_params(dv):
         dv.add_parameter(name, v)
 
 
+# a list of all registered demo functions
+demos = []
+
+
+def demo(func):
+    """Decorator to register a function in the list of demos"""
+    demos.append(func)
+    return func
+
+
+@demo
 def demo_1d_simple(dv):
     dv.new('demo_1d_simple', ['x [ms]'], ['y [V]'])
     add_params(dv)
     for i in xrange(1000):
         x = i / 100
-        y = 5 * math.sin(x) + random.random()
+        y = 5 * math.sin(x) + random.random() - 0.5
         dv.add([x, y])
-        time.sleep(0.01)
+        time.sleep(0.002)
 
 
+@demo
 def demo_1d_multi(dv):
     dv.new('demo_1d_multi',
            ['x [ms]'],
@@ -36,12 +48,13 @@ def demo_1d_multi(dv):
         x = i / 100
         row = [x]
         for i in range(6):
-            y = 5 * math.sin(x + math.pi * i/5) + random.random()
+            y = 5 * math.sin(x + math.pi * i/5) + random.random() - 0.5
             row.append(y)
         dv.add(row)
-        time.sleep(0.01)
+        time.sleep(0.002)
 
 
+@demo
 def demo_2d_simple(dv):
     dv.new('demo_2d_simple', ['x [GHz]', 'y [V]'], ['z [a.u.]'])
     add_params(dv)
@@ -49,11 +62,12 @@ def demo_2d_simple(dv):
         x = i / 10
         for j in xrange(50):
             y = j / 10
-            z = 5 * math.cos((x**2 + y**2) / 10) + random.random()
+            z = 5 * math.cos((x**2 + y**2) / 10) + random.random() - 0.5
             dv.add([x, y, z])
-            time.sleep(0.01)
+            time.sleep(0.002)
 
 
+@demo
 def demo_2d_vargrid(dv):
     dv.new('demo_2d_vargrid', ['x [GHz]', 'y [miles]'], ['z [nH]'])
     add_params(dv)
@@ -65,9 +79,25 @@ def demo_2d_vargrid(dv):
         x = sum(dx[:i])
         for j in xrange(ny):
             y = sum(dy[:j])
-            z = 5 * math.cos(4*math.pi * (x**2 + y**2) / rMax2) + random.random()
+            z = 5 * math.cos(4*math.pi * (x**2 + y**2) / rMax2) + random.random() - 0.5
             dv.add([x, y, z])
-            time.sleep(0.01)
+            time.sleep(0.002)
+
+
+@demo
+def demo_2d_sparse(dv):
+    dv.new('demo_2d_sparse', ['x', 'y'], ['z'])
+    add_params(dv)
+    nx, ny = 100, 20
+    for i in xrange(-nx, nx+1):
+        x = i
+        y_center = 100 * (1 if x == 0 else math.sin(x / 10) / (x / 10))
+        y_grid_center = math.floor(y_center)
+        for j in xrange(-ny, ny+1):
+            y = y_grid_center + j
+            z = 1 / (1 + (y - y_center)**2 / (ny/4)**2) + (random.random() - 0.5) * 0.1
+            dv.add([x/10, y/10, z])
+            time.sleep(0.002)
 
 
 def main(dv):
@@ -81,17 +111,9 @@ def main(dv):
     raw_input('Starting demo {}. Press [Enter] to continue. '.format(path))
 
     while True:
-        print 'demo_1d_simple'
-        demo_1d_simple(dv)
-
-        print 'demo_1d_multi'
-        demo_1d_multi(dv)
-
-        print 'demo_2d_simple'
-        demo_2d_simple(dv)
-
-        print 'demo_2d_vargrid'
-        demo_2d_vargrid(dv)
+        for func in demos:
+            print func.__name__
+            func(dv)
 
 
 if __name__ == '__main__':
