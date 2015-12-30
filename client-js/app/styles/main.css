@@ -24,7 +24,7 @@ tbody tr:hover {
  * understand and fix the problem with polymer/d3.
  */
 rect {
-  fill: #ddd;
+  fill: #eee;
 }
 .axis path, .axis line {
   fill: none;

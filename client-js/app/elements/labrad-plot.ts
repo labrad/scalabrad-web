@@ -178,6 +178,25 @@ export class Plot extends polymer.Base {
     }
   }
 
+  @observe('numIndeps')
+  numIndepsChanged(newNum: number, oldNum: number) {
+    this.updatePlotStyles();
+  }
+
+  private updatePlotStyles() {
+    if (!this.svg) return;
+    switch (this.numIndeps) {
+      case 1:
+        this.$$('rect.background').style.fill = '#eeeeee';
+        break;
+
+      case 2:
+        this.$$('rect.background').style.fill = '#222222';
+        break;
+    }
+  }
+
+
   // Switch to specific mouse modes
   private mouseModePan() {
     this.mouseMode = 'pan';
@@ -194,6 +213,7 @@ export class Plot extends polymer.Base {
       area.removeChild(area.firstChild);
     }
     this.createPlot(area, Math.max(rect.width, 400), Math.max(rect.height, 400));
+    this.updatePlotStyles();
     this.plotData(this.data);
     this.installMouseListeners();
   }
@@ -247,7 +267,8 @@ export class Plot extends polymer.Base {
     p.svg.append('rect')
             .classed('background', true)
             .attr('width', width)
-            .attr('height', height);
+            .attr('height', height)
+            .style('fill', '#222222');
 
     // x-axis ticks and label
     p.svg.append('g')
