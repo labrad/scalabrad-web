@@ -195,14 +195,14 @@
       </div>
     </paper-dialog>
 
-     <paper-dialog id="dragCopyDialog" modal>
-      <h1>Copy "<span id="originName"></span>" from <span id="originPath"></span></h1>
+     <paper-dialog id="dragDialog" modal>
+      <h1><span id="dragOp"></span> "<span id="originName"></span>" from <span id="originPath"></span></h1>
       <form>
-        <paper-input id="dragCopyNameInput" label="New Name" always-float-label></paper-input>
-        <paper-input id="dragCopyPathInput" label="New Path" always-float-label></paper-input>
+        <paper-input id="dragNameInput" label="New Name" always-float-label></paper-input>
+        <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
       </form>
       <div class="buttons">
-        <paper-button on-click="doDragCopy" dialog-confirm>OK</paper-button>
+        <paper-button on-click="doDragOp" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>

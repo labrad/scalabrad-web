@@ -202,18 +202,19 @@ export class LabradRegistry extends polymer.Base {
       console.log('dropped on', event.target.closest('td').name, 'with data', data ); 
       var newPath: string[] = this.path.slice(),
           oldFullPath: string[] = data.path,
-          dialog = this.$.dragCopyDialog,
-          copyOriginName = this.$.originName,
-          copyOriginPath = this.$.originPath,
-          copyNameElem = this.$.dragCopyNameInput,
-          copyPathElem = this.$.dragCopyPathInput;
+          dialog = this.$.dragDialog,
+          dragOriginName = this.$.originName,
+          dragOriginPath = this.$.originPath,
+          dragNameElem = this.$.dragNameInput,
+          dragPathElem = this.$.dragPathInput,
+          dragOp = this.$.dragOp;
       newPath.push(event.target.closest('td').name);
-      copyNameElem.value = data.name;
-      copyOriginName.textContent = data.name;
-      copyOriginPath.textContent = JSON.stringify(data.path);
-      copyPathElem.value = this.pathToString(newPath);
+      dragNameElem.value = data.name;
+      dragOriginName.textContent = data.name;
+      dragOriginPath.textContent = JSON.stringify(data.path);
+      dragPathElem.value = this.pathToString(newPath);
       dialog.open();
-      window.setTimeout(() => copyNameElem.$.input.focus(), 0);
+      window.setTimeout(() => dragNameElem.$.input.focus(), 0);
     }
   }
 
@@ -225,24 +226,26 @@ export class LabradRegistry extends polymer.Base {
     event.preventDefault();
     var data = JSON.parse(event.dataTransfer.getData('text'));
     console.log('dropped', event.dataTransfer);
-    if (event.ctrlKey) {
-      if (JSON.stringify(this.path) != JSON.stringify(data.path)) {
-        //Comparing strings is lame, I know
+    if (JSON.stringify(this.path) != JSON.stringify(data.path)) {  
+      //Comparing strings is lame, I know
+      var oldFullPath: string[] = data.path,
+      dialog = this.$.dragDialog,
+      dragOriginName = this.$.originName,
+      dragOriginPath = this.$.originPath,
+      dragNameElem = this.$.dragNameInput,
+      dragPathElem = this.$.dragPathInput,
+      dragOp = this.$.dragOp;
+        if (event.ctrlKey) {
         console.log('copying into window', this.path, data.path);
-        var oldFullPath: string[] = data.path,
-            dialog = this.$.dragCopyDialog,
-            copyOriginName = this.$.originName,
-            copyOriginPath = this.$.originPath,
-            copyNameElem = this.$.dragCopyNameInput,
-            copyPathElem = this.$.dragCopyPathInput;
-        copyNameElem.value = data.name;
-        copyOriginName.textContent = data.name;
-        copyOriginPath.textContent = JSON.stringify(data.path);
-        copyPathElem.value = this.pathToString(this.path);
-        this.$.dragCopyDialog.open();
-        window.setTimeout(() => copyNameElem.$.input.focus(), 0);
+        dragOp.textContent = "Copy";
+        dragNameElem.value = data.name;
+        dragOriginName.textContent = data.name;
+        dragOriginPath.textContent = JSON.stringify(data.path);
+        dragPathElem.value = this.pathToString(this.path);
+        this.$.dragDialog.open();
+        window.setTimeout(() => dragNameElem.$.input.focus(), 0);
+        }
       }
-    }
   }
 
 
@@ -385,9 +388,9 @@ export class LabradRegistry extends polymer.Base {
     }
   }
 
-  async doDragCopy() {
-    var newName =  this.$.dragCopyNameInput.value;
-    var newPath = JSON.parse(this.$.dragCopyPathInput.value);
+  async doDragOp() {
+    var newName =  this.$.dragNameInput.value;
+    var newPath = JSON.parse(this.$.dragPathInput.value);
     var oldPath = JSON.parse(this.$.originPath.textContent);
     var oldName = this.$.originName.textContent;
 
@@ -447,6 +450,13 @@ export class LabradRegistry extends polymer.Base {
     }
   }
 
+  /**
+   * Move
+   */
+  doDragMove() {
+  
+  //moveDir(params: {path: Array<string>; dir: string; newPath: Array<string>; newDir: string}): 
+  }
 
   /**
    * Launch the delete confirmation dialog.
