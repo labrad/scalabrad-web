@@ -172,7 +172,6 @@ export class LabradRegistry extends polymer.Base {
     //detect start of drag event, grab info about target
     var data: any; //I tried enum, but kept getting errors...
     data = {path: this.path, name: event.target.name};
-    console.log('drag started', data);
     event.dataTransfer.setData('text', JSON.stringify(data));
     event.dataTransfer.effectAllowed = 'copyMove';
   }
@@ -194,60 +193,48 @@ export class LabradRegistry extends polymer.Base {
    * behaviour for dropping on folders
    */
   dirDrop(event) {
-    console.log(event);
     var data = JSON.parse(event.dataTransfer.getData('text'));
-    console.log('dirDrop',event.button);
+    var newPath: string[] = this.path.slice();
+    newPath.push(event.target.closest('td').name);
     event.target.closest('td').classList.remove('over');
+
+    this.$.dragNameInput.value = data.name;
+    this.$.originName.textContent = data.name;
+    this.$.originPath.textContent = JSON.stringify(data.path);
+    this.$.dragPathInput.value = this.pathToString(newPath);
+
     if (event.ctrlKey || event.button == 2 ) {
-      console.log('dropped on', event.target.closest('td').name, 'with data', data ); 
-      var newPath: string[] = this.path.slice(),
-          oldFullPath: string[] = data.path,
-          dialog = this.$.dragDialog,
-          dragOriginName = this.$.originName,
-          dragOriginPath = this.$.originPath,
-          dragNameElem = this.$.dragNameInput,
-          dragPathElem = this.$.dragPathInput,
-          dragOp = this.$.dragOp;
-      newPath.push(event.target.closest('td').name);
-      dragNameElem.value = data.name;
-      dragOriginName.textContent = data.name;
-      dragOriginPath.textContent = JSON.stringify(data.path);
-      dragPathElem.value = this.pathToString(newPath);
-      dialog.open();
-      window.setTimeout(() => dragNameElem.$.input.focus(), 0);
+      //should I use switch and case here instead of ifs?
+      this.$.dragOp.innerText = 'Copy';
+    } else {
+      this.$.dragOp.innerText = 'Move';
     }
+    this.$.dragDialog.open();
+    window.setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
   }
 
   /**
    * handles folders dropped not into folders
    */
   @listen('drop')
-  handleDrop(event) {
+  handleDrop(event) {{"path":["two"]}
     event.preventDefault();
     var data = JSON.parse(event.dataTransfer.getData('text'));
-    console.log('dropped', event.dataTransfer);
-    if (JSON.stringify(this.path) != JSON.stringify(data.path)) {  
-      //Comparing strings is lame, I know
-      var oldFullPath: string[] = data.path,
-      dialog = this.$.dragDialog,
-      dragOriginName = this.$.originName,
-      dragOriginPath = this.$.originPath,
-      dragNameElem = this.$.dragNameInput,
-      dragPathElem = this.$.dragPathInput,
-      dragOp = this.$.dragOp;
-        if (event.ctrlKey) {
-        console.log('copying into window', this.path, data.path);
-        dragOp.textContent = "Copy";
-        dragNameElem.value = data.name;
-        dragOriginName.textContent = data.name;
-        dragOriginPath.textContent = JSON.stringify(data.path);
-        dragPathElem.value = this.pathToString(this.path);
-        this.$.dragDialog.open();
-        window.setTimeout(() => dragNameElem.$.input.focus(), 0);
-        }
+    var newPath: string[] = this.path.slice();
+    newPath.push(event.target.closest('td').name);
+    event.target.closest('td').classList.remove('over');
+    this.$.dragNameInput.value = data.name;
+    this.$.originName.textContent = data.name;
+    this.$.originPath.textContent = JSON.stringify(data.path);
+    this.$.dragPathInput.value = this.pathToString(this.path);
+      if (event.ctrlKey) {
+        this.$.dragOp.innerText = 'Copy';
+      } else if(JSON.stringify(this.path) != JSON.stringify(data.path)) {
+        this.$.dragOp.innerText = 'Move';
       }
+      this.$.dragDialog.open();
+      window.setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
   }
-
 
   /**
    * Launch new key dialog.
@@ -372,7 +359,6 @@ export class LabradRegistry extends polymer.Base {
     var newName =  this.$.copyNameInput.value;
     var newPath = JSON.parse(this.$.copyPathInput.value);
 
-
     try {
       if (this.selectedType === 'dir') {
         this.$.pendingDialog.open();
@@ -388,22 +374,39 @@ export class LabradRegistry extends polymer.Base {
     }
   }
 
+  /**
+   * Execute the drag operation
+   */
   async doDragOp() {
     var newName =  this.$.dragNameInput.value;
     var newPath = JSON.parse(this.$.dragPathInput.value);
     var oldPath = JSON.parse(this.$.originPath.textContent);
     var oldName = this.$.originName.textContent;
 
-    this.$.pendingDialog.open();
-    this.$.pendingOp.innerText = "Copying...";
-
-    try {
-      var resp = await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
-      console.log(resp)//this.repopulateList();
-      this.$.pendingDialog.close()
-      this.$.toastTextSuccess.show();
-    } catch (error) {
-      this.handleError(error);
+    if (this.$.dragOp.innerText === 'Copy') {
+      try {
+        this.$.pendingDialog.open();
+        this.$.pendingOp.innerText = "Copying...";
+        var resp = await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
+        this.$.toastCopySuccess.show();
+      } catch (error) {
+        this.handleError(error);
+      } finally {
+        this.$.pendingDialog.close();
+      }
+    }
+    else if (this.$.dragOp.innerText === 'Move') {
+      try {
+        this.$.pendingDialog.open();
+        this.$.pendingOp.innerText = "Moving...";
+        var resp = await this.socket.moveDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
+        this.$.toastMoveSuccess.show();
+        this.$.pendingDialog.close()
+      } catch (error) {
+        this.handleError(error);
+      } finally {
+        this.$.pendingDialog.close();
+      }
     }
   }
 
@@ -448,14 +451,6 @@ export class LabradRegistry extends polymer.Base {
     else {
       this.handleError(`Cannot rename ${this.selectedType} to empty string`);
     }
-  }
-
-  /**
-   * Move
-   */
-  doDragMove() {
-  
-  //moveDir(params: {path: Array<string>; dir: string; newPath: Array<string>; newDir: string}): 
   }
 
   /**
