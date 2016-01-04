@@ -10,6 +10,7 @@ import * as registry from "./registry";
 import * as datavault from "./datavault";
 import * as nodeApi from "./node";
 import * as rpc from "./rpc";
+import {obligate} from "./obligation";
 
 import {LabradApp} from "../elements/labrad-app";
 import {LabradGrapher} from "../elements/labrad-grapher";
@@ -580,7 +581,8 @@ window.addEventListener('WebComponentsReady', () => {
   /**
    * Launch a dialog box to let the user log in to labrad.
    */
-  function loginWithDialog() {
+  function loginWithDialog(): Promise<void> {
+    var {obligation, promise} = obligate<void>();
     async function doLogin() {
       var username = '',
           password = app.$.passwordInput.value,
@@ -589,11 +591,9 @@ window.addEventListener('WebComponentsReady', () => {
         var result = await mgr.login({username: username, password: password});
         var creds = {username: username, password: password};
         var storage = rememberPassword ? window.localStorage : window.sessionStorage;
-        storage.setItem('labrad-credentials', JSON.stringify(creds));
+        saveCreds(storage, creds);
         app.$.loginDialog.close();
-        page({
-          hashbang: false
-        });
+        obligation.resolve();
       } catch (error) {
         app.loginError = error.message || error;
         setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
@@ -607,6 +607,7 @@ window.addEventListener('WebComponentsReady', () => {
     });
     app.$.loginDialog.open();
     setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
+    return promise;
   }
 
   /**
@@ -629,6 +630,13 @@ window.addEventListener('WebComponentsReady', () => {
   }
 
   /**
+   * Save credentials to the given Storage object, to be loaded by loadCreds.
+   */
+  function saveCreds(storage: Storage, creds: Creds) {
+    storage.setItem('labrad-credentials', JSON.stringify(creds));
+  }
+
+  /**
    * Attempt to login to labrad using credentials saved in the given Storage.
    *
    * If the login fails due to an invalid password, we clear the credentials
@@ -640,7 +648,7 @@ window.addEventListener('WebComponentsReady', () => {
       throw new Error('no credentials');
     } else {
       try {
-        return mgr.login({
+        await mgr.login({
           username: creds.username,
           password: creds.password
         });
@@ -659,12 +667,24 @@ window.addEventListener('WebComponentsReady', () => {
   // If no valid credentials are found, prompt user with login dialog.
   var creds: Creds = loadCreds(window.sessionStorage) || loadCreds(window.localStorage);
 
-  attemptLogin(window.sessionStorage)
-    .catch(
-      error => attemptLogin(window.localStorage)
-    )
-    .then(
-      success => page({hashbang: false}),
-      error => loginWithDialog()
-    );
+  /**
+   * Login to labrad and then load the page.
+   *
+   * We attempt to login first with credentials stored in sessionStorage,
+   * then localStorage, and finally by prompting the user to enter credentials
+   * if neither of those work.
+   */
+  async function main() {
+    try {
+      await attemptLogin(window.sessionStorage);
+    } catch (e) {
+      try {
+        await attemptLogin(window.localStorage);
+      } catch (e) {
+        await loginWithDialog();
+      }
+    }
+    page({hashbang: false});
+  }
+  main();
 });
