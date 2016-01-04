@@ -22,7 +22,19 @@ object RegistryApi {
   }
 }
 
+/**
+ * The contents of a registry directory, potentially including recursive subdirectory contents
+ */
+case class RegistryContents(dirs: Seq[(String, RegistryContents)], keys: Seq[(String, Data)])
+object RegistryContents {
+  val Empty = RegistryContents(dirs = Nil, keys = Nil)
+}
 
+/**
+ * Contents of a single registry directory, not including any subdirectory contents.
+ *
+ * This is in a form suitable for encoding in JSON.
+ */
 case class RegistryListing(path: Seq[String], dirs: Seq[String], keys: Seq[String], vals: Seq[String])
 object RegistryListing { implicit val format = Json.format[RegistryListing] }
 
@@ -39,7 +51,7 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     pkt
   }
 
-  private def regDir(path: Seq[String]): Future[RegistryListing] = async {
+  private def regGetContents(path: Seq[String], recursive: Boolean = false): Future[RegistryContents] = async {
     // get directory listing
     val pkt = startPacket(path)
     val dirF = pkt.dir()
@@ -48,6 +60,17 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     val (dirsRaw, keysRaw) = await { dirF }
     val dirs = dirsRaw.sorted
     val keys = keysRaw.sorted
+
+    val dirContents = if (recursive) {
+      // recursively get contents of subdirectories
+      val fs = dirs.map { dir =>
+        regGetContents(path :+ dir, recursive = true)
+      }
+      await { Future.sequence(fs) }
+    } else {
+      // just use empty contents for each subdirectory
+      Seq.fill(dirs.length) { RegistryContents.Empty }
+    }
 
     val vals = if (keys.size == 0) {
       Seq()
@@ -59,7 +82,12 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
       await { Future.sequence(fs) }
     }
 
-    RegistryListing(path, dirs, keys, vals.map(_.toString))
+    RegistryContents(dirs zip dirContents, keys zip vals)
+  }
+
+  private def regDir(path: Seq[String]): Future[RegistryListing] = async {
+    val ans = await { regGetContents(path) }
+    RegistryListing(path, ans.dirs.map(_._1), ans.keys.map(_._1), ans.keys.map(_._2.toString))
   }
 
   private def regDel(path: Seq[String], key: String): Future[Unit] = async {
@@ -100,33 +128,48 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     await { p2.send() }
   }
 
+  private def regPutContents(path: Seq[String], contents: RegistryContents): Future[Unit] = async {
+    // recursively put subdirectory contents
+    val dirPuts = contents.dirs.map { case (subdir, subContents) =>
+      regMkDirIfNeeded(path, subdir).flatMap { _ =>
+        regPutContents(path :+ subdir, subContents)
+      }
+    }
+    await { Future.sequence(dirPuts) }
+
+    // put keys in this directory
+    val pkt = startPacket(path)
+    for ((key, value) <- contents.keys) {
+      pkt.set(key, value)
+    }
+    await { pkt.send() }
+  }
+
+  private def regMkDirIfNeeded(path: Seq[String], dir: String): Future[Unit] = async {
+    val pkt = startPacket(path)
+    val f = pkt.dir()
+    pkt.send()
+    val (dirs, keys) = await { f }
+    if (!dirs.contains(dir)) {
+      val pkt = startPacket(path)
+      pkt.mkDir(dir)
+      await { pkt.send() }
+    }
+  }
+
+  /**
+   * Copy the contents of a directory to a new path.
+   *
+   * The destination directory will be created if it does not yet exist.
+   * To avoid problems with copying a directory to a path inside of itself,
+   * we first recursively fetch the contents of the directory tree, and then
+   * put those contents to the new location.
+   */
   private def regCopyDir(path: Seq[String], dir: String, newPath: Seq[String], newDir: String): Future[Unit] = async {
     if (absPath(path) != absPath(newPath) || dir != newDir) {
-      val srcPath = path :+ dir
-      val dstPath = newPath :+ newDir
-
-      // get listing of source directory
-      val srcListing = await { regDir(srcPath) }
-
-      // create destination directory if needed
-      val listing = await { regDir(newPath) }
-      if (!listing.dirs.contains(newDir)) {
-        val pkt = startPacket(newPath)
-        pkt.mkDir(newDir)
-        await { pkt.send() }
-      }
-
-      // recursively copy all subdirectories
-      val dirCopies = srcListing.dirs.map { subdir =>
-        regCopyDir(srcPath, subdir, dstPath, subdir)
-      }
-      await { Future.sequence(dirCopies) }
-
-      // copy all keys
-      val keyCopies = srcListing.keys.map { key =>
-        regCopy(srcPath, key, dstPath, key)
-      }
-      await { Future.sequence(keyCopies) }
+      val contents = await { regGetContents(path :+ dir, recursive = true) }
+      await { regMkDirIfNeeded(newPath, newDir) }
+      await { regPutContents(newPath :+ newDir, contents) }
     }
   }
 
