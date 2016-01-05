@@ -51,7 +51,8 @@ gulp.task('compile-ts', function () {
       declarationFiles: false,
       noExternalResolve: true,
       experimentalDecorators: true,
-      emitDecoratorMetadata: true
+      emitDecoratorMetadata: true,
+      experimentalAsyncFunctions: true
     }));
 
   return merge([
