@@ -16,17 +16,20 @@ export class JsonRpcSocket {
   socket: WebSocket;
   prefix: string;
 
-  callables: { [method: string]: (Object) => Promise<any> };
   // local functions that are remotely-callable
+  callables: { [method: string]: (Object) => Promise<any> };
 
-  notifiables: { [method: string]: (Object) => void };
   // local functions that are remotely-notifiable
+  notifiables: { [method: string]: (Object) => void };
 
-  openPromise: Promise<void>;
   // A promise that will be resolved as soon as the socket is connected.
   // We chain call promises off this promise so that the user can immediately
   // make calls but we don't actually send any messages to the server until the
   // socket is ready.
+  openPromise: Promise<void>;
+
+  // An oservable that will fire when the socket connection is lost
+  connectionClosed = new Observable<CloseEvent>();
 
   constructor(url: string) {
     this.url = url;
@@ -40,8 +43,17 @@ export class JsonRpcSocket {
     var { obligation, promise } = obligate<any>();
     this.openPromise = promise;
 
-    this.socket.onopen = (message) => { console.log("onopen", message); obligation.resolve(null); }
-    this.socket.onerror = (message) => { console.log("onerror", message); obligation.reject(message); }
+    var connected = false;
+    this.socket.onopen = (message) => {
+      connected = true;
+      obligation.resolve(null);
+    }
+    this.socket.onclose = (message) => {
+      if (!connected) {
+        obligation.reject(message.reason);
+      }
+      this.connectionClosed.call(message);
+    }
 
     this.socket.onmessage = (message) => {
       var json = JSON.parse(message.data);
@@ -74,6 +86,13 @@ export class JsonRpcSocket {
         }
       }
     }
+  }
+
+  /**
+   * Close the rpc socket by closing the underlying WebSocket.
+   */
+  close(code?: number, reason?: string) {
+    this.socket.close(code, reason);
   }
 
   /**

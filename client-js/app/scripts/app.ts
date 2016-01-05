@@ -70,7 +70,25 @@ window.addEventListener('WebComponentsReady', () => {
   var apiUrl = (window['apiHost'] || relativeWebSocketUrl()) + "/api/socket";
 
   var socket = new rpc.JsonRpcSocket(apiUrl);
+  socket.connectionClosed.add((event) => {
+    app.connectionError = "WebSocket connection closed.";
+    app.$.errorDialog.open();
+    setTimeout(() => {
+      console.log('reloading!');
+      location.reload();
+    }, 10000);
+  });
+
   var mgr = new manager.ManagerServiceJsonRpc(socket);
+  mgr.disconnected.add((msg) => {
+    app.connectionError = "Manager connection closed.";
+    app.$.errorDialog.open();
+    setTimeout(() => {
+      console.log('reloading!');
+      location.reload();
+    }, 10000);
+  });
+
   var reg = new registry.RegistryServiceJsonRpc(socket);
   var dv = new datavault.DataVaultService(socket);
   var node = new nodeApi.NodeService(socket);

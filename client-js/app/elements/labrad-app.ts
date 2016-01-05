@@ -15,6 +15,9 @@ export class LabradApp extends polymer.Base {
   @property({type: String})
   loginError: string;
 
+  @property({type: String})
+  connectionError: string;
+
   ready() {
     // Ensure the drawer is hidden on desktop/tablet
     this.$.drawerPanel.forceNarrow = true;

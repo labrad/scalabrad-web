@@ -127,5 +127,15 @@
         <paper-button id="loginButton">Login</paper-button>
       </div>
     </paper-dialog>
+
+    <paper-dialog id="errorDialog" modal>
+      <h1>Lost connection to Labrad</h1>
+      <div>
+        <span>{{connectionError}}</span>
+      </div>
+      <div>
+        Attempting to reconnect.
+      </div>
+    </paper-dialog>
   </template>
 </dom-module>
