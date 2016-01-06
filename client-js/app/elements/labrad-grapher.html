@@ -4,35 +4,96 @@
     :host {
       display: block;
     }
-    paper-header-panel {
-      height: 500px;
-      width: 500px
+    table {
+      width: 100%;
+    }
+    .iron-selected {
+      background-color: #ddd;
+    }
+    .label-wide {
+      width: 100%;
+    }
+    dir-item {
+      white-space: nowrap;
+    }
+    #container {
+      display: flex;
+      flex-direction: row;
+    }
+    #listing {
+      flex-basis: 40%;
+      flex-grow: 1;
+    }
+    #details {
+      flex-basis: 60%;
+      flex-grow: 1;
+    }
+    .monospace {
+      font-family: courier;
     }
   </style>
   <template>
-    <table>
-      <tbody>
-        <template is="dom-repeat" items="{{dirs}}">
-          <tr>
-            <td>
-              <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-                <dir-item kind="folder">{{item.name}}</dir-item>
-              </a>
-            </td>
-          </tr>
+    <div id="container">
+      <div id="listing">
+        <table>
+          <tbody is="selectable-table" selected="{{selectedIdx}}">
+            <template is="dom-repeat" items="{{dirs}}">
+              <tr>
+                <td>
+                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+                    <dir-item kind="folder">{{item.name}}</dir-item>
+                  </a>
+                </td>
+                <td class="label-wide"></td>
+              </tr>
+            </template>
+            <template is="dom-repeat" items="{{datasets}}">
+              <tr>
+                <td>
+                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+                    <dir-item kind="data">{{item.name}}</dir-item>
+                  </a>
+                </td>
+                <td class="label-wide"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <div id="details">
+        <h1>{{selectedDataset}}</h1>
+        <template is="dom-if" if="{{selectedDataset}}">
+          <table>
+            <tr><th colspan="3">Independents</th></tr>
+            <template is="dom-repeat" items="{{selectedDatasetInfo.independents}}">
+              <tr>
+                <td>{{item.label}}</td>
+                <td></td>
+                <td>{{item.unit}}</td>
+              </tr>
+            </template>
+
+            <tr><th colspan="3">Dependents</th></tr>
+            <template is="dom-repeat" items="{{selectedDatasetInfo.dependents}}">
+              <tr>
+                <td>{{item.label}}</td>
+                <td>{{item.legend}}</td>
+                <td>{{item.unit}}</td>
+              </tr>
+            </template>
+          </table>
+
+          <table>
+            <tr><th colspan="2">Parameters</th></tr>
+            <template is="dom-repeat" items="{{selectedDatasetInfo.params}}">
+              <tr>
+                <td class="monospace">{{item.name}}</td>
+                <td class="monospace">{{item.value}}</td>
+              </tr>
+            </template>
+          </table>
         </template>
-      </tbody>
-      <tbody>
-        <template is="dom-repeat" items="{{datasets}}">
-          <tr>
-            <td>
-              <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-                <dir-item kind="data">{{item.name}}</dir-item>
-              </a>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+      </div>
+    </div>
   </template>
 </dom-module>

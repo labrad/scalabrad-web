@@ -93,6 +93,7 @@ export class DatavaultActivity implements Activity {
     ];
 
     this.elem = <LabradGrapher> LabradGrapher.create();
+    this.elem.api = this.api;
     this.elem.path = this.path;
     this.elem.dirs = this.getDirs(listing);
     this.elem.datasets = this.getDatasets(listing);
@@ -127,7 +128,10 @@ export class DatavaultActivity implements Activity {
 
   private getDatasets(listing: datavault.DataVaultListing) {
     return listing.datasets.map(name => {
-      return {name: name, url: places.datasetUrl(this.path, name.slice(0, 5))};
+      return {
+        name: name,
+        url: places.datasetUrl(this.path, name.split(" - ")[0])
+      };
     });
   }
 }
@@ -214,7 +218,10 @@ export class DatavaultLiveActivity implements Activity {
 
   private getDatasets(listing: datavault.DataVaultListing) {
     return listing.datasets.map(name => {
-      return {name: name, url: places.datasetUrl(this.path, name.slice(0, 5))};
+      return {
+        name: name,
+        url: places.datasetUrl(this.path, name.split(" - ")[0])
+      };
     });
   }
 }
