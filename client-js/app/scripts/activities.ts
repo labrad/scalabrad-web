@@ -258,11 +258,11 @@ export class DatasetActivity implements Activity {
       let plot = <Plot> Plot.create();
       plot.setAttribute('class', 'flex');
       plot.numIndeps = info.independents.length;
-      plot.xLabel = info.independents[0];
+      plot.xLabel = datavault.makeAxisLabel(info.independents[0]);
       if (plot.numIndeps == 1) {
-        plot.yLabel = info.dependents[0];
+        plot.yLabel = datavault.makeAxisLabel(info.dependents[0]);
       } else {
-        plot.yLabel = info.independents[1];
+        plot.yLabel = datavault.makeAxisLabel(info.independents[1]);
       }
       this.plot = plot;
       elem = plot;

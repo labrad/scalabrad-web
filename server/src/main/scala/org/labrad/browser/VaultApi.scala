@@ -83,12 +83,24 @@ extends PacketProxy(server, ctx) with VaultServer
 case class VaultListing(path: Seq[String], dirs: Seq[String], datasets: Seq[String])
 object VaultListing { implicit val format = Json.format[VaultListing] }
 
+case class IndependentVar(label: String, unit: String)
+object IndependentVar { implicit val format = Json.format[IndependentVar] }
+
+case class DependentVar(label: String, legend: String, unit: String)
+object DependentVar { implicit val format = Json.format[DependentVar] }
+
 case class Param(name: String, value: String)
 object Param { implicit val format = Json.format[Param] }
 
-case class DatasetInfo(path: Seq[String], name: String, num: Int, independents: Seq[String], dependents: Seq[String], params: Seq[Param])
+case class DatasetInfo(
+  path: Seq[String],
+  name: String,
+  num: Int,
+  independents: Seq[IndependentVar],
+  dependents: Seq[DependentVar],
+  params: Seq[Param]
+)
 object DatasetInfo { implicit val format = Json.format[DatasetInfo] }
-
 
 object VaultApi {
   /**
@@ -215,9 +227,15 @@ class VaultApi(cxn: LabradConnection, client: VaultClientApi)(implicit ec: Execu
       paramMap <- paramsF
     } yield {
       val num = name.split(" - ")(0).toInt
+      val independents = indeps.map { case (label, unit) =>
+        IndependentVar(label, unit)
+      }
+      val dependents = deps.map { case (label, legend, unit) =>
+        DependentVar(label, legend, unit)
+      }
       val paramNames = paramMap.keys.toSeq.sorted
       val params = paramNames.map { name => Param(name, paramMap(name).toString) }
-      DatasetInfo(path, name, num, indeps.map(_._1), deps.map(_._1), params)
+      DatasetInfo(path, name, num, independents, dependents, params)
     }
   }
 

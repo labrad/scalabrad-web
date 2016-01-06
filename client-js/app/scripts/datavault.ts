@@ -11,8 +11,8 @@ export interface DatasetInfo {
   path: Array<string>;
   name: string;
   num: number;
-  independents: Array<string>;
-  dependents: Array<string>;
+  independents: Array<{label: string; legend: string; unit: string}>;
+  dependents: Array<{label: string; unit: string}>;
   params: Array<{name: string; value: string}>;
 }
 
@@ -77,4 +77,11 @@ export class DataVaultService extends rpc.RpcService implements DataVaultApi {
   dataStreamClose(params: {token: string}): Promise<void> {
     return this.call<void>('dataStreamClose', params);
   }
+}
+
+export function makeAxisLabel(variable: {label: string; unit: string}): string {
+  if (variable.unit) {
+    return `${variable.label} [${variable.unit}]`;
+  }
+  return variable.label;
 }

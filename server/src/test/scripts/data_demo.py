@@ -8,7 +8,7 @@ import labrad
 
 
 def demo_1d_simple(dv):
-    dv.new('demo_1d_simple', ['x'], ['y'])
+    dv.new('demo_1d_simple', ['x [ms]'], ['y [V]'])
     for i in xrange(1000):
         x = i / 100
         y = 5 * math.sin(x) + random.random()
@@ -17,7 +17,10 @@ def demo_1d_simple(dv):
 
 
 def demo_1d_multi(dv):
-    dv.new('demo_1d_multi', ['x'], ['y1', 'y2', 'y3', 'y4', 'y5', 'y6'])
+    dv.new('demo_1d_multi',
+           ['x [ms]'],
+           ['y (1) [nV]', 'y (2) [nV]', 'y (3) [nV]',
+            'y (4) [nV]', 'y (5) [nV]', 'y (6) [nV]'])
     for i in xrange(1000):
         x = i / 100
         row = [x]
@@ -29,7 +32,7 @@ def demo_1d_multi(dv):
 
 
 def demo_2d_simple(dv):
-    dv.new('demo_2d_simple', ['x', 'y'], ['z'])
+    dv.new('demo_2d_simple', ['x [GHz]', 'y [V]'], ['z [a.u.]'])
     for i in xrange(50):
         x = i / 10
         for j in xrange(50):
@@ -40,7 +43,7 @@ def demo_2d_simple(dv):
 
 
 def demo_2d_vargrid(dv):
-    dv.new('demo_2d_vargrid', ['x', 'y'], ['z'])
+    dv.new('demo_2d_vargrid', ['x [GHz]', 'y [miles]'], ['z [nH]'])
     nx, ny = 50, 50
     dx = [1 + 5 * math.sin(3*math.pi * i / nx)**2 for i in range(nx)]
     dy = [1 + 5 * math.sin(2*math.pi * i / ny)**2 for i in range(ny)]
