@@ -3,8 +3,8 @@ import * as rpc from './rpc';
 
 export interface DataVaultListing {
   path: Array<string>;
-  dirs: Array<string>;
-  datasets: Array<string>;
+  dirs: Array<{name: string; tags: Array<string>}>;
+  datasets: Array<{name: string; tags: Array<string>}>;
 }
 
 export interface DatasetInfo {
@@ -36,6 +36,8 @@ export interface DataVaultApi {
   dataStreamOpen(params: {token: string; path: Array<string>; dataset: number}): Promise<void>;
   dataStreamGet(params: {token: string; limit?: number}): Promise<Array<Array<number>>>;
   dataStreamClose(params: {token: string}): Promise<void>;
+
+  updateTags(params: {path: Array<string>; name: string; isDir: boolean; tags: Array<string>}): Promise<void>;
 }
 
 export class DataVaultService extends rpc.RpcService implements DataVaultApi {
@@ -76,6 +78,10 @@ export class DataVaultService extends rpc.RpcService implements DataVaultApi {
 
   dataStreamClose(params: {token: string}): Promise<void> {
     return this.call<void>('dataStreamClose', params);
+  }
+
+  updateTags(params: {name: string; isDir: boolean; tags: Array<string>}): Promise<void> {
+    return this.call<void>('updateTags', params);
   }
 }
 

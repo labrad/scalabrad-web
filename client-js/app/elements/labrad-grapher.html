@@ -3,6 +3,7 @@
   <style>
     :host {
       display: block;
+      overflow: hidden;
     }
     table {
       width: 100%;
@@ -12,49 +13,66 @@
     }
     .label-wide {
       width: 100%;
+      text-align: right;
     }
     dir-item {
       white-space: nowrap;
     }
+    #outer {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
     #container {
       display: flex;
       flex-direction: row;
+      height: 100%;
     }
     #listing {
       flex-basis: 40%;
       flex-grow: 1;
+      overflow-y: scroll;
     }
     #details {
       flex-basis: 60%;
       flex-grow: 1;
+      overflow-y: scroll;
     }
     .monospace {
       font-family: courier;
+      text-overflow: ellipsis;
     }
   </style>
   <template>
+    <div id="outer">
     <div id="container">
       <div id="listing">
+        <div id="buttons">
+          <paper-icon-button icon="stars" id="star" on-click="starClicked" title="show starred items"></paper-icon-button>
+          <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="show trashed items"></paper-icon-button>
+        </div>
         <table>
-          <tbody is="selectable-table" selected="{{selectedIdx}}">
-            <template is="dom-repeat" items="{{dirs}}">
-              <tr>
+          <tbody is="selectable-table" selected="{{selectedId}}" attr-for-selected="selid">
+            <template is="dom-repeat" items="{{listItems}}">
+              <tr selid="{{item.id}}">
                 <td>
                   <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-                    <dir-item kind="folder">{{item.name}}</dir-item>
+                    <template is="dom-if" if="{{item.isDir}}">
+                      <dir-item kind="folder">{{item.name}}</dir-item>
+                    </template>
+                    <template is="dom-if" if="{{!item.isDir}}">
+                      <dir-item kind="data">{{item.name}}</dir-item>
+                    </template>
                   </a>
                 </td>
-                <td class="label-wide"></td>
-              </tr>
-            </template>
-            <template is="dom-repeat" items="{{datasets}}">
-              <tr>
-                <td>
-                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-                    <dir-item kind="data">{{item.name}}</dir-item>
-                  </a>
+                <td class="label-wide">
+                  <template is="dom-if" if="{{item.starred}}">
+                    <paper-icon-button icon="stars"></paper-icon-button>
+                  </template>
+                  <template is="dom-if" if="{{item.trashed}}">
+                    <paper-icon-button icon="delete"></paper-icon-button>
+                  </template>
                 </td>
-                <td class="label-wide"></td>
               </tr>
             </template>
           </tbody>
@@ -94,6 +112,7 @@
           </table>
         </template>
       </div>
+    </div>
     </div>
   </template>
 </dom-module>

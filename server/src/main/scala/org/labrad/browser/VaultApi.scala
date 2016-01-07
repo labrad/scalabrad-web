@@ -10,12 +10,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 
 trait VaultServer extends Requester {
-  private def strSeq(strs: Seq[String]): Data = Arr(strs.map(Str(_)))
+  private def strSeq(strs: Seq[String]): Data = Arr(strs.map(Str(_))).convertTo("*s")
 
   def dir(tagFilters: Seq[String] = Seq("-trash")): Future[(Seq[String], Seq[String])] =
     call[(Seq[String], Seq[String])]("dir", strSeq(tagFilters))
   def dirWithTags(tagFilters: Seq[String] = Seq("-trash")): Future[(Seq[(String, Seq[String])], Seq[(String, Seq[String])])] =
-    call[(Seq[(String, Seq[String])], Seq[(String, Seq[String])])]("dir", strSeq(tagFilters), Bool(false))
+    call[(Seq[(String, Seq[String])], Seq[(String, Seq[String])])]("dir", strSeq(tagFilters), Bool(true))
 
   def cd(dir: String): Future[Seq[String]] = call[Seq[String]]("cd", Str(dir))
   def cd(dir: Seq[String], create: Boolean = false): Future[Seq[String]] = call[Seq[String]]("cd", strSeq(dir), Bool(create))
@@ -63,7 +63,7 @@ trait VaultServer extends Requester {
 
   def signalNewDir(id: Long): Future[Unit] = callUnit("signal: new dir", UInt(id))
   def signalNewDataset(id: Long): Future[Unit] = callUnit("signal: new dataset", UInt(id))
-  def signalTagsUpdated(id: Long): Future[Unit] = callUnit("signal: new dataset", UInt(id))
+  def signalTagsUpdated(id: Long): Future[Unit] = callUnit("signal: tags updated", UInt(id))
 
   def signalDataAvailable(id: Long): Future[Unit] = callUnit("signal: data available", UInt(id))
   def signalNewParameter(id: Long): Future[Unit] = callUnit("signal: new parameter", UInt(id))
@@ -80,7 +80,10 @@ extends PacketProxy(server, ctx) with VaultServer
 
 
 // json request/response types
-case class VaultListing(path: Seq[String], dirs: Seq[String], datasets: Seq[String])
+case class NameWithTags(name: String, tags: Seq[String])
+object NameWithTags { implicit val format = Json.format[NameWithTags] }
+
+case class VaultListing(path: Seq[String], dirs: Seq[NameWithTags], datasets: Seq[NameWithTags])
 object VaultListing { implicit val format = Json.format[VaultListing] }
 
 case class IndependentVar(label: String, unit: String)
@@ -190,12 +193,16 @@ class VaultApi(cxn: LabradConnection, client: VaultClientApi)(implicit ec: Execu
   private def dvDir(path: Seq[String]): Future[VaultListing] = {
     // get directory listing
     val pkt = startPacket(path)
-    val dirF = pkt.dir()
+    val dirF = pkt.dirWithTags(tagFilters = Nil)
     pkt.send()
     dirF.map { case (dirsRaw, datasetsRaw) =>
 
-      val dirs = dirsRaw.sorted
-      val datasets = datasetsRaw.sorted
+      val dirs = dirsRaw.sortBy(_._1).map {
+        case (name, tags) => NameWithTags(name, tags)
+      }
+      val datasets = datasetsRaw.sortBy(_._1).map {
+        case (name, tags) => NameWithTags(name, tags)
+      }
 
       VaultListing(path, dirs, datasets)
     }
@@ -237,6 +244,15 @@ class VaultApi(cxn: LabradConnection, client: VaultClientApi)(implicit ec: Execu
       val params = paramNames.map { name => Param(name, paramMap(name).toString) }
       DatasetInfo(path, name, num, independents, dependents, params)
     }
+  }
+
+  def updateTags(path: Seq[String], name: String, isDir: Boolean, tags: Seq[String]): Future[Unit] = {
+    val p = startPacket(path)
+    val f = p.updateTags(tags,
+                         dirs = if (isDir) Seq(name) else Nil,
+                         datasets = if (isDir) Nil else Seq(name))
+    p.send()
+    f
   }
 
   def dataStreamOpen(token: String, path: Seq[String], dataset: Either[String, Int]): Future[Unit] = {

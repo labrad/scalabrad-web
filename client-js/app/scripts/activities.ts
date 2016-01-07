@@ -72,6 +72,7 @@ export class DatavaultActivity implements Activity {
     console.log('loading datavault:', this.path);
     this.api.newDir.add(x => this.onNewDir(), this.lifetime);
     this.api.newDataset.add(x => this.onNewDataset(), this.lifetime);
+    this.api.tagsUpdated.add(x => this.tagsUpdated(), this.lifetime);
     var listing = await this.api.dir(this.path);
     var breadcrumbs = [];
     for (var i = 0; i <= this.path.length; i++) {
@@ -116,21 +117,32 @@ export class DatavaultActivity implements Activity {
     this.elem.datasets = this.getDatasets(listing);
   }
 
+  async tagsUpdated() {
+    var listing = await this.api.dir(this.path);
+    this.elem.dirs = this.getDirs(listing);
+    this.elem.datasets = this.getDatasets(listing);
+  }
+
   async stop(): Promise<void> {
     this.lifetime.close();
   }
 
   private getDirs(listing: datavault.DataVaultListing) {
-    return listing.dirs.map(name => {
-      return {name: name, url: places.grapherUrl(this.path, name)};
+    return listing.dirs.map(item => {
+      return {
+        name: item.name,
+        url: places.grapherUrl(this.path, item.name),
+        tags: item.tags
+      };
     });
   }
 
   private getDatasets(listing: datavault.DataVaultListing) {
-    return listing.datasets.map(name => {
+    return listing.datasets.map(item => {
       return {
-        name: name,
-        url: places.datasetUrl(this.path, name.split(" - ")[0])
+        name: item.name,
+        url: places.datasetUrl(this.path, item.name.split(" - ")[0]),
+        tags: item.tags
       };
     });
   }
@@ -148,7 +160,7 @@ export class DatavaultLiveActivity implements Activity {
   async start(): Promise<ActivityState> {
     this.api.newDataset.add(item => this.onNewDataset(item.name), this.lifetime);
     var listing = await this.api.dir(this.path);
-    var datasets = listing.datasets.slice(-3);
+    var datasets = listing.datasets.slice(-3).map(item => item.name);
 
     var breadcrumbs = [];
     for (var i = 0; i <= this.path.length; i++) {
@@ -217,10 +229,10 @@ export class DatavaultLiveActivity implements Activity {
   }
 
   private getDatasets(listing: datavault.DataVaultListing) {
-    return listing.datasets.map(name => {
+    return listing.datasets.map(item => {
       return {
-        name: name,
-        url: places.datasetUrl(this.path, name.split(" - ")[0])
+        name: item.name,
+        url: places.datasetUrl(this.path, item.name.split(" - ")[0])
       };
     });
   }
