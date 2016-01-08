@@ -13,7 +13,7 @@ export interface DatasetInfo {
   num: number;
   independents: Array<{label: string; unit: string}>;
   dependents: Array<{label: string; legend: string; unit: string}>;
-  params: Array<{name: string; value: string}>;
+  params?: Array<{name: string; value: string}>;
 }
 
 export interface TagsMessage {
@@ -31,7 +31,7 @@ export interface DataVaultApi {
   commentsAvailable: Observable<void>;
 
   dir(path: Array<string>): Promise<DataVaultListing>;
-  datasetInfo(params: {path: Array<string>; dataset: number}): Promise<DatasetInfo>;
+  datasetInfo(params: {path: Array<string>; dataset: number; includeParams?: boolean}): Promise<DatasetInfo>;
 
   dataStreamOpen(params: {token: string; path: Array<string>; dataset: number}): Promise<void>;
   dataStreamGet(params: {token: string; limit?: number}): Promise<Array<Array<number>>>;
@@ -64,7 +64,7 @@ export class DataVaultService extends rpc.RpcService implements DataVaultApi {
     return this.call<DataVaultListing>('dir', [path]);
   }
 
-  datasetInfo(params: {path: Array<string>; dataset: number}): Promise<DatasetInfo> {
+  datasetInfo(params: {path: Array<string>; dataset: number; includeParams?: boolean}): Promise<DatasetInfo> {
     return this.call<DatasetInfo>('datasetInfo', params);
   }
 

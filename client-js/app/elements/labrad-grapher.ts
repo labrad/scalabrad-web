@@ -158,7 +158,8 @@ export class LabradGrapher extends polymer.Base {
   async fetchInfo(name: string) {
     var info = await this.api.datasetInfo({
       path: this.path,
-      dataset: datavault.datasetNumber(name)
+      dataset: datavault.datasetNumber(name),
+      includeParams: true
     });
     this.selectedDatasetInfo = info;
   }

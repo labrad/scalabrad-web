@@ -217,14 +217,22 @@ class VaultApi(cxn: LabradConnection, client: VaultClientApi)(implicit ec: Execu
     }
   }
 
-  def datasetInfo(path: Seq[String], dataset: Either[String, Int]): Future[DatasetInfo] = {
+  def datasetInfo(
+    path: Seq[String],
+    dataset: Either[String, Int],
+    includeParams: Boolean = true
+  ): Future[DatasetInfo] = {
     val p = startPacket(path)
     val openF = dataset match {
       case Left(name) => p.open(name)
       case Right(num) => p.open(num)
     }
     val varsF = p.variables()
-    val paramsF = p.getParameters()
+    val paramsF = if (includeParams) {
+      p.getParameters()
+    } else {
+      Future.successful(Map.empty[String, Data])
+    }
 
     p.send()
 

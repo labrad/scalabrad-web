@@ -257,7 +257,11 @@ export class DatasetActivity implements Activity {
       if (msg.token === this.token) this.dataAvailable.offer(null);
     }, this.lifetime);
     this.api.newParameter.add(x => this.onNewParameter(), this.lifetime);
-    var info = await this.api.datasetInfo({path: this.path, dataset: this.dataset});
+    var info = await this.api.datasetInfo({
+      path: this.path,
+      dataset: this.dataset,
+      includeParams: false
+    });
     var breadcrumbs = [];
     for (var i = 0; i <= this.path.length; i++) {
       breadcrumbs.push({
