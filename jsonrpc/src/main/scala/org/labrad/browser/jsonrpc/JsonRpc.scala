@@ -408,13 +408,9 @@ object JsonRpc {
         val defaultName = methodName + "$default$" + (i+1)
         val default = defaultMethods.find(m => symbolName(m) == defaultName) match {
           case Some(m) =>
-            val invokeDefault = Apply(
-              Select(
-                inst,
-                TermName(defaultName)
-              ),
-              List()
-            )
+            // Default methods are defined without parens,
+            // so we can invoke them just by selecting.
+            val invokeDefault = Select(inst, TermName(defaultName))
             q"_root_.scala.Some(() => $invokeDefault)"
 
           case None => q"_root_.scala.None"

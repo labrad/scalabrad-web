@@ -15,7 +15,8 @@ lazy val jsonrpc = project.in(file("jsonrpc"))
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
       "com.typesafe.play" %% "play-json" % "2.4.0",
-      "net.maffoo" %% "jsonquote-play" % "0.3.0"
+      "net.maffoo" %% "jsonquote-play" % "0.3.0",
+      "org.scalatest" %% "scalatest" % "2.2.4" % "test"
     )
   )
 

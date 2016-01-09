@@ -71,7 +71,6 @@ export class DataVaultService extends rpc.RpcService implements DataVaultApi {
   }
 
   dataStreamGet(params: {token: string; limit?: number}): Promise<Array<Array<number>>> {
-    params.limit = params.limit || 1000;
     return this.call<Array<Array<number>>>('dataStreamGet', params);
   }
 

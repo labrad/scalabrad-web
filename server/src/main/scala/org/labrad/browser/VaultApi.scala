@@ -235,8 +235,7 @@ class VaultApi(cxn: LabradConnection, client: VaultClientApi)(implicit ec: Execu
     p.send()
   }
 
-  // TODO: JsonRpc does not work with default values of type Int
-  def dataStreamGet(token: String, limit: Int): Future[Array[Array[Double]]] = {
+  def dataStreamGet(token: String, limit: Int = 2000): Future[Array[Array[Double]]] = {
     val context = dataStreamsByToken(token)
     new VaultServerProxy(cxn.get, context = context).get(limit, startOver = false)
   }
