@@ -97,6 +97,10 @@
     dir-item {
       white-space: nowrap;
     }
+    .mono {
+      font-family: 'roboto mono', monospace;
+    }
+
   </style>
   <template>
     <div id="reg-area">
@@ -107,8 +111,8 @@
               <td class="dir" 
                   name="{{item.name}}" 
                   draggable="true" 
-                  on-dragover="onDirDragOver" 
-                  on-dragleave="onDirDragLeave" 
+                  on-dragover="onDirDragOver"
+                  on-dragleave="onDirDragLeave"
                   on-drop="dirDrop">
                 <a is="app-link" path="{{item.url}}" href="{{item.url}}">
                   <dir-item kind="folder">{{item.name}}</dir-item>
@@ -120,10 +124,14 @@
           <template id="keyList" is="dom-repeat" items="{{keys}}" filter="filterFunc">
             <tr class="key" name="{{item.name}}">
               <td>
-                <dir-item kind="key">{{item.name}}</dir-item>
+                <dir-item kind="key">
+                  <span class="mono">{{item.name}}</span>
+                </dir-item>
               </td>
               <td class="label-wide">
-                <paper-item key-name="{{item.name}}" on-dblclick="editValueClicked">{{item.value}}</paper-item>
+                <paper-item key-name="{{item.name}}" on-dblclick="editValueClicked">
+                  <span class="mono">{{item.value}}</span>
+                </paper-item>
               </td>
             </tr>
           </template>
