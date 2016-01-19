@@ -108,6 +108,7 @@
     }
     td.dir {
       white-space: nowrap;
+      -webkit-user-select: none;  
     }
     td.key-item {
       white-space: nowrap;
@@ -148,7 +149,9 @@
                 <td class="label-wide"></td>
               </template>
               <template is="dom-if" if="{{item.isKey}}">
-                <td class="key-item">
+                <td class="key"
+                    name="{{item.name}}"
+                    draggable="true">
                   <iron-icon icon="communication:vpn-key" item-icon class="key"></iron-icon>
                   <span class="mono">{{item.name}}</span>
                 </td>
@@ -229,7 +232,7 @@
     </paper-dialog>
 
      <paper-dialog id="dragDialog" modal>
-      <h1><span id="dragOp"></span> "<span id="originName"></span>" from <span id="originPath"></span></h1>
+      <h1><span id="dragOp"></span> <span id="dragClass"></span> "<span id="originName"></span>" from <span id="originPath"></span></h1>
       <form>
         <paper-input id="dragNameInput" label="New Name" always-float-label></paper-input>
         <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
@@ -275,8 +278,8 @@
       <h1 id="pendingOp"></h1> 
     </paper-dialog>
 
-    <paper-toast id="toastCopySuccess" text="Directory Copied Successfully!" duration=3000></paper-toast>
-    <paper-toast id="toastMoveSuccess" text="Directory Moved Successfully!" duration=3000></paper-toast>
+    <paper-toast id="toastCopySuccess" text="Copy Successful!" duration=3000></paper-toast>
+    <paper-toast id="toastMoveSuccess" text="Move Successful!" duration=3000></paper-toast>
 
   </template>
 </dom-module>

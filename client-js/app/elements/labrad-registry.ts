@@ -188,7 +188,7 @@ export class LabradRegistry extends polymer.Base {
   startDrag(event) {
     //detect start of drag event, grab info about target
     var data: any; //I tried enum, but kept getting errors...
-    data = {path: this.path, name: event.target.name};
+    data = {path: this.path, name: event.target.name, kind: event.target.className.split(' ')[0]};
     event.dataTransfer.setData('text', JSON.stringify(data));
     event.dataTransfer.effectAllowed = 'copyMove';
   }
@@ -210,12 +210,14 @@ export class LabradRegistry extends polymer.Base {
    * behaviour for dropping on folders
    */
   dirDrop(event) {
+    event.stopPropagation();
     var data = JSON.parse(event.dataTransfer.getData('text'));
+    this.$.dragDialog.dragData = data;
     var newPath: string[] = this.path.slice();
     newPath.push(event.target.closest('td').name);
     event.target.closest('td').classList.remove('over');
-
     this.$.dragNameInput.value = data.name;
+    this.$.dragClass.textContent = data.kind;
     this.$.originName.textContent = data.name;
     this.$.originPath.textContent = JSON.stringify(data.path);
     this.$.dragPathInput.value = this.pathToString(newPath);
@@ -223,11 +225,14 @@ export class LabradRegistry extends polymer.Base {
     if (event.ctrlKey || event.button == 2 ) {
       //should I use switch and case here instead of ifs?
       this.$.dragOp.innerText = 'Copy';
+      this.$.dragDialog.open();
+      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
     } else {
       this.$.dragOp.innerText = 'Move';
+      this.$.dragDialog.open();
+      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
     }
-    this.$.dragDialog.open();
-    window.setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
+
   }
 
   /**
@@ -237,20 +242,23 @@ export class LabradRegistry extends polymer.Base {
   handleDrop(event) {
     event.preventDefault();
     var data = JSON.parse(event.dataTransfer.getData('text'));
-    var newPath: string[] = this.path.slice();
-    newPath.push(event.target.closest('td').name);
+    this.$.dragDialog.dragData = data;
     event.target.closest('td').classList.remove('over');
     this.$.dragNameInput.value = data.name;
+    this.$.dragClass.textContent = data.kind;
     this.$.originName.textContent = data.name;
     this.$.originPath.textContent = JSON.stringify(data.path);
     this.$.dragPathInput.value = this.pathToString(this.path);
-      if (event.ctrlKey) {
-        this.$.dragOp.innerText = 'Copy';
-      } else if(JSON.stringify(this.path) != JSON.stringify(data.path)) {
-        this.$.dragOp.innerText = 'Move';
-      }
+
+    if (event.ctrlKey) {
+      this.$.dragOp.innerText = 'Copy';
       this.$.dragDialog.open();
-      window.setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
+      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
+    } else if(JSON.stringify(this.path) != JSON.stringify(data.path)) {
+      this.$.dragOp.innerText = 'Move';
+      this.$.dragDialog.open();
+      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
+    }
   }
 
   /**
@@ -404,25 +412,40 @@ export class LabradRegistry extends polymer.Base {
       try {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = "Copying...";
-        var resp = await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
-        this.$.toastCopySuccess.show();
+        switch (this.$.dragDialog.dragData['kind']) {
+          case "dir":
+            var resp = await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
+            break;
+
+          case "key":
+            var resp = await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
+            break;
+        }
       } catch (error) {
         this.handleError(error);
       } finally {
         this.$.pendingDialog.close();
+        this.$.toastCopySuccess.show();
       }
     }
     else if (this.$.dragOp.innerText === 'Move') {
       try {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = "Moving...";
-        var resp = await this.socket.moveDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
-        this.$.toastMoveSuccess.show();
-        this.$.pendingDialog.close()
+        switch (this.$.dragDialog.dragData['kind']) {
+          case "dir":
+            var resp = await this.socket.moveDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
+            break;
+
+          case "key":
+            var resp = await this.socket.move({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
+            break;
+        }
       } catch (error) {
         this.handleError(error);
       } finally {
         this.$.pendingDialog.close();
+        this.$.toastMoveSuccess.show();
       }
     }
   }
