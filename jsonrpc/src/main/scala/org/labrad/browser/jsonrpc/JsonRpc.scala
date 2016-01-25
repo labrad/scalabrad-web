@@ -397,11 +397,13 @@ object JsonRpc {
       val (paramTypes, returnType) = paramAndReturnTypes(m)
       val paramNames = paramTypes.map(symbolName)
 
-      // selector for this method
+      // Selector for the method given by methodName on the instance inst.
       val f = Select(inst, TermName(methodName))
 
-      // create arguments for extractArg for a particular parameter
-      def p(t: Symbol, i: Int): Seq[Tree] = {
+      // Create code to extract each parameter of the required type for the
+      // underlying method. Note that the trees created here refer to a term
+      // "params", which is defined in the invoke function below.
+      val args = paramTypes.zipWithIndex.map { case (t, i) =>
         val reader = inferReader(t.pos, t.typeSignature.dealias)
         val defaultName = methodName + "$default$" + (i+1)
         val default = defaultMethods.find(m => symbolName(m) == defaultName) match {
@@ -418,22 +420,12 @@ object JsonRpc {
           case None => q"_root_.scala.None"
         }
 
-        Seq(q"$i", q"${symbolName(t)}", reader, default)
+        q"$extractArg(params, $i, ${symbolName(t)}, $reader, $default)"
       }
 
-      val invoke = paramTypes match {
-        case Seq()                                       => q"""(in: $paramsT) => $f()"""
-        case Seq(t0)                                     => q"""(in: $paramsT) => $f($ex(in, ..${p(t0,0)}))"""
-        case Seq(t0, t1)                                 => q"""(in: $paramsT) => $f($ex(in, ..${p(t0,0)}), $ex(in, ..${p(t1,1)}))"""
-        case Seq(t0, t1, t2)                             => q"""(in: $paramsT) => $f($ex(in, ..${p(t0,0)}), $ex(in, ..${p(t1,1)}), $ex(in, ..${p(t2,2)}))"""
-        case Seq(t0, t1, t2, t3)                         => q"""(in: $paramsT) => $f($ex(in, ..${p(t0,0)}), $ex(in, ..${p(t1,1)}), $ex(in, ..${p(t2,2)}), $ex(in, ..${p(t3,3)}))"""
-        case Seq(t0, t1, t2, t3, t4)                     => q"""(in: $paramsT) => $f($ex(in, ..${p(t0,0)}), $ex(in, ..${p(t1,1)}), $ex(in, ..${p(t2,2)}), $ex(in, ..${p(t3,3)}), $ex(in, ..${p(t4,4)}))"""
-        case Seq(t0, t1, t2, t3, t4, t5)                 => q"""(in: $paramsT) => $f($ex(in, ..${p(t0,0)}), $ex(in, ..${p(t1,1)}), $ex(in, ..${p(t2,2)}), $ex(in, ..${p(t3,3)}), $ex(in, ..${p(t4,4)}), $ex(in, ..${p(t5,5)}))"""
-        case Seq(t0, t1, t2, t3, t4, t5, t6)             => q"""(in: $paramsT) => $f($ex(in, ..${p(t0,0)}), $ex(in, ..${p(t1,1)}), $ex(in, ..${p(t2,2)}), $ex(in, ..${p(t3,3)}), $ex(in, ..${p(t4,4)}), $ex(in, ..${p(t5,5)}), $ex(in, ..${p(t6,6)}))"""
-        case Seq(t0, t1, t2, t3, t4, t5, t6, t7)         => q"""(in: $paramsT) => $f($ex(in, ..${p(t0,0)}), $ex(in, ..${p(t1,1)}), $ex(in, ..${p(t2,2)}), $ex(in, ..${p(t3,3)}), $ex(in, ..${p(t4,4)}), $ex(in, ..${p(t5,5)}), $ex(in, ..${p(t6,6)}), $ex(in, ..${p(t7,7)}))"""
-        case Seq(t0, t1, t2, t3, t4, t5, t6, t7, t8)     => q"""(in: $paramsT) => $f($ex(in, ..${p(t0,0)}), $ex(in, ..${p(t1,1)}), $ex(in, ..${p(t2,2)}), $ex(in, ..${p(t3,3)}), $ex(in, ..${p(t4,4)}), $ex(in, ..${p(t5,5)}), $ex(in, ..${p(t6,6)}), $ex(in, ..${p(t7,7)}), $ex(in, ..${p(t8,8)}))"""
-        case Seq(t0, t1, t2, t3, t4, t5, t6, t7, t8, t9) => q"""(in: $paramsT) => $f($ex(in, ..${p(t0,0)}), $ex(in, ..${p(t1,1)}), $ex(in, ..${p(t2,2)}), $ex(in, ..${p(t3,3)}), $ex(in, ..${p(t4,4)}), $ex(in, ..${p(t5,5)}), $ex(in, ..${p(t6,6)}), $ex(in, ..${p(t7,7)}), $ex(in, ..${p(t8,8)}), $ex(in, ..${p(t9,9)}))"""
-      }
+      // Create a function that takes one argument "params" of type Params
+      // and then calls the method given by f.
+      val invoke = q"(params: $paramsT) => $f(..$args)"
 
       // get return value writer, and determine whether the method is async
       val (resultWriter, async) = returnType.dealias match {
@@ -571,7 +563,7 @@ object JsonRpc {
     val map = q"_root_.scala.collection.immutable.Map"
     val classTag = q"_root_.scala.reflect.classTag"
 
-    val ex = q"_root_.org.labrad.browser.jsonrpc.JsonRpc.extractArg"
+    val extractArg = q"_root_.org.labrad.browser.jsonrpc.JsonRpc.extractArg"
     val unitWriter = q"_root_.org.labrad.browser.jsonrpc.JsonRpc.unitWriter"
     val anyWriter = q"_root_.org.labrad.browser.jsonrpc.JsonRpc.anyWriter"
 
