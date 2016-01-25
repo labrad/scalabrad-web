@@ -11,7 +11,7 @@ export class LabradRegistry extends polymer.Base {
 
   @property({type: Array, notify: true})
   path: Array<string>;
-  
+
   @property({type: Array, notify: true})
   selectedIdx: number;
 
@@ -217,7 +217,7 @@ export class LabradRegistry extends polymer.Base {
    * handles folders dropped not into folders
    */
   @listen('drop')
-  handleDrop(event) {{"path":["two"]}
+  handleDrop(event) {
     event.preventDefault();
     var data = JSON.parse(event.dataTransfer.getData('text'));
     var newPath: string[] = this.path.slice();
