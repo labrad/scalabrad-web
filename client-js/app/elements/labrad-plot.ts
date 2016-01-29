@@ -95,6 +95,9 @@ export class Plot extends polymer.Base {
   @property({type: Number, value: 0})
   numIndeps: number;
 
+  @property({type: String, value: ''})
+  currPos: string;
+
   @property({type: String, value: 'zoomRect'})
   mouseMode: string;
 
@@ -194,6 +197,19 @@ export class Plot extends polymer.Base {
         this.$$('rect.background').style.fill = '#222222';
         break;
     }
+  }
+
+  @listen('plot.mousemove')
+  mouseMove(event) {
+    var xMin = this.xScale.invert(0),
+        xMax = this.xScale.invert(this.width),
+        yMin = this.yScale.invert(this.height),
+        yMax = this.yScale.invert(0),
+        dx = (xMax - xMin) / this.width,
+        dy = (yMax - yMin) / this.height,
+        x = this.mouseToDataX(event.offsetX),
+        y = this.mouseToDataY(event.offsetY);
+    this.currPos = `(${prettyNumber(x, xMin, xMax, dx)}, ${prettyNumber(y, yMin, yMax, dy)})`;
   }
 
 
@@ -555,4 +571,53 @@ export class Plot extends polymer.Base {
     d3.event.preventDefault();
     d3.event.stopPropagation();
   }
+
+  private mouseToDataX(x: number): number {
+    x = clip(x - this.margin.left, 0, this.width);
+    return this.xScale.invert(x);
+  }
+
+  private mouseToDataY(y: number): number {
+    y = clip(y - this.margin.top, 0, this.height);
+    return this.yScale.invert(y);
+  }
 }
+
+
+/**
+ * Digits needed to display a value to the given resolution in fixed-point
+ * format.
+ */
+function fixedDigits(res: number): number {
+  return Math.max(0, 1 + Math.ceil(Math.log10(Math.abs(1 / res))));
+}
+
+
+/**
+ * Digits needed to display the given value to the given resolution in
+ * exponential format.
+ */
+function expDigits(value: number, res: number): number {
+  return Math.max(1, 1 + Math.ceil(Math.log10(Math.abs(value / res))));
+}
+
+
+/**
+ * Get a pretty string representation of the given number, taken from the
+ * given range and accurate to the given resolution. Computes the number of
+ * digits needed to display numbers in this range in fixed point or exponential
+ * format, and then chooses the smaller representation. We also limit fixed
+ * point format to numbers less than a million in absolute value.
+ */
+function prettyNumber(value: number, min: number, max: number, res: number): string {
+  var numFixed = fixedDigits(res),
+      numExp = Math.max(expDigits(min, res), expDigits(max, res)),
+      fixed = value.toFixed(numFixed),
+      exp = value.toExponential(numExp);
+  if ((fixed.length < exp.length) && (Math.abs(value) < 1e6)) {
+    return fixed;
+  } else {
+    return exp;
+  }
+}
+
