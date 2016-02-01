@@ -1,19 +1,35 @@
 // Function for creating URLs of all the places in the application.
 
-export function grapherUrl(path: Array<string>, dir?: string): string {
-  return '/grapher/' + pathStr(path, dir);
-}
+export class Places {
+  fullPrefix: string;
 
-export function datasetUrl(path: Array<string>, dataset: string): string {
-  return '/dataset/' + pathStr(path, dataset);
-}
+  constructor(public prefix: string, public manager: string) {
+    this.fullPrefix = this.prefix + (manager ? '/' + manager : '');
+  }
 
-export function registryUrl(path: Array<string>, dir?: string): string {
-  return '/registry/' + pathStr(path, dir);
-}
+  managerUrl(): string {
+    return this.fullPrefix + '/';
+  }
 
-export function serverUrl(name: string): string {
-  return '/server/' + encodeURIComponent(name);
+  nodesUrl(): string {
+    return this.fullPrefix + '/nodes';
+  }
+
+  grapherUrl(path: Array<string>, dir?: string): string {
+    return this.fullPrefix + '/grapher/' + pathStr(path, dir);
+  }
+
+  datasetUrl(path: Array<string>, dataset: string): string {
+    return this.fullPrefix + '/dataset/' + pathStr(path, dataset);
+  }
+
+  registryUrl(path: Array<string>, dir?: string): string {
+    return this.fullPrefix + '/registry/' + pathStr(path, dir);
+  }
+
+  serverUrl(name: string): string {
+    return this.fullPrefix + '/server/' + encodeURIComponent(name);
+  }
 }
 
 // helper function to creating URL from a list of segments

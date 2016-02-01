@@ -40,6 +40,11 @@
        websocket api connections should be made. Comments are stripped
        when we built the dist version, so this has no effect in prod. -->
   <!-- DEV_MODE_CONFIG -->
+
+  <script type="application/javascript">
+    window['org.labrad.urlPrefix'] = "__LABRAD_URL_PREFIX__";
+    window['org.labrad.managers'] = "__LABRAD_MANAGERS__";
+  </script>
 </head>
 
 <body unresolved class="fullbleed layout vertical">

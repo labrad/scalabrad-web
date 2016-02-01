@@ -2,7 +2,7 @@ import {Activity, ActivityState} from "./activity";
 import {AsyncQueue} from "./async-queue";
 import {Lifetime} from "./lifetime";
 import * as manager from "./manager";
-import * as places from "./places";
+import {Places} from "./places";
 import * as registry from "./registry";
 import * as datavault from "./datavault";
 import * as node from "./node";
@@ -19,7 +19,9 @@ export class RegistryActivity implements Activity {
   private elem: LabradRegistry;
   private lifetime = new Lifetime();
 
-  constructor(private api: registry.RegistryApi, public path: Array<string>) {}
+  constructor(private places: Places,
+              private api: registry.RegistryApi,
+              public path: Array<string>) {}
 
   async start(): Promise<ActivityState> {
     this.api.newItem.add(() => this.onNewItem(), this.lifetime);
@@ -31,7 +33,7 @@ export class RegistryActivity implements Activity {
       breadcrumbs.push({
         name: (i == 0) ? 'registry' : this.path[i-1],
         isLink: i < this.path.length,
-        url: places.registryUrl(this.path.slice(0, i))
+        url: this.places.registryUrl(this.path.slice(0, i))
       });
     }
 
@@ -41,6 +43,7 @@ export class RegistryActivity implements Activity {
     elem.dirs = [];
     elem.keys = [];
     elem.socket = this.api;
+    elem.places = this.places;
     elem.repopulateList();
 
     this.elem = elem;
@@ -65,7 +68,8 @@ export class DatavaultActivity implements Activity {
   private elem: LabradGrapher;
   private lifetime = new Lifetime();
 
-  constructor(private api: datavault.DataVaultService,
+  constructor(private places: Places,
+              private api: datavault.DataVaultService,
               public path: Array<string>) {}
 
   async start(): Promise<ActivityState> {
@@ -79,7 +83,7 @@ export class DatavaultActivity implements Activity {
       breadcrumbs.push({
         name: (i == 0) ? 'grapher' : this.path[i-1],
         isLink: i < this.path.length,
-        url: places.grapherUrl(this.path.slice(0, i))
+        url: this.places.grapherUrl(this.path.slice(0, i))
       });
     }
     var breadcrumbExtras = [
@@ -89,7 +93,7 @@ export class DatavaultActivity implements Activity {
       },
       { name: 'live view',
         isLink: true,
-        url: places.grapherUrl(this.path) + '?live'
+        url: this.places.grapherUrl(this.path) + '?live'
       }
     ];
 
@@ -131,7 +135,7 @@ export class DatavaultActivity implements Activity {
     return listing.dirs.map(item => {
       return {
         name: item.name,
-        url: places.grapherUrl(this.path, item.name),
+        url: this.places.grapherUrl(this.path, item.name),
         tags: item.tags
       };
     });
@@ -141,7 +145,7 @@ export class DatavaultActivity implements Activity {
     return listing.datasets.map(item => {
       return {
         name: item.name,
-        url: places.datasetUrl(this.path, item.name.split(" - ")[0]),
+        url: this.places.datasetUrl(this.path, item.name.split(" - ")[0]),
         tags: item.tags
       };
     });
@@ -154,7 +158,8 @@ export class DatavaultLiveActivity implements Activity {
   private lifetime = new Lifetime();
   private activities: Array<DatasetActivity> = [];
 
-  constructor(private api: datavault.DataVaultApi,
+  constructor(private places: Places,
+              private api: datavault.DataVaultApi,
               public path: Array<string>) {}
 
   async start(): Promise<ActivityState> {
@@ -167,13 +172,13 @@ export class DatavaultLiveActivity implements Activity {
       breadcrumbs.push({
         name: (i == 0) ? 'grapher' : this.path[i-1],
         isLink: i < this.path.length,
-        url: places.grapherUrl(this.path.slice(0, i))
+        url: this.places.grapherUrl(this.path.slice(0, i))
       });
     }
     var breadcrumbExtras = [
       { name: 'dir view',
         isLink: true,
-        url: places.grapherUrl(this.path)
+        url: this.places.grapherUrl(this.path)
       },
       { name: 'live view',
         isLink: false
@@ -206,12 +211,12 @@ export class DatavaultLiveActivity implements Activity {
   private async addDataset(name: string) {
     var numStr = name.split(" - ")[0];
     var num = Number(numStr);
-    var activity = new DatasetActivity(this.api, this.path, num);
+    var activity = new DatasetActivity(this.places, this.api, this.path, num);
     var state = await activity.start();
     var plot = state.elem;
     var labeled = <LabeledPlot> LabeledPlot.create();
     labeled.name = name;
-    labeled.url = places.datasetUrl(this.path, numStr);
+    labeled.url = this.places.datasetUrl(this.path, numStr);
     labeled.$.plot.appendChild(plot);
     this.elem.addPlot(labeled);
     this.activities.push(activity);
@@ -232,7 +237,7 @@ export class DatavaultLiveActivity implements Activity {
     return listing.datasets.map(item => {
       return {
         name: item.name,
-        url: places.datasetUrl(this.path, item.name.split(" - ")[0])
+        url: this.places.datasetUrl(this.path, item.name.split(" - ")[0])
       };
     });
   }
@@ -245,7 +250,8 @@ export class DatasetActivity implements Activity {
 
   private plot: Plot;
 
-  constructor(private api: datavault.DataVaultApi,
+  constructor(private places: Places,
+              private api: datavault.DataVaultApi,
               public path: Array<string>,
               public dataset: number) {
     this.lifetime.defer(() => this.dataAvailable.close());
@@ -267,13 +273,13 @@ export class DatasetActivity implements Activity {
       breadcrumbs.push({
         name: (i == 0) ? 'grapher' : this.path[i-1],
         isLink: true,
-        url: places.grapherUrl(this.path.slice(0, i))
+        url: this.places.grapherUrl(this.path.slice(0, i))
       });
     }
     breadcrumbs.push({
       name: info.name,
       isLink: false,
-      url: places.datasetUrl(this.path, String(info.num))
+      url: this.places.datasetUrl(this.path, String(info.num))
     });
 
     var elem: HTMLElement = null;
@@ -333,14 +339,15 @@ export class DatasetActivity implements Activity {
 }
 
 export class ManagerActivity implements Activity {
-  constructor(private api: manager.ManagerApi) {}
+  constructor(private places: Places,
+              private api: manager.ManagerApi) {}
 
   async start(): Promise<ActivityState> {
     var conns = await this.api.connections();
     var connsWithUrl = conns.map((c) => {
       var x = <any> c;
       if (c.server) {
-        x['url'] = places.serverUrl(c.name);
+        x['url'] = this.places.serverUrl(c.name);
       }
       return x;
     });
@@ -372,13 +379,15 @@ export class ServerActivity implements Activity {
 }
 
 export class NodesActivity implements Activity {
-  constructor(private mgrApi: manager.ManagerApi,
+  constructor(private places: Places,
+              private mgrApi: manager.ManagerApi,
               private nodeApi: node.NodeApi) {}
 
   async start(): Promise<ActivityState> {
     var nodesInfo = await this.nodeApi.allNodes();
     var elem = <LabradNodes> LabradNodes.create();
     elem.info = nodesInfo;
+    elem.places = this.places;
     elem.api = this.nodeApi;
     elem.managerApi = this.mgrApi;
     return {

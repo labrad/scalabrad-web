@@ -40,7 +40,7 @@ export interface ServerConnectMessage { name: string; }
 export interface ServerDisconnectMessage { name: string; }
 
 export interface ManagerApi {
-  login(params: {username: string; password: string}): Promise<void>;
+  login(params: {username: string; password: string, host: string}): Promise<void>;
   connections(): Promise<Array<ConnectionInfo>>;
   connectionClose(id: number): Promise<string>;
   serverInfo(name: String): Promise<ServerInfo>;
@@ -66,7 +66,7 @@ export class ManagerServiceJsonRpc extends rpc.RpcService implements ManagerApi 
     this.connect("org.labrad.serverDisconnected", this.serverDisconnected);
   }
 
-  login(params: {username: string; password: string}): Promise<void> {
+  login(params: {username: string; password: string; host: string}): Promise<void> {
     return this.call<void>("login", params);
   }
 

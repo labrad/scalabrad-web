@@ -35,6 +35,18 @@ class StaticResourceHandler(
    * available resource under the resourceRoot path.
    */
   def get(uri: String): Option[FullHttpResponse] = {
+    getBytes(uri).map { case (path, bytes) => makeResponse(path, bytes) }
+  }
+
+  /**
+   * Get bytes for the given resource.
+   *
+   * Returns an optional http response, which will be defined if a suitable
+   * resource is available and the request can be handled. Otherwise returns
+   * None, for example if the uri path is ill-formed or does not point to an
+   * available resource under the resourceRoot path.
+   */
+  def getBytes(uri: String): Option[(String, Array[Byte])] = {
     val path = resourcePath(uri).getOrElse { return None }
     val stream = Option(getClass.getResourceAsStream(path)).getOrElse { return None }
 
@@ -53,7 +65,10 @@ class StaticResourceHandler(
       }
       b.result
     }
+    Some((path, bytes))
+  }
 
+  def makeResponse(path: String, bytes: Array[Byte]): FullHttpResponse = {
     val now = DateTime.now()
 
     // create http response and set headers
@@ -69,8 +84,7 @@ class StaticResourceHandler(
       case None =>
         response.headers.set(CACHE_CONTROL, "no-cache")
     }
-
-    Some(response)
+    response
   }
 
   def resourcePath(uri: String): Option[String] = {

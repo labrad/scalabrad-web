@@ -8,6 +8,7 @@ import * as manager from "./manager";
 import * as registry from "./registry";
 import * as datavault from "./datavault";
 import * as nodeApi from "./node";
+import {Places} from "./places";
 import * as rpc from "./rpc";
 import {obligate} from "./obligation";
 
@@ -30,6 +31,51 @@ interface Creds {
 }
 
 
+interface Services {
+  places?: Places;
+  socket: rpc.JsonRpcSocket;
+  mgr: manager.ManagerApi;
+  reg: registry.RegistryApi;
+  dv: datavault.DataVaultApi;
+  node: nodeApi.NodeApi;
+}
+
+
+/**
+ * Make a route with n path segments labeled p<i>.
+ *
+ * On a page change, the path can be extracted using the getPath function.
+ * TODO: figure out a way to use wildcard routes instead of multiple routes
+ * each with a fixed number of segments.
+ */
+function pathRoute(n: number): string {
+  var route = '';
+  for (var i = 0; i < n; i++) {
+    route += `:p${i}/`;
+  }
+  return route;
+}
+
+/**
+ * Get a path from the given page context.
+ *
+ * This is a helper to be used with heirarchical routes for the registry and
+ * datavault, as created by the pathRoute function.
+ */
+function getPath(ctx): Array<string> {
+  var path = [], i = 0;
+  while (true) {
+    var name = `p${i}`;
+    if (ctx.params.hasOwnProperty(name)) {
+      path.push(ctx.params[name]);
+    } else {
+      return path;
+    }
+    i++;
+  }
+}
+
+
 window.addEventListener('WebComponentsReady', () => {
 
   // register our custom elements with polymer
@@ -44,6 +90,17 @@ window.addEventListener('WebComponentsReady', () => {
   LabradServer.register();
   Plot.register();
   LabeledPlot.register();
+
+  var prefix = window['org.labrad.urlPrefix'];
+  if (prefix == "__LABRAD_URL_PREFIX__") {
+    prefix = "";
+  }
+  console.log('urlPrefix', prefix);
+
+  var managers = window['org.labrad.managers'];
+  if (managers == "__LABRAD_MANAGERS__") {
+    managers = [];
+  }
 
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
@@ -67,44 +124,35 @@ window.addEventListener('WebComponentsReady', () => {
   // Get the url for the api backend websocket connection.
   // If the apiHost variable has been set globally, use that,
   // otherwise construct a url relative to the page host.
-  var apiUrl = (window['apiHost'] || relativeWebSocketUrl()) + "/api/socket";
-
-  var socket = new rpc.JsonRpcSocket(apiUrl);
-  socket.connectionClosed.add((event) => {
-    app.connectionError = "WebSocket connection closed.";
-    app.$.errorDialog.open();
-    setTimeout(() => {
-      console.log('reloading!');
-      location.reload();
-    }, 10000);
-  });
-
-  var mgr = new manager.ManagerServiceJsonRpc(socket);
-  mgr.disconnected.add((msg) => {
-    app.connectionError = "Manager connection closed.";
-    app.$.errorDialog.open();
-    setTimeout(() => {
-      console.log('reloading!');
-      location.reload();
-    }, 10000);
-  });
-
-  var reg = new registry.RegistryServiceJsonRpc(socket);
-  var dv = new datavault.DataVaultService(socket);
-  var node = new nodeApi.NodeService(socket);
+  var apiUrl = (window['apiHost'] || relativeWebSocketUrl()) + prefix + "/api/socket";
 
   // The current activity, which encapsulates the current URL and the UI
   // rendered for that URL.
   var activity: Activity = null;
 
+  // The name of the manager to which we are currently logged in
+  var loggedInTo: string = null;
+  var services: Services = null;
+
   // Stop the current activity and start a new one. This allows activities to
   // do cleanup work before their UI is replaced, such as removing event
   // listeners.
-  async function activate(newActivity: Activity): Promise<void> {
+  async function activate(manager: string, newActivityFunc: (Services) => Activity): Promise<void> {
     try {
       if (activity) {
         await activity.stop();
       }
+      if (loggedInTo !== manager) {
+        if (services) {
+          services.socket.close();
+        }
+        services = await login(manager);
+        services.places = new Places(prefix, manager);
+        loggedInTo = manager;
+        app.host = manager;
+        app.places = services.places;
+      }
+      var newActivity = newActivityFunc(services);
       var state = await newActivity.start();
       app.route = state.route;
       if (state.breadcrumbs) {
@@ -125,97 +173,80 @@ window.addEventListener('WebComponentsReady', () => {
     }
   }
 
-  // Set up page routing using page.js. When URL transitions are triggered that
-  // match the routes specified here, we create a corresponding activity and
-  // activate it after shutting down the current activity. Note that these
-  // routes correspond to the functions for creating URLs defined in the places
-  // module.
-  page('/', () => {
-    activate(new activities.ManagerActivity(mgr));
-  });
-
-  page('/server/:name', (ctx, next) => {
-    activate(new activities.ServerActivity(mgr, ctx.params['name']));
-  });
-
-  page('/nodes', () => {
-    activate(new activities.NodesActivity(mgr, node));
-  });
-
-  /**
-   * Make a route with n path segments labeled p<i>.
-   *
-   * On a page change, the path can be extracted using the getPath function.
-   * TODO: figure out a way to use wildcard routes instead of multiple routes
-   * each with a fixed number of segments.
-   */
-  function pathRoute(n: number): string {
-    var route = '';
-    for (var i = 0; i < n; i++) {
-      route += ':p' + i + '/';
+  function createRoutes(withManager: boolean) {
+    // Set up page routing using page.js. When URL transitions are triggered that
+    // match the routes specified here, we create a corresponding activity and
+    // activate it after shutting down the current activity. Note that these
+    // routes correspond to the functions for creating URLs defined in the places
+    // module.
+    var pref = prefix;
+    if (withManager) {
+      pref += '/:manager';
     }
-    return route;
-  }
 
-  /**
-   * Get a path from the given page context.
-   *
-   * This is a helper to be used with heirarchical routes for the registry and
-   * datavault, as created by the pathRoute function.
-   */
-  function getPath(ctx): Array<string> {
-    var path = [], i = 0;
-    while (true) {
-      var name = 'p' + i;
-      if (ctx.params.hasOwnProperty(name)) {
-        path.push(ctx.params[name]);
+    function getManager(ctx): string {
+      if (withManager) {
+        return ctx.params['manager'];
       } else {
-        return path;
+        return '';
       }
-      i++;
+    }
+
+    page(pref + '/', (ctx, next) => {
+      activate(getManager(ctx), (s) => new activities.ManagerActivity(s.places, s.mgr));
+    });
+
+    page(pref + '/server/:name', (ctx, next) => {
+      activate(getManager(ctx), (s) => new activities.ServerActivity(s.mgr, ctx.params['name']));
+    });
+
+    page(pref + '/nodes', (ctx, next) => {
+      activate(getManager(ctx), (s) => new activities.NodesActivity(s.places, s.mgr, s.node));
+    });
+
+    function mkRegRoute(n: number) {
+      page(pref + '/registry/' + pathRoute(n), (ctx, next) => {
+        activate(getManager(ctx), (s) => new activities.RegistryActivity(s.places, s.reg, getPath(ctx)));
+      })
+    }
+    for (var i = 0; i <= 20; i++) {
+      mkRegRoute(i);
+    }
+
+    function mkDvRoutes(n: number) {
+      page(pref + '/grapher/' + pathRoute(n), (ctx, next) => {
+        var path = getPath(ctx);
+        if (ctx.querystring === "live") {
+          activate(getManager(ctx), (s) => new activities.DatavaultLiveActivity(s.places, s.dv, path));
+        } else {
+          activate(getManager(ctx), (s) => new activities.DatavaultActivity(s.places, s.dv, path));
+        }
+      });
+      page(pref + '/dataset/' + pathRoute(n) + ':dataset', (ctx, next) => {
+        activate(getManager(ctx), (s) => new activities.DatasetActivity(s.places, s.dv, getPath(ctx), Number(ctx.params['dataset'])));
+      });
+    }
+    for (var i = 0; i <= 20; i++) {
+      mkDvRoutes(i);
     }
   }
-
-  function mkRegRoute(n: number) {
-    page('/registry/' + pathRoute(n), (ctx, next) => {
-      activate(new activities.RegistryActivity(reg, getPath(ctx)));
-    })
-  }
-  for (var i = 0; i <= 20; i++) {
-    mkRegRoute(i);
-  }
-
-  function mkDvRoutes(n: number) {
-    page('/grapher/' + pathRoute(n), (ctx, next) => {
-      var path = getPath(ctx);
-      if (ctx.querystring === "live") {
-        activate(new activities.DatavaultLiveActivity(dv, path));
-      } else {
-        activate(new activities.DatavaultActivity(dv, path));
-      }
-    });
-    page('/dataset/' + pathRoute(n) + ':dataset', (ctx, next) => {
-      activate(new activities.DatasetActivity(dv, getPath(ctx), Number(ctx.params['dataset'])));
-    });
-  }
-  for (var i = 0; i <= 20; i++) {
-    mkDvRoutes(i);
-  }
+  createRoutes(false);
+  createRoutes(true);
 
   /**
    * Launch a dialog box to let the user log in to labrad.
    */
-  function loginWithDialog(): Promise<void> {
+  function loginWithDialog(mgr: manager.ManagerApi, manager: string): Promise<void> {
     var {obligation, promise} = obligate<void>();
     async function doLogin() {
       var username = '',
           password = app.$.passwordInput.value,
           rememberPassword = app.$.rememberPassword.checked;
       try {
-        var result = await mgr.login({username: username, password: password});
+        var result = await mgr.login({username: username, password: password, host: manager});
         var creds = {username: username, password: password};
         var storage = rememberPassword ? window.localStorage : window.sessionStorage;
-        saveCreds(storage, creds);
+        saveCreds(manager, storage, creds);
         app.$.loginDialog.close();
         obligation.resolve();
       } catch (error) {
@@ -223,6 +254,7 @@ window.addEventListener('WebComponentsReady', () => {
         setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
       }
     }
+    app.host = manager;
     app.$.loginButton.addEventListener('click', (event) => doLogin());
     app.$.loginForm.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -239,9 +271,13 @@ window.addEventListener('WebComponentsReady', () => {
    *
    * If valid credentials are not found, return null.
    */
-  function loadCreds(storage: Storage): Creds {
+  function loadCreds(manager: string, storage: Storage): Creds {
+    var key = 'labrad-credentials';
+    if (manager) {
+      key += '.' + manager;
+    }
     try {
-      var creds = JSON.parse(storage.getItem('labrad-credentials'));
+      var creds = JSON.parse(storage.getItem(key));
       if (creds.hasOwnProperty('username') &&
           creds.hasOwnProperty('password')) {
         return {
@@ -256,8 +292,12 @@ window.addEventListener('WebComponentsReady', () => {
   /**
    * Save credentials to the given Storage object, to be loaded by loadCreds.
    */
-  function saveCreds(storage: Storage, creds: Creds) {
-    storage.setItem('labrad-credentials', JSON.stringify(creds));
+  function saveCreds(manager: string, storage: Storage, creds: Creds) {
+    var key = 'labrad-credentials';
+    if (manager) {
+      key += '.' + manager;
+    }
+    storage.setItem(key, JSON.stringify(creds));
   }
 
   /**
@@ -266,30 +306,31 @@ window.addEventListener('WebComponentsReady', () => {
    * If the login fails due to an invalid password, we clear the credentials
    * from this storage object.
    */
-  async function attemptLogin(storage: Storage): Promise<void> {
-    var creds = loadCreds(storage);
+  async function attemptLogin(mgr: manager.ManagerApi, manager: string, storage: Storage): Promise<void> {
+    var key = 'labrad-credentials';
+    if (manager) {
+      key += '.' + manager;
+    }
+    var creds = loadCreds(manager, storage);
     if (creds === null) {
       throw new Error('no credentials');
     } else {
       try {
         await mgr.login({
           username: creds.username,
-          password: creds.password
+          password: creds.password,
+          host: manager
         });
       } catch (error) {
         var errStr = String(error.message || error);
         if (errStr.indexOf('password') >= 0) {
           // if we had credentials, clear them out
-          storage.removeItem('labrad-credentials');
+          storage.removeItem(key);
         }
         throw error;
       }
     }
   }
-
-  // Login using credentials from session and then local storage.
-  // If no valid credentials are found, prompt user with login dialog.
-  var creds: Creds = loadCreds(window.sessionStorage) || loadCreds(window.localStorage);
 
   /**
    * Login to labrad and then load the page.
@@ -298,17 +339,47 @@ window.addEventListener('WebComponentsReady', () => {
    * then localStorage, and finally by prompting the user to enter credentials
    * if neither of those work.
    */
-  async function main() {
+  async function login(host: string): Promise<Services> {
+    var socket = new rpc.JsonRpcSocket(apiUrl);
+    socket.connectionClosed.add((event) => {
+      if (event.code !== 1000) {
+        app.connectionError = "WebSocket connection closed.";
+        app.$.errorDialog.open();
+        setTimeout(() => {
+          console.log('reloading!');
+          location.reload();
+        }, 10000);
+      }
+    });
+
+    var mgr = new manager.ManagerServiceJsonRpc(socket);
+    mgr.disconnected.add((msg) => {
+      app.connectionError = "Manager connection closed.";
+      app.$.errorDialog.open();
+      setTimeout(() => {
+        console.log('reloading!');
+        location.reload();
+      }, 10000);
+    });
+
     try {
-      await attemptLogin(window.sessionStorage);
+      await attemptLogin(mgr, host, window.sessionStorage);
     } catch (e) {
       try {
-        await attemptLogin(window.localStorage);
+        await attemptLogin(mgr, host, window.localStorage);
       } catch (e) {
-        await loginWithDialog();
+        await loginWithDialog(mgr, host);
       }
     }
-    page({hashbang: false});
+    return {
+      places: new Places(prefix, host),
+      socket: socket,
+      mgr: mgr,
+      reg: new registry.RegistryServiceJsonRpc(socket),
+      dv: new datavault.DataVaultService(socket),
+      node: new nodeApi.NodeService(socket)
+    };
   }
-  main();
+
+  page({hashbang: false});
 });

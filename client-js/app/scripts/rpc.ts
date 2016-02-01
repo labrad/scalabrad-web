@@ -92,6 +92,7 @@ export class JsonRpcSocket {
    * Close the rpc socket by closing the underlying WebSocket.
    */
   close(code?: number, reason?: string) {
+    code = code || 1000;
     this.socket.close(code, reason);
   }
 

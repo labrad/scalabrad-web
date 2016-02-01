@@ -10,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * services and create proxies for calling methods and sending notifications
  * to the client. Each backend instance manages its own connection to labrad.
  */
-class ApiBackend(implicit ec: ExecutionContext) extends Backend {
+class ApiBackend(config: LabradConnectionConfig)(implicit ec: ExecutionContext) extends Backend {
   private var cxn: LabradConnection = null
   private var datavaultApi: VaultApi = null
   private var managerApi: ManagerApi = null
@@ -50,7 +50,7 @@ class ApiBackend(implicit ec: ExecutionContext) extends Backend {
     """)
 
     // connect to labrad (and reconnect if connection is lost)
-    cxn = new LabradConnection(labradClient, nodeClient)
+    cxn = new LabradConnection(config, labradClient, nodeClient)
 
     // api implementations for incoming calls and notifications
     datavaultApi = new VaultApi(cxn, vaultClient)

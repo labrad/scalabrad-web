@@ -8,6 +8,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http._
 import io.netty.handler.codec.http.HttpMethod._
 import io.netty.handler.logging.{LogLevel, LoggingHandler}
+import java.nio.charset.StandardCharsets.UTF_8
 import org.clapper.argot._
 import org.clapper.argot.ArgotConverters._
 import org.labrad.util.Util
@@ -18,7 +19,9 @@ import scala.util.{Try, Success, Failure}
  * Configuration for running the labrad web interface.
  */
 case class WebServerConfig(
-  port: Int
+  port: Int,
+  urlPrefix: Option[String],
+  managerHosts: Map[String, String]
 )
 
 object WebServerConfig {
@@ -43,11 +46,27 @@ object WebServerConfig {
       sortUsage = false
     )
     val portOpt = parser.option[Int](
-      names = List("port"),
+      names = List("http-port"),
       valueName = "int",
       description = "Port on which to listen for incoming connections. " +
         "If not provided, fallback to the value given in the LABRADHTTPPORT " +
         "environment variable, with default value 7667."
+    )
+    val urlPrefixOpt = parser.option[String](
+      names = List("url-prefix"),
+      valueName = "string",
+      description = "Prefix of application urls for use when the server is " +
+        "not served at the root url. If not provided, defaults to the empty " +
+        "string, which assumes that we are served from the root url path."
+    )
+    val managerHostsOpt = parser.option[String](
+      names = List("manager-hosts"),
+      valueName = "string",
+      description = "List of manager hostname aliases that can be used to " +
+        "connect to manager hosts without including the full host name in " +
+        "the application url. Specified as a comma-separated list of pairs " +
+        "in the form alias=hostname, for example: " +
+        "foo=foo.example.com,bar=bar.example.com"
     )
     val help = parser.flag[Boolean](List("h", "help"),
       "Print usage information and exit")
@@ -57,17 +76,41 @@ object WebServerConfig {
       if (help.value.getOrElse(false)) parser.usage()
 
       WebServerConfig(
-        port = portOpt.value.orElse(env.get("LABRADHTTPPORT").map(_.toInt)).getOrElse(7667)
+        port = portOpt.value.orElse(env.get("LABRADHTTPPORT").map(_.toInt)).getOrElse(7667),
+        urlPrefix = urlPrefixOpt.value,
+        managerHosts = managerHostsOpt.value.map { hosts =>
+          hosts.split(",").map { pair =>
+            val Array(alias, hostname) = pair.split("=")
+            (alias, hostname)
+          }.toMap
+        }.getOrElse(Map())
       )
     }
   }
 }
 
 
-class WebServer(port: Int) {
+class WebServer(config: WebServerConfig) {
   val bossGroup = new NioEventLoopGroup(1)
   val workerGroup = new NioEventLoopGroup()
   val staticHandler = new StaticResourceHandler()
+  val (appPath, appBytes) = {
+    val (path, bytes) = staticHandler.getBytes("/index.html").getOrElse {
+      // When running in dev mode, index.html may not exist yet, so we'll
+      // stuff in a placeholder to remind the user to run gulp.
+      ("index.html", "run gulp to build app".getBytes(UTF_8))
+    }
+    config.urlPrefix match {
+      case None => (path, bytes)
+      case Some(prefix) =>
+        val appString = new String(bytes, UTF_8)
+        val newAppString = appString.replace("__LABRAD_URL_PREFIX__", prefix)
+        (path, newAppString.getBytes(UTF_8))
+    }
+  }
+  val appFunc = () => staticHandler.makeResponse(appPath, appBytes)
+  val connectionConfig = LabradConnectionConfig(config.managerHosts)
+
   val b = new ServerBootstrap()
   b.group(bossGroup, workerGroup)
    .channel(classOf[NioServerSocketChannel])
@@ -78,19 +121,19 @@ class WebServer(port: Int) {
        pipeline.addLast(new HttpServerCodec())
        pipeline.addLast(new HttpObjectAggregator(65536))
        pipeline.addLast(new RoutingHandler(
-         WebSocketRoute(GET, "^/api/socket$".r, false, () => new ApiBackend),
-         AppRoute(GET, "^/$".r, staticHandler, "/index.html"),
-         AppRoute(GET, "^/dataset.*$".r, staticHandler, "/index.html"),
-         AppRoute(GET, "^/grapher.*$".r, staticHandler, "/index.html"),
-         AppRoute(GET, "^/nodes.*$".r, staticHandler, "/index.html"),
-         AppRoute(GET, "^/registry.*$".r, staticHandler, "/index.html"),
-         AppRoute(GET, "^/server.*$".r, staticHandler, "/index.html"),
+         WebSocketRoute(GET, "^/api/socket$".r, false, () => new ApiBackend(connectionConfig)),
+         AppRoute(GET, "^(/[a-zA-Z0-9\\-_.]+)?/$".r, appFunc),
+         AppRoute(GET, "^(/[a-zA-Z0-9\\-_.]+)?/dataset.*$".r, appFunc),
+         AppRoute(GET, "^(/[a-zA-Z0-9\\-_.]+)?/grapher.*$".r, appFunc),
+         AppRoute(GET, "^(/[a-zA-Z0-9\\-_.]+)?/nodes.*$".r, appFunc),
+         AppRoute(GET, "^(/[a-zA-Z0-9\\-_.]+)?/registry.*$".r, appFunc),
+         AppRoute(GET, "^(/[a-zA-Z0-9\\-_.]+)?/server.*$".r, appFunc),
          StaticRoute(GET, ".*".r, staticHandler)
        ))
      }
    })
 
-  val channel = b.bind(port).sync().channel
+  val channel = b.bind(config.port).sync().channel
 
   def stop(): Unit = {
     channel.close()
@@ -114,7 +157,7 @@ object WebServer {
         return
     }
 
-    val server = new WebServer(config.port)
+    val server = new WebServer(config)
 
     println(s"now serving at http://localhost:${config.port}")
 

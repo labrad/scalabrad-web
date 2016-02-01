@@ -1,4 +1,5 @@
 import {RegistryApi, RegistryListing} from '../scripts/registry';
+import {Places} from '../scripts/places';
 
 @component('labrad-registry')
 export class LabradRegistry extends polymer.Base {
@@ -17,6 +18,9 @@ export class LabradRegistry extends polymer.Base {
 
   @property({type: Object})
   socket: RegistryApi;
+
+  @property()
+  places: Places;
 
   @property({type: String, notify: true})
   notify: string;
@@ -92,7 +96,7 @@ export class LabradRegistry extends polymer.Base {
     this.splice('keys', 0, this.keys.length);
 
     for (var i in resp.dirs) {
-      this.push('dirs', {name: resp.dirs[i], url: this.createUrl(resp.path, resp.dirs[i])});
+      this.push('dirs', {name: resp.dirs[i], url: this.places.registryUrl(resp.path, resp.dirs[i])});
     }
     for (var j in resp.keys) {
       this.push('keys', {name: resp.keys[j], value: resp.vals[j]});
@@ -101,18 +105,6 @@ export class LabradRegistry extends polymer.Base {
     this.$.pendingDialog.close()
     this.$.combinedList.selected = null;
 
-  }
-
-  createUrl(path: Array<string>, dir: string): string {
-    var pathUrl = '/registry/';
-    if (path.length === 0) {
-      return pathUrl + dir;
-    }//not sure if this is the best way to handle this edge case
-    for (var i in path) {
-      pathUrl += path[i] + '/';
-    }
-    console.log(pathUrl + dir);
-    return pathUrl + dir;
   }
 
   pathToString(path) {

@@ -77,7 +77,7 @@
           <th>Global Servers</th>
           <th></th>
           <template is="dom-repeat" items="{{nodeNames}}" as="node">
-            <th><labrad-node-controller api={{api}} name={{node}}></labrad-node-controller></th>
+            <th><labrad-node-controller places={{places}} api={{api}} name={{node}}></labrad-node-controller></th>
           </template>
         </thead>
         <tbody>
@@ -89,6 +89,7 @@
                 <td>
                   <template is="dom-if" if="{{node.exists}}">
                     <labrad-instance-controller
+                      places={{places}}
                       api={{api}}
                       local
                       name={{server.name}}
@@ -118,6 +119,7 @@
                 <td>
                   <template is="dom-if" if="{{node.exists}}">
                     <labrad-instance-controller
+                      places={{places}}
                       api={{api}}
                       name={{server.name}}
                       instance-name={{node.instanceName}}

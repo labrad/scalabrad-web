@@ -9,6 +9,8 @@ import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 
+case class LabradConnectionConfig(hosts: Map[String, String])
+
 object LabradConnection {
   val timer = new Timer(true)
 }
@@ -20,7 +22,11 @@ trait LabradClientApi {
   def serverDisconnected(name: String): Unit
 }
 
-class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi)(implicit ec: ExecutionContext) extends Logging {
+class LabradConnection(
+  config: LabradConnectionConfig,
+  client: LabradClientApi,
+  nodeClient: NodeClientApi
+)(implicit ec: ExecutionContext) extends Logging {
   private val RECONNECT_TIMEOUT = 10.seconds
 
   @volatile private var live: Boolean = true
@@ -38,8 +44,17 @@ class LabradConnection(client: LabradClientApi, nodeClient: NodeClientApi)(impli
     setupFuncs += f
   }
 
-  def login(username: String, password: String): Unit = {
-    val cxn = new Client("Browser", password = password.toCharArray)
+  def login(username: String, password: String, host: String/* = ""*/): Unit = {
+    val hostname = config.hosts.get(host).getOrElse(host)
+    if (hostname == host) {
+      println(s"logging in to host: '$host'")
+    } else {
+      println(s"logging in to host: '$host' ($hostname)")
+    }
+    val cxn = hostname match {
+      case "" => new Client("Browser", password = password.toCharArray)
+      case host => new Client("Browser", host = host, password = password.toCharArray)
+    }
     handleConnectionEvents(cxn)
     cxn.connect()
     runSetupFuncs(cxn)

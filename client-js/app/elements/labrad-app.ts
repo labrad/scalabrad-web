@@ -1,7 +1,15 @@
+import {Places} from '../scripts/places';
+
 @component('labrad-app')
 export class LabradApp extends polymer.Base {
+  @property({type: String, value: ''})
+  host: string;
+
   @property({type: String})
   route: string;
+
+  @property()
+  places: Places;
 
   @property({type: Boolean})
   hasBreadcrumbs: boolean;
@@ -18,6 +26,26 @@ export class LabradApp extends polymer.Base {
   @property({type: String})
   connectionError: string;
 
+  @computed()
+  managerUrl(places: Places): string {
+    return places.managerUrl();
+  }
+
+  @computed()
+  nodesUrl(places: Places): string {
+    return places.nodesUrl();
+  }
+
+  @computed()
+  registryUrl(places: Places): string {
+    return places.registryUrl([]);
+  }
+
+  @computed()
+  grapherUrl(places: Places): string {
+    return places.grapherUrl([]);
+  }
+
   ready() {
     // Ensure the drawer is hidden on desktop/tablet
     this.$.drawerPanel.forceNarrow = true;
@@ -32,8 +60,12 @@ export class LabradApp extends polymer.Base {
   }
 
   doLogout(event) {
-    window.localStorage.removeItem('labrad-credentials');
-    window.sessionStorage.removeItem('labrad-credentials');
+    var key = 'labrad-credentials';
+    if (this.host) {
+      key += '.' + this.host;
+    }
+    window.localStorage.removeItem(key);
+    window.sessionStorage.removeItem(key);
     window.location.reload();
   }
 }

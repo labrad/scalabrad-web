@@ -1,6 +1,7 @@
 import {Lifetime} from '../scripts/lifetime';
 import {ManagerApi, ServerConnectMessage, ServerDisconnectMessage} from '../scripts/manager';
 import {NodeApi, NodeStatus, ServerStatus, ServerStatusMessage} from '../scripts/node';
+import {Places} from '../scripts/places';
 
 @component('labrad-instance-controller')
 export class LabradInstanceController extends polymer.Base {
@@ -28,9 +29,12 @@ export class LabradInstanceController extends polymer.Base {
   @property()
   api: NodeApi;
 
+  @property()
+  places: Places;
+
   @computed()
-  serverUrl(instanceName: string): string {
-    return `/server/${encodeURIComponent(instanceName)}`
+  serverUrl(instanceName: string, places: Places): string {
+    return places.serverUrl(instanceName);
   }
 
   ready() {
@@ -110,6 +114,9 @@ export class LabradNodeController extends polymer.Base {
   api: NodeApi;
 
   @property()
+  places: Places;
+
+  @property()
   name: string;
 
   @property({type: Boolean, value: false})
@@ -142,6 +149,9 @@ export class LabradNodes extends polymer.Base {
 
   @property({type: Object})
   api: NodeApi;
+
+  @property()
+  places: Places;
 
   @property({type: Object})
   managerApi: ManagerApi;

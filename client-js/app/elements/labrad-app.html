@@ -63,22 +63,22 @@
 
         <!-- Drawer Content -->
         <paper-menu class="list" attr-for-selected="data-route" selected="{{route}}" on-iron-select="onMenuSelect">
-          <a data-route="manager" href="/">
+          <a data-route="manager" href="{{managerUrl}}">
             <iron-icon icon="home"></iron-icon>
             <span>Manager</span>
           </a>
 
-          <a data-route="nodes" href="/nodes">
+          <a data-route="nodes" href="{{nodesUrl}}">
             <iron-icon icon="hardware:device-hub"></iron-icon>
             <span>Nodes</span>
           </a>
 
-          <a data-route="registry" href="/registry">
+          <a data-route="registry" href="{{registryUrl}}">
             <iron-icon icon="description"></iron-icon>
             <span>Registry</span>
           </a>
 
-          <a data-route="grapher" href="/grapher">
+          <a data-route="grapher" href="{{grapherUrl}}">
             <iron-icon icon="editor:insert-chart"></iron-icon>
             <span>Grapher</span>
           </a>
@@ -116,6 +116,9 @@
 
     <paper-dialog id="loginDialog" modal>
       <h1>Login to Labrad</h1>
+      <template is="dom-if" if="{{host}}">
+        <h2>on <span>{{host}}</span></h2>
+      </template>
       <form id="loginForm">
         <paper-input id="passwordInput" label="password" always-float-label type="password"></paper-input>
         <paper-checkbox id="rememberPassword">Remember password</paper-checkbox>

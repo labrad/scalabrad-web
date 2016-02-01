@@ -21,7 +21,7 @@ sealed trait Route {
   def path: Regex
 }
 case class WebSocketRoute(method: HttpMethod, path: Regex, ssl: Boolean, backend: () => Backend) extends Route
-case class AppRoute(method: HttpMethod, path: Regex, handler: StaticResourceHandler, appPath: String) extends Route
+case class AppRoute(method: HttpMethod, path: Regex, func: () => FullHttpResponse) extends Route
 case class StaticRoute(method: HttpMethod, path: Regex, handler: StaticResourceHandler) extends Route
 
 /**
@@ -45,10 +45,7 @@ extends SimpleChannelInboundHandler[FullHttpRequest] with Logging {
             WebSocketHandler.upgrade(ctx, req, route.ssl, route.backend())
 
           case route: AppRoute =>
-            responseOpt = route.handler.get(route.appPath).orElse {
-              log.error(s"unable to find app resource ${route.appPath}")
-              Some(errorResponse(INTERNAL_SERVER_ERROR))
-            }
+            responseOpt = Some(route.func())
 
           case route: StaticRoute =>
             responseOpt = route.handler.get(req.uri).orElse {
@@ -56,6 +53,9 @@ extends SimpleChannelInboundHandler[FullHttpRequest] with Logging {
             }
         }
       }
+    }
+    if (!matched) {
+      responseOpt = Some(errorResponse(NOT_FOUND))
     }
 
     // send response and close connection if necessary
