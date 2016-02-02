@@ -7,12 +7,14 @@
     }
     table {
       width: 100%;
+      border-collapse: collapse;
     }
-    .iron-selected {
-      background-color: #ddd;
+    tbody tr:nth-child(1n).iron-selected {
+      background-color: #ccc;
     }
     .label-wide {
       width: 100%;
+      min-width: 60px;
       text-align: right;
     }
     dir-item {
@@ -28,91 +30,159 @@
       flex-direction: row;
       height: 100%;
     }
-    #listing {
-      flex-basis: 40%;
+    #left-column {
+      flex-basis: 20%;
       flex-grow: 1;
-      overflow-y: scroll;
+      border-right: 1px solid #AAA;
     }
-    #details {
-      flex-basis: 60%;
-      flex-grow: 1;
-      overflow-y: scroll;
+    #buttons {
+      height: 50px;
+    }
+    #buttons paper-icon-button {
+      margin: 5px;
+    }
+    #listing iron-icon {
+      margin: 5px;
+    }
+    #listing iron-icon.folder {
+      color: #CFBA78;
+    }
+    #listing iron-icon.dataset {
+      color: #209131;
+    }
+    #listing iron-icon.star {
+      color: #FF2299;
+    }
+    #listing iron-icon.trash {
+      color: #773300;
+    }
+    #right-column {
+      flex-basis: 80%;
+      flex-grow: 0;
+    }
+    #right-column .paper-header {
+      min-height: 50px;
+    }
+    #right-column .paper-header h1 {
+      margin: 5px 18px 0px 18px;
+      font-size: 24px;
+      line-height: 45px;
+    }
+    #params thead tr {
+      background-color: #7744AA;
+      color: white;
+    }
+    #params th,td {
+      padding-left: 0.5em;
+      padding-right: 0.5em;
     }
     .monospace {
       font-family: courier;
       text-overflow: ellipsis;
     }
+    tbody tr:nth-child(odd) {
+      background-color: #EEEEEE;
+    }
+    tbody tr:nth-child(odd):hover {
+      background-color: #F6F699;
+    }
+    tbody tr:nth-child(even):hover {
+      background-color: #FFFFAA;
+    }
+    td.item {
+      white-space: nowrap;
+    }
   </style>
   <template>
     <div id="outer">
-    <div id="container">
-      <div id="listing">
-        <div id="buttons">
-          <paper-icon-button icon="stars" id="star" on-click="starClicked" title="show starred items"></paper-icon-button>
-          <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="show trashed items"></paper-icon-button>
-        </div>
-        <table>
-          <tbody is="selectable-table" selected="{{selectedId}}" attr-for-selected="selid">
-            <template is="dom-repeat" items="{{listItems}}">
-              <tr selid="{{item.id}}">
-                <td>
-                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-                    <template is="dom-if" if="{{item.isDir}}">
-                      <dir-item kind="folder">{{item.name}}</dir-item>
-                    </template>
-                    <template is="dom-if" if="{{!item.isDir}}">
-                      <dir-item kind="data">{{item.name}}</dir-item>
-                    </template>
-                  </a>
-                </td>
-                <td class="label-wide">
-                  <template is="dom-if" if="{{item.starred}}">
-                    <paper-icon-button icon="stars"></paper-icon-button>
-                  </template>
-                  <template is="dom-if" if="{{item.trashed}}">
-                    <paper-icon-button icon="delete"></paper-icon-button>
-                  </template>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
-      <div id="details">
-        <h1>{{selectedDataset}}</h1>
-        <template is="dom-if" if="{{selectedDataset}}">
-          <table>
-            <tr><th colspan="3">Independents</th></tr>
-            <template is="dom-repeat" items="{{selectedDatasetInfo.independents}}">
-              <tr>
-                <td>{{item.label}}</td>
-                <td></td>
-                <td>{{item.unit}}</td>
-              </tr>
-            </template>
+      <div id="container">
+        <paper-header-panel id="left-column">
+          <div class="paper-header" id="buttons">
+            <paper-icon-button icon="stars" id="star" on-click="starClicked" title="show starred items"></paper-icon-button>
+            <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="show trashed items"></paper-icon-button>
+          </div>
+          <div id="listing">
+            <table>
+              <tbody is="selectable-table" selected="{{selectedId}}" attr-for-selected="selid">
+                <template is="dom-repeat" items="{{listItems}}">
+                  <tr selid="{{item.id}}">
+                    <td class="item">
+                      <template is="dom-if" if="{{item.isParent}}">
+                        <iron-icon icon="arrow-back" item-icon></iron-icon>
+                      </template>
+                      <template is="dom-if" if="{{item.isDir}}">
+                        <iron-icon icon="folder" item-icon class="folder"></iron-icon>
+                      </template>
+                      <template is="dom-if" if="{{item.isDataset}}">
+                        <iron-icon icon="editor:insert-chart" item-icon class="dataset"></iron-icon>
+                      </template>
+                      <a is="app-link" path="{{item.url}}" href="{{item.url}}">{{item.name}}</a>
+                    </td>
+                    <td class="label-wide">
+                      <template is="dom-if" if="{{item.starred}}">
+                        <iron-icon icon="stars" class="star"></iron-icon>
+                      </template>
+                      <template is="dom-if" if="{{item.trashed}}">
+                        <iron-icon icon="delete" class="trash"></iron-icon>
+                      </template>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </paper-header-panel>
+        <paper-header-panel id="right-column">
+          <div class="paper-header">
+            <h1>{{selectedDataset}}</h1>
+          </div>
+          <div id="params">
+            <template is="dom-if" if="{{selectedDataset}}">
+              <table>
+                <thead>
+                  <tr><th colspan="3">Independents</th></tr>
+                </thead>
+                <tbody>
+                <template is="dom-repeat" items="{{selectedDatasetInfo.independents}}">
+                  <tr>
+                    <td>{{item.label}}</td>
+                    <td></td>
+                    <td>{{item.unit}}</td>
+                  </tr>
+                </template>
+                </tbody>
 
-            <tr><th colspan="3">Dependents</th></tr>
-            <template is="dom-repeat" items="{{selectedDatasetInfo.dependents}}">
-              <tr>
-                <td>{{item.label}}</td>
-                <td>{{item.legend}}</td>
-                <td>{{item.unit}}</td>
-              </tr>
-            </template>
-          </table>
+                <thead>
+                  <tr class="header-row"><th colspan="3">Dependents</th></tr>
+                </thead>
+                <tbody>
+                <template is="dom-repeat" items="{{selectedDatasetInfo.dependents}}">
+                  <tr>
+                    <td>{{item.label}}</td>
+                    <td>{{item.legend}}</td>
+                    <td>{{item.unit}}</td>
+                  </tr>
+                </template>
+                </tbody>
+              </table>
 
-          <table>
-            <tr><th colspan="2">Parameters</th></tr>
-            <template is="dom-repeat" items="{{selectedDatasetInfo.params}}">
-              <tr>
-                <td class="monospace">{{item.name}}</td>
-                <td class="monospace">{{item.value}}</td>
-              </tr>
+              <table>
+                <thead>
+                  <tr class="header-row"><th colspan="2">Parameters</th></tr>
+                </thead>
+                <tbody>
+                <template is="dom-repeat" items="{{selectedDatasetInfo.params}}">
+                  <tr>
+                    <td class="monospace">{{item.name}}</td>
+                    <td class="monospace">{{item.value}}</td>
+                  </tr>
+                </template>
+                </tbody>
+              </table>
             </template>
-          </table>
-        </template>
+          </div>
+        </paper-header-panel>
       </div>
-    </div>
     </div>
   </template>
 </dom-module>

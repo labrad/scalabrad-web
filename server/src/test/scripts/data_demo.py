@@ -101,6 +101,22 @@ def demo_2d_sparse(dv):
 
 
 @demo
+def demo_2d_sparse_rectfill(dv):
+    dv.new('demo_2d_sparse_rectfill', ['x', 'y'], ['z'])
+    add_params(dv)
+    nx, ny = 100, 20
+    for i in xrange(-nx, nx+1):
+        x = i
+        y_center = 100 * (1 if x == 0 else math.sin(x / 10) / (x / 10))
+        y_grid_center = y_center
+        for j in xrange(-ny, ny+1):
+            y = y_grid_center + j
+            z = 1 / (1 + (y - y_center)**2 / (ny/4)**2) + (random.random() - 0.5) * 0.1
+            dv.add([x/10, y/10, z])
+            time.sleep(0.002)
+
+
+@demo
 def demo_1d_x_coords(dv):
     dv.new('demo_1d_x_coords', ['x'], ['y'])
     add_params(dv)

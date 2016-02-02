@@ -1,4 +1,5 @@
 import * as datavault from '../scripts/datavault';
+import {Places} from '../scripts/places';
 
 @component('labrad-grapher')
 export class LabradGrapher extends polymer.Base {
@@ -19,6 +20,9 @@ export class LabradGrapher extends polymer.Base {
 
   @property({type: Number, value: 0})
   kick: number;
+
+  @property({type: Object})
+  places: Places;
 
   @property({type: Object})
   api: datavault.DataVaultApi;
@@ -97,6 +101,7 @@ export class LabradGrapher extends polymer.Base {
 
   @computed()
   listItems(
+    path: Array<string>,
     dirs: Array<{name: string; url: string; tags: Array<string>}>,
     datasets: Array<{name: string; url: string; tags: Array<string>}>,
     kick: number
@@ -117,6 +122,18 @@ export class LabradGrapher extends polymer.Base {
     }
 
     var items = [];
+    if (path.length > 0 && this.places) {
+      items.push({
+        id: '..',
+        name: '..',
+        url: this.places.grapherUrl(path.slice(0, -1)),
+        isDir: false,
+        isDataset: false,
+        isParent: true,
+        starred: false,
+        trashed: false
+      });
+    }
     for (let dir of dirs) {
       if (isIncluded(dir)) {
         items.push({
@@ -124,6 +141,8 @@ export class LabradGrapher extends polymer.Base {
           name: dir.name,
           url: dir.url,
           isDir: true,
+          isDataset: false,
+          isParent: false,
           starred: isTagged(dir, 'star'),
           trashed: isTagged(dir, 'trash')
         });
@@ -136,6 +155,8 @@ export class LabradGrapher extends polymer.Base {
           name: dataset.name,
           url: dataset.url,
           isDir: false,
+          isDataset: true,
+          isParent: false,
           starred: isTagged(dataset, 'star'),
           trashed: isTagged(dataset, 'trash')
         });

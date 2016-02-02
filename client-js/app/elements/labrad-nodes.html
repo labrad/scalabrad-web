@@ -12,6 +12,8 @@
       padding: 2px 5px 2px 5px;
     }
     paper-icon-button {
+      width: 1.6em;
+      height: 1.6em;
       padding: 0px;
     }
     paper-spinner {
@@ -43,6 +45,8 @@
 <dom-module id="labrad-node-controller">
   <style>
     paper-icon-button {
+      width: 1.6em;
+      height: 1.6em;
       padding: 0px;
     }
     paper-spinner {
@@ -68,6 +72,28 @@
   <style>
     :host {
       display: block;
+    }
+    table {
+      border-collapse: collapse;
+    }
+    th {
+      padding: 4px;
+    }
+    td {
+      padding: 4px;
+    }
+    thead tr {
+      background-color: #440088;
+      color: white;
+    }
+    tbody tr:nth-child(odd) {
+      background-color: #EEEEEE;
+    }
+    tbody tr:nth-child(odd):hover {
+      background-color: #F6F699;
+    }
+    tbody tr:nth-child(even):hover {
+      background-color: #FFFFAA;
     }
   </style>
   <template>

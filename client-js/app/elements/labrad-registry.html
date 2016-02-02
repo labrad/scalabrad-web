@@ -1,7 +1,6 @@
 <link rel="import" href="../bower_components/paper-input/paper-textarea.html">
 <link rel="import" href="../bower_components/paper-toast/paper-toast.html">
 <link rel="import" href="app-link.html">
-<link rel="import" href="dir-item.html">
 
 <!-- This is the component that simply renders the table of registry content -->
 <dom-module id="labrad-registry">
@@ -25,8 +24,8 @@
       height: 100%;
     }
 
-    .iron-selected {
-      background-color: #ddd;
+    tbody tr:nth-child(1n).iron-selected {
+      background-color: #CCCCCC;
     }
 
     .iron-selector {
@@ -38,14 +37,24 @@
 
     table {
       width: 100%;
+      border-collapse: collapse;
     }
 
     tbody {
       display:table-header-group;
     }
-    
+
     td.dir.over {
       background-color: #93d4d4;
+    }
+    tbody tr:nth-child(odd) {
+      background-color: #EEEEEE;
+    }
+    tbody tr:nth-child(odd):hover {
+      background-color: #F6F699;
+    }
+    tbody tr:nth-child(even):hover {
+      background-color: #FFFFAA;
     }
 
     .table-header {
@@ -94,45 +103,61 @@
       border-radius: 2px;
       -webkit-appearance: none;
     }
-    dir-item {
-      white-space: nowrap;
-    }
     .mono {
       font-family: 'roboto mono', monospace;
     }
-
+    td.dir {
+      white-space: nowrap;
+    }
+    td.key-item {
+      white-space: nowrap;
+    }
+    iron-icon {
+      margin: 5px;
+    }
+    iron-icon.folder {
+      color: #CFBA78;
+    }
+    iron-icon.key {
+      color: #209131;
+    }
   </style>
   <template>
     <div id="reg-area">
       <table>
         <tbody is="selectable-table" id="combinedList" selected="{{selectedIdx}}">
-          <template id="dirList" is="dom-repeat" items="{{dirs}}" filter="filterFunc">
-            <tr name="{{item.name}}" class="dir">
-              <td class="dir" 
-                  name="{{item.name}}" 
-                  draggable="true" 
-                  on-dragover="onDirDragOver"
-                  on-dragleave="onDirDragLeave"
-                  on-drop="dirDrop">
-                <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-                  <dir-item kind="folder">{{item.name}}</dir-item>
-                </a>
-              </td>
-              <td class="label-wide"></td>
-            </tr>
-          </template>
-          <template id="keyList" is="dom-repeat" items="{{keys}}" filter="filterFunc">
-            <tr class="key" name="{{item.name}}">
-              <td>
-                <dir-item kind="key">
+          <template id="fullList" is="dom-repeat" items="{{listItems}}" filter="filterFunc">
+            <tr name="{{item.name}}">
+              <template is="dom-if" if="{{item.isParent}}">
+                <td>
+                  <iron-icon icon="arrow-back" item-icon></iron-icon>
+                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">{{item.name}}</a>
+                </td>
+                <td class="label-wide"></td>
+              </template>
+              <template is="dom-if" if="{{item.isDir}}">
+                <td class="dir"
+                    name="{{item.name}}"
+                    draggable="true"
+                    on-dragover="onDirDragOver"
+                    on-dragleave="onDirDragLeave"
+                    on-drop="dirDrop">
+                  <iron-icon icon="folder" item-icon class="folder"></iron-icon>
+                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">{{item.name}}</a>
+                </td>
+                <td class="label-wide"></td>
+              </template>
+              <template is="dom-if" if="{{item.isKey}}">
+                <td class="key-item">
+                  <iron-icon icon="communication:vpn-key" item-icon class="key"></iron-icon>
                   <span class="mono">{{item.name}}</span>
-                </dir-item>
-              </td>
-              <td class="label-wide">
-                <paper-item key-name="{{item.name}}" on-dblclick="editValueClicked">
-                  <span class="mono">{{item.value}}</span>
-                </paper-item>
-              </td>
+                </td>
+                <td class="label-wide">
+                  <paper-item key-name="{{item.name}}" on-dblclick="editValueClicked">
+                    <span class="mono">{{item.value}}</span>
+                  </paper-item>
+                </td>
+              </template>
             </tr>
           </template>
         </tbody>

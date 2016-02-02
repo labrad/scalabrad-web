@@ -99,6 +99,7 @@ export class DatavaultActivity implements Activity {
 
     this.elem = <LabradGrapher> LabradGrapher.create();
     this.elem.api = this.api;
+    this.elem.places = this.places;
     this.elem.path = this.path;
     this.elem.dirs = this.getDirs(listing);
     this.elem.datasets = this.getDatasets(listing);

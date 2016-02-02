@@ -5,10 +5,10 @@ import {Places} from '../scripts/places';
 export class LabradRegistry extends polymer.Base {
 
   @property({type: Array, notify: true})
-  dirs: Array<any>;
+  dirs: Array<{name: string; url: string}>;
 
   @property({type: Array, notify: true})
-  keys: Array<any>;
+  keys: Array<{name: string; value: string}>;
 
   @property({type: Array, notify: true})
   path: Array<string>;
@@ -24,6 +24,9 @@ export class LabradRegistry extends polymer.Base {
 
   @property({type: String, notify: true})
   notify: string;
+
+  @property({type: Number, value: 0})
+  kick: number;
 
   @property({type: String, notify: true, value: ''})
   filterText: string;
@@ -45,8 +48,7 @@ export class LabradRegistry extends polymer.Base {
   @observe('filterText')
   reloadMenu() {
     this.regex = new RegExp(this.filterText, 'i');
-    this.$.dirList.render();
-    this.$.keyList.render();
+    this.$.fullList.render();
   }
 
   /**
@@ -55,6 +57,27 @@ export class LabradRegistry extends polymer.Base {
    */
   filterFunc(item) {
     return item.name.match(this.regex);
+  }
+
+  @computed()
+  listItems(
+    path: Array<string>,
+    dirs: Array<{name: string; url: string}>,
+    keys: Array<{name: string; value: string}>,
+    kick: number
+  ): Array<{name: string; isParent: boolean; isDir: boolean; isKey: boolean; url?: string; value?: string}> {
+    var items = [];
+    if (path.length > 0 && this.places) {
+      var url = this.places.registryUrl(path.slice(0, -1));
+      items.push({name: '..', isParent: true, isDir: false, isKey: false, url: url});
+    }
+    for (let dir of dirs) {
+      items.push({name: dir.name, isParent: false, isDir: true, isKey: false, url: dir.url});
+    }
+    for (let key of keys) {
+      items.push({name: key.name, isParent: false, isDir: false, isKey: true, value: key.value});
+    }
+    return items;
   }
 
   @computed()
@@ -73,7 +96,8 @@ export class LabradRegistry extends polymer.Base {
   selectedItem: string;
 
   _computeSelectedType(selectedIdx: number): string {
-    if (this.dirs && selectedIdx < this.dirs.length) {
+    var offset = this.path.length > 0 ? 1 : 0; // account for parent '..' entry
+    if (this.dirs && selectedIdx < this.dirs.length + offset) {
       return 'dir';
     } else {
       return 'key';
@@ -81,9 +105,10 @@ export class LabradRegistry extends polymer.Base {
   }
 
   _computeSelectedItem(selectedIdx: number): string {
-    if (this.dirs) {
-      return this.dirs.concat(this.keys)[selectedIdx].name
-    }
+    var offset = this.path.length > 0 ? 1 : 0; // account for parent '..' entry
+    var dirNames = (this.dirs || []).map(it => it.name);
+    var keyNames = (this.keys || []).map(it => it.name);
+    return dirNames.concat(keyNames)[selectedIdx - offset];
   }
 
   incrementSelector() {
@@ -104,7 +129,7 @@ export class LabradRegistry extends polymer.Base {
 
     this.$.pendingDialog.close()
     this.$.combinedList.selected = null;
-
+    this.kick++;
   }
 
   pathToString(path) {
