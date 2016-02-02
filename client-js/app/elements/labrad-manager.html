@@ -7,6 +7,26 @@
     }
     table {
       width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      padding: 4px;
+    }
+    td {
+      padding: 4px;
+    }
+    thead tr {
+      background-color: #440088;
+      color: white;
+    }
+    tbody tr:nth-child(odd) {
+      background-color: #DDDDDD;
+    }
+    tbody tr:nth-child(odd):hover {
+      background-color: #F6F699;
+    }
+    tbody tr:nth-child(even):hover {
+      background-color: #FFFFAA;
     }
   </style>
   <template>
