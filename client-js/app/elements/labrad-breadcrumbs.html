@@ -4,7 +4,8 @@
   <style>
     ul {
       padding-left: 0.5em;
-      display: inline-block;
+      display: inline;
+      white-space: nowrap;
       list-style-type: none;
     }
     li {
@@ -35,10 +36,8 @@
           </template>
         </li>
       </template>
-    </ul>
-    <ul>
       <template is="dom-if" if="{{extras}}">
-        <li>|</li>
+        <li class="extra">|</li>
       </template>
       <template is="dom-repeat" items="{{extras}}">
         <li class="extra">
