@@ -34,6 +34,16 @@
       flex-grow: 1;
       overflow-y: scroll;
     }
+    #buttons {
+      position: fixed;
+      height: 40px;
+      z-index: 1;
+      background: white;
+    }
+    #list {
+      position: relative;
+      top: 40px;
+    }
     #details {
       flex-basis: 60%;
       flex-grow: 1;
@@ -73,34 +83,36 @@
           <paper-icon-button icon="stars" id="star" on-click="starClicked" title="show starred items"></paper-icon-button>
           <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="show trashed items"></paper-icon-button>
         </div>
-        <table>
-          <tbody is="selectable-table" selected="{{selectedId}}" attr-for-selected="selid">
-            <template is="dom-repeat" items="{{listItems}}">
-              <tr selid="{{item.id}}">
-                <td class="item">
-                  <template is="dom-if" if="{{item.isParent}}">
-                    <iron-icon icon="arrow-back" item-icon></iron-icon>
-                  </template>
-                  <template is="dom-if" if="{{item.isDir}}">
-                    <iron-icon icon="folder" item-icon class="folder"></iron-icon>
-                  </template>
-                  <template is="dom-if" if="{{item.isDataset}}">
-                    <iron-icon icon="editor:insert-chart" item-icon class="dataset"></iron-icon>
-                  </template>
-                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">{{item.name}}</a>
-                </td>
-                <td class="label-wide">
-                  <template is="dom-if" if="{{item.starred}}">
-                    <paper-icon-button icon="stars"></paper-icon-button>
-                  </template>
-                  <template is="dom-if" if="{{item.trashed}}">
-                    <paper-icon-button icon="delete"></paper-icon-button>
-                  </template>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+        <div id="list">
+          <table>
+            <tbody is="selectable-table" selected="{{selectedId}}" attr-for-selected="selid">
+              <template is="dom-repeat" items="{{listItems}}">
+                <tr selid="{{item.id}}">
+                  <td class="item">
+                    <template is="dom-if" if="{{item.isParent}}">
+                      <iron-icon icon="arrow-back" item-icon></iron-icon>
+                    </template>
+                    <template is="dom-if" if="{{item.isDir}}">
+                      <iron-icon icon="folder" item-icon class="folder"></iron-icon>
+                    </template>
+                    <template is="dom-if" if="{{item.isDataset}}">
+                      <iron-icon icon="editor:insert-chart" item-icon class="dataset"></iron-icon>
+                    </template>
+                    <a is="app-link" path="{{item.url}}" href="{{item.url}}">{{item.name}}</a>
+                  </td>
+                  <td class="label-wide">
+                    <template is="dom-if" if="{{item.starred}}">
+                      <paper-icon-button icon="stars"></paper-icon-button>
+                    </template>
+                    <template is="dom-if" if="{{item.trashed}}">
+                      <paper-icon-button icon="delete"></paper-icon-button>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
       </div>
       <div id="details">
         <h1>{{selectedDataset}}</h1>
