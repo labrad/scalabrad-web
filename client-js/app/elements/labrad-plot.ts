@@ -6,7 +6,7 @@ import {viridisData} from '../scripts/colormaps';
 /**
  * Colors for traces in 1D plots
  */
-var COLOR_LIST = ['red', 'blue', 'yellow', 'green', 'magenta'];
+var COLOR_LIST = ['blue', 'red', '#00CC00', '#DDDD00', '#DD00DD', '#0088DD'];
 
 
 /**
