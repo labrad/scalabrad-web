@@ -7,9 +7,10 @@
     }
     table {
       width: 100%;
+      border-collapse: collapse;
     }
-    .iron-selected {
-      background-color: #ddd;
+    tbody tr:nth-child(1n).iron-selected {
+      background-color: #ccc;
     }
     .label-wide {
       width: 100%;
@@ -42,6 +43,27 @@
       font-family: courier;
       text-overflow: ellipsis;
     }
+    tbody tr:nth-child(odd) {
+      background-color: #EEEEEE;
+    }
+    tbody tr:nth-child(odd):hover {
+      background-color: #F6F699;
+    }
+    tbody tr:nth-child(even):hover {
+      background-color: #FFFFAA;
+    }
+    td.item {
+      white-space: nowrap;
+    }
+    iron-icon {
+      margin: 5px;
+    }
+    iron-icon.folder {
+      color: #CFBA78;
+    }
+    iron-icon.dataset {
+      color: #209131;
+    }
   </style>
   <template>
     <div id="outer">
@@ -55,15 +77,17 @@
           <tbody is="selectable-table" selected="{{selectedId}}" attr-for-selected="selid">
             <template is="dom-repeat" items="{{listItems}}">
               <tr selid="{{item.id}}">
-                <td>
-                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-                    <template is="dom-if" if="{{item.isDir}}">
-                      <dir-item kind="folder">{{item.name}}</dir-item>
-                    </template>
-                    <template is="dom-if" if="{{!item.isDir}}">
-                      <dir-item kind="data">{{item.name}}</dir-item>
-                    </template>
-                  </a>
+                <td class="item">
+                  <template is="dom-if" if="{{item.isParent}}">
+                    <iron-icon icon="arrow-back" item-icon></iron-icon>
+                  </template>
+                  <template is="dom-if" if="{{item.isDir}}">
+                    <iron-icon icon="folder" item-icon class="folder"></iron-icon>
+                  </template>
+                  <template is="dom-if" if="{{item.isDataset}}">
+                    <iron-icon icon="editor:insert-chart" item-icon class="dataset"></iron-icon>
+                  </template>
+                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">{{item.name}}</a>
                 </td>
                 <td class="label-wide">
                   <template is="dom-if" if="{{item.starred}}">
