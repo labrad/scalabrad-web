@@ -9,6 +9,7 @@ import * as registry from "./registry";
 import * as datavault from "./datavault";
 import * as nodeApi from "./node";
 import {Places} from "./places";
+import * as promises from "./promises";
 import * as rpc from "./rpc";
 import {obligate} from "./obligation";
 
@@ -300,6 +301,11 @@ window.addEventListener('WebComponentsReady', () => {
     storage.setItem(key, JSON.stringify(creds));
   }
 
+  function isPasswordError(error): boolean {
+    var errStr = String(error.message || error);
+    return errStr.indexOf('password') >= 0;
+  }
+
   /**
    * Attempt to login to labrad using credentials saved in the given Storage.
    *
@@ -322,8 +328,7 @@ window.addEventListener('WebComponentsReady', () => {
           host: manager
         });
       } catch (error) {
-        var errStr = String(error.message || error);
-        if (errStr.indexOf('password') >= 0) {
+        if (isPasswordError(error)) {
           // if we had credentials, clear them out
           storage.removeItem(key);
         }
@@ -339,28 +344,52 @@ window.addEventListener('WebComponentsReady', () => {
    * then localStorage, and finally by prompting the user to enter credentials
    * if neither of those work.
    */
-  async function login(host: string): Promise<Services> {
-    var socket = new rpc.JsonRpcSocket(apiUrl);
-    socket.connectionClosed.add((event) => {
-      if (event.code !== 1000) {
-        app.connectionError = "WebSocket connection closed.";
-        app.$.errorDialog.open();
-        setTimeout(() => {
-          console.log('reloading!');
-          location.reload();
-        }, 10000);
+  async function login(host: string, topLevel: boolean = true): Promise<Services> {
+    async function reconnect(message: string) {
+      app.connectionError = message;
+      app.$.errorDialog.open();
+      while (true) {
+        await promises.sleep(5000);
+        var services: Services = null;
+        try {
+          console.log('attempting to connect');
+          services = await login(host, false);
+          break;
+        } catch (e) {
+          console.log('connection failed', e);
+          if (isPasswordError(e)) {
+            break;
+          }
+        } finally {
+          if (services) {
+            await services.socket.close();
+          }
+        }
       }
-    });
+      location.reload();
+    }
+
+    var socket = new rpc.JsonRpcSocket(apiUrl);
+    try {
+      await socket.openPromise;
+    } catch (e) {
+      await reconnect("Unable to establish websocket connection.");
+    }
+
+    if (topLevel) {
+      socket.connectionClosed.add((event) => {
+        if (event.code !== 1000) {
+          reconnect("WebSocket connection closed.");
+        }
+      });
+    }
 
     var mgr = new manager.ManagerServiceJsonRpc(socket);
-    mgr.disconnected.add((msg) => {
-      app.connectionError = "Manager connection closed.";
-      app.$.errorDialog.open();
-      setTimeout(() => {
-        console.log('reloading!');
-        location.reload();
-      }, 10000);
-    });
+    if (topLevel) {
+      mgr.disconnected.add((msg) => {
+        reconnect("Manager connection closed.");
+      });
+    }
 
     try {
       await attemptLogin(mgr, host, window.sessionStorage);
@@ -368,7 +397,11 @@ window.addEventListener('WebComponentsReady', () => {
       try {
         await attemptLogin(mgr, host, window.localStorage);
       } catch (e) {
-        await loginWithDialog(mgr, host);
+        if (topLevel) {
+          await loginWithDialog(mgr, host);
+        } else {
+          throw e;
+        }
       }
     }
     return {
