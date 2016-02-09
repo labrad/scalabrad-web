@@ -98,6 +98,9 @@ export class Plot extends polymer.Base {
   @property({type: String, value: ''})
   currPos: string;
 
+  @property({type: String, value: 'dots'})
+  drawMode2D: string;
+
   @property({type: String, value: 'zoomRect'})
   mouseMode: string;
 
@@ -126,6 +129,10 @@ export class Plot extends polymer.Base {
   private yNext: {[y: number]: number} = {};
   private dx: number = 1;
   private dy: number = 1;
+  private x0: number = null;
+  private y0: number = null;
+  private dx0: number = -1;
+  private dy0: number = -1;
 
   attached() {
     this.redraw();
@@ -181,6 +188,32 @@ export class Plot extends polymer.Base {
     }
   }
 
+  @observe('drawMode2D')
+  drawMode2DChanged(newMode: string, oldMode: string) {
+    switch (newMode) {
+      case 'dots':
+        this.$.dots.style.color = 'black';
+        this.$.rectfill.style.color = '#AAAAAA';
+        this.$.vargrid.style.color = '#AAAAAA';
+        break;
+
+      case 'rectfill':
+        this.$.dots.style.color = '#AAAAAA';
+        this.$.rectfill.style.color = 'black';
+        this.$.vargrid.style.color = '#AAAAAA';
+        break;
+
+      case 'vargrid':
+        this.$.dots.style.color = '#AAAAAA';
+        this.$.rectfill.style.color = '#AAAAAA';
+        this.$.vargrid.style.color = 'black';
+        break;
+    }
+    if (oldMode && newMode !== oldMode) {
+      setTimeout(() => this.handleZoom(), 0);
+    }
+  }
+
   @observe('numIndeps')
   numIndepsChanged(newNum: number, oldNum: number) {
     this.updatePlotStyles();
@@ -220,6 +253,19 @@ export class Plot extends polymer.Base {
 
   private mouseModeZoomRect() {
     this.mouseMode = 'zoomRect';
+  }
+
+  // Switch to specific draw modes
+  private drawMode2DDots() {
+    this.drawMode2D = 'dots';
+  }
+
+  private drawMode2DRectfill() {
+    this.drawMode2D = 'rectfill';
+  }
+
+  private drawMode2DVargrid() {
+    this.drawMode2D = 'vargrid';
   }
 
   private redraw() {
@@ -406,6 +452,11 @@ export class Plot extends polymer.Base {
     // update data limits
     for (let row of data) {
       let x = row[0];
+      if (this.x0 === null) {
+        this.x0 = x;
+      } else if (this.dx0 < 0 && x !== this.x0) {
+        this.dx0 = Math.abs(x - this.x0);
+      }
       this.dataLimits.xMin = safeMin(this.dataLimits.xMin, x);
       this.dataLimits.xMax = safeMax(this.dataLimits.xMax, x);
       if (!this.xNext.hasOwnProperty(x)) {
@@ -423,6 +474,11 @@ export class Plot extends polymer.Base {
       }
 
       let y = row[1];
+      if (this.y0 === null) {
+        this.y0 = y;
+      } else if (this.dy0 < 0 && y !== this.y0) {
+        this.dy0 = Math.abs(y - this.y0);
+      }
       this.dataLimits.yMin = safeMin(this.dataLimits.yMin, y);
       this.dataLimits.yMax = safeMax(this.dataLimits.yMax, y);
       if (!this.yNext.hasOwnProperty(y)) {
@@ -461,16 +517,51 @@ export class Plot extends polymer.Base {
 
     // add a dot to the plot
     var p = this;
-    for (let row of data) {
-      this.chartBody
-            .append('rect')
-            .datum(row)
-            .classed('data', true)
-            .attr('x', (d) => p.xScale(d[0]))
-            .attr('y', (d) => p.yScale(p.yNext[d[1]]))
-            .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
-            .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
-            .style('fill', (d) => getColor(d[2], zMin, zMax));
+    switch (this.drawMode2D) {
+    case 'dots':
+      var w = 4, h = 4;
+      for (let row of data) {
+        this.chartBody
+              .append('rect')
+              .datum(row)
+              .classed('data', true)
+              .attr('x', (d) => p.xScale(d[0]))
+              .attr('y', (d) => p.yScale(d[1]) - h)
+              .attr('width', w)
+              .attr('height', h)
+              .style('fill', (d) => getColor(d[2], zMin, zMax));
+      }
+      break;
+
+    case 'rectfill':
+      var w = Math.abs(p.xScale(this.dx0) - p.xScale(0)),
+          h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
+      for (let row of data) {
+        this.chartBody
+              .append('rect')
+              .datum(row)
+              .classed('data', true)
+              .attr('x', (d) => p.xScale(d[0]))
+              .attr('y', (d) => p.yScale(d[1]) - h)
+              .attr('width', w)
+              .attr('height', h)
+              .style('fill', (d) => getColor(d[2], zMin, zMax));
+      }
+      break;
+
+    case 'vargrid':
+      for (let row of data) {
+        this.chartBody
+              .append('rect')
+              .datum(row)
+              .classed('data', true)
+              .attr('x', (d) => p.xScale(d[0]))
+              .attr('y', (d) => p.yScale(p.yNext[d[1]]))
+              .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
+              .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
+              .style('fill', (d) => getColor(d[2], zMin, zMax));
+      }
+      break;
     }
   }
 
@@ -511,12 +602,37 @@ export class Plot extends polymer.Base {
         p = this;
 
     // adjust size, position, and color of each data rect
-    this.svg.selectAll('rect.data')
-        .attr('x', (d) => p.xScale(d[0]))
-        .attr('y', (d) => p.yScale(p.yNext[d[1]]))
-        .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
-        .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
-        .style('fill', (d) => getColor(d[2], zMin, zMax));
+    switch (this.drawMode2D) {
+    case 'dots':
+      var w = 4, h = 4;
+      this.svg.selectAll('rect.data')
+          .attr('x', (d) => p.xScale(d[0]))
+          .attr('y', (d) => p.yScale(d[1]) - h)
+          .attr('width', w)
+          .attr('height', h)
+          .style('fill', (d) => getColor(d[2], zMin, zMax));
+      break;
+
+    case 'rectfill':
+      var w = Math.abs(p.xScale(this.dx0) - p.xScale(0)),
+          h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
+      this.svg.selectAll('rect.data')
+          .attr('x', (d) => p.xScale(d[0]))
+          .attr('y', (d) => p.yScale(d[1]) - h)
+          .attr('width', w)
+          .attr('height', h)
+          .style('fill', (d) => getColor(d[2], zMin, zMax));
+      break;
+
+    case 'vargrid':
+      this.svg.selectAll('rect.data')
+          .attr('x', (d) => p.xScale(d[0]))
+          .attr('y', (d) => p.yScale(p.yNext[d[1]]))
+          .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
+          .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
+          .style('fill', (d) => getColor(d[2], zMin, zMax));
+      break;
+    }
   }
 
   // Zoom into a selected rectangular region on the graph

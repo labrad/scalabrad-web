@@ -30,6 +30,9 @@
     #home {
       margin-top: 20px;
     }
+    #dots {
+      margin-top: 40px;
+    }
   </style>
   <template>
     <div id="plot"></div>
@@ -38,6 +41,10 @@
       <paper-icon-button icon="tab-unselected" id="rect" on-click="mouseModeZoomRect" title="drag to zoom"></paper-icon-button>
       <paper-icon-button icon="open-with" id="pan" on-click="mouseModePan" title="drag to pan"></paper-icon-button>
       <paper-icon-button icon="home" id="home" on-click="resetZoom" title="zoom out"></paper-icon-button>
+
+      <paper-icon-button icon="av:stop" id="dots" on-click="drawMode2DDots" title="draw with dots"></paper-icon-button>
+      <paper-icon-button icon="dashboard" id="rectfill" on-click="drawMode2DRectfill" title="draw with rect fill"></paper-icon-button>
+      <paper-icon-button icon="view-list" id="vargrid" on-click="drawMode2DVargrid" title="draw with vargrid"></paper-icon-button>
     </div>
   </template>
 </dom-module>
