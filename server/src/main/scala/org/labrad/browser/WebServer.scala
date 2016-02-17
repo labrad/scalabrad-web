@@ -19,6 +19,7 @@ import scala.util.{Try, Success, Failure}
  * Configuration for running the labrad web interface.
  */
 case class WebServerConfig(
+  host: String,
   port: Int,
   urlPrefix: Option[String],
   managerHosts: Map[String, String]
@@ -44,6 +45,13 @@ object WebServerConfig {
     val parser = new ArgotParser("labrad-web",
       preUsage = Some("Web interface to labrad."),
       sortUsage = false
+    )
+    val hostOpt = parser.option[String](
+      names = List("host"),
+      valueName = "address",
+      description = "Address to bind for listening to incoming connections. " +
+        "If not provided, default to 127.0.0.1 to accept connections from " +
+        "localhost only. To listen on any interface, use 0.0.0.0."
     )
     val portOpt = parser.option[Int](
       names = List("http-port"),
@@ -76,6 +84,7 @@ object WebServerConfig {
       if (help.value.getOrElse(false)) parser.usage()
 
       WebServerConfig(
+        host = hostOpt.value.getOrElse("127.0.0.1"),
         port = portOpt.value.orElse(env.get("LABRADHTTPPORT").map(_.toInt)).getOrElse(7667),
         urlPrefix = urlPrefixOpt.value,
         managerHosts = managerHostsOpt.value.map { hosts =>
@@ -133,7 +142,7 @@ class WebServer(config: WebServerConfig) {
      }
    })
 
-  val channel = b.bind(config.port).sync().channel
+  val channel = b.bind(config.host, config.port).sync().channel
 
   def stop(): Unit = {
     channel.close()
