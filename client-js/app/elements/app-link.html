@@ -6,7 +6,8 @@
     extends: 'a',
 
     listeners: {
-      'click': 'onClick'
+      'click': 'onClick',
+      'tap': 'onTap'
     },
 
     onClick: function(e) {
@@ -15,6 +16,12 @@
       }
       this.fire('app-link-click', {path: this.path});
       e.preventDefault();
+      e.stopPropagation();
+    },
+
+    onTap: function(e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
   });
 })();
