@@ -407,6 +407,16 @@ window.addEventListener('WebComponentsReady', () => {
         }
       }
     }
+
+    var id = setInterval(() => {
+      mgr.ping();
+    }, 5000);
+    if (topLevel) {
+      socket.connectionClosed.add((event) => {
+        clearInterval(id);
+      })
+    }
+
     return {
       places: new Places(prefix, host),
       socket: socket,

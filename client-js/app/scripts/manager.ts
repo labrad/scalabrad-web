@@ -41,6 +41,7 @@ export interface ServerDisconnectMessage { name: string; }
 
 export interface ManagerApi {
   login(params: {username: string; password: string, host: string}): Promise<void>;
+  ping(): Promise<void>;
   connections(): Promise<Array<ConnectionInfo>>;
   connectionClose(id: number): Promise<string>;
   serverInfo(name: String): Promise<ServerInfo>;
@@ -68,6 +69,10 @@ export class ManagerServiceJsonRpc extends rpc.RpcService implements ManagerApi 
 
   login(params: {username: string; password: string; host: string}): Promise<void> {
     return this.call<void>("login", params);
+  }
+
+  ping(): Promise<void> {
+    return this.call<void>("ping", []);
   }
 
   connections(): Promise<Array<ConnectionInfo>> {

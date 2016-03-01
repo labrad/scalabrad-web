@@ -60,6 +60,9 @@ class LabradConnection(
     runSetupFuncs(cxn)
   }
 
+  def ping(): Unit = {
+  }
+
   def get: Connection = {
     cxnOpt.getOrElse { sys.error("not connected") }
   }
