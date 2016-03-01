@@ -118,6 +118,7 @@ object StaticResourceHandler {
     "htm" -> "text/html",
     "html" -> "text/html",
     "js" -> "application/javascript",
-    "ts" -> "application/x-typescript"
+    "ts" -> "application/x-typescript",
+    "png" -> "image/png"
   )
 }

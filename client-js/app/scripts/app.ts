@@ -155,6 +155,9 @@ window.addEventListener('WebComponentsReady', () => {
       }
       var newActivity = newActivityFunc(services);
       var state = await newActivity.start();
+      if (document) {
+        document.title = `${manager || "Labrad"} - ${state.route}`;
+      }
       app.route = state.route;
       if (state.breadcrumbs) {
         app.hasBreadcrumbs = true;
