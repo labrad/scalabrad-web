@@ -32,7 +32,7 @@
     #listing {
       flex-basis: 40%;
       flex-grow: 1;
-      overflow-y: scroll;
+      /*overflow-y: scroll;*/
     }
     #buttons {
       position: fixed;
@@ -74,16 +74,17 @@
     iron-icon.dataset {
       color: #209131;
     }
+
   </style>
   <template>
     <div id="outer">
     <div id="container">
-      <div id="listing">
-        <div id="buttons">
-          <paper-icon-button icon="stars" id="star" on-click="starClicked" title="show starred items"></paper-icon-button>
-          <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="show trashed items"></paper-icon-button>
-        </div>
-        <div id="list">
+    <paper-header-panel id="listing" mode="scroll" class="orange">
+      <div class="paper-header">
+        <paper-icon-button icon="stars" id="star" on-click="starClicked" title="show starred items"></paper-icon-button>
+        <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="show trashed items"></paper-icon-button>
+      </div>
+        <div class="fit">
           <table>
             <tbody is="selectable-table" selected="{{selectedId}}" attr-for-selected="selid">
               <template is="dom-repeat" items="{{listItems}}">
@@ -113,7 +114,7 @@
             </tbody>
           </table>
         </div>
-      </div>
+        </paper-header-panel>
       <div id="details">
         <h1>{{selectedDataset}}</h1>
         <template is="dom-if" if="{{selectedDataset}}">
