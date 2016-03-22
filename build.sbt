@@ -1,8 +1,7 @@
 lazy val commonSettings = Seq(
-  version := "1.0.0-M3",
+  version := "1.0.0",
   scalaVersion := "2.11.7",
-  resolvers += "bintray" at "http://jcenter.bintray.com",
-  resolvers += "bintray-maffoo" at "http://dl.bintray.com/maffoo/maven"
+  resolvers += "bintray" at "http://jcenter.bintray.com"
 )
 
 lazy val jsonrpc = project.in(file("jsonrpc"))
