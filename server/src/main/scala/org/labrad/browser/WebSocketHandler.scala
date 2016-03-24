@@ -79,7 +79,7 @@ extends SimpleChannelInboundHandler[FullHttpRequest] with Logging {
   }
 
   def keepAlive(req: FullHttpRequest, res: FullHttpResponse): Boolean = {
-    return HttpHeaderUtil.isKeepAlive(req) && res.status.code == 200
+    return HttpUtil.isKeepAlive(req) && res.status.code == 200
   }
 
   def errorResponse(status: HttpResponseStatus): FullHttpResponse = {
@@ -87,7 +87,7 @@ extends SimpleChannelInboundHandler[FullHttpRequest] with Logging {
     val buf = Unpooled.copiedBuffer(response.status.toString, UTF_8)
     response.content.writeBytes(buf)
     buf.release()
-    HttpHeaderUtil.setContentLength(response, response.content.readableBytes)
+    HttpUtil.setContentLength(response, response.content.readableBytes)
     response
   }
 }

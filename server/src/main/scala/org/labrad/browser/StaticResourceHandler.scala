@@ -73,7 +73,7 @@ class StaticResourceHandler(
 
     // create http response and set headers
     val response = new DefaultFullHttpResponse(HTTP_1_1, OK, Unpooled.wrappedBuffer(bytes))
-    HttpHeaderUtil.setContentLength(response, bytes.length)
+    HttpUtil.setContentLength(response, bytes.length)
     response.headers.set(CONTENT_TYPE, mediaType(fileType(path)))
     response.headers.set(DATE, DateFormat.print(now))
     cacheTime match {
