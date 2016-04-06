@@ -122,6 +122,16 @@
     iron-icon.key {
       color: #209131;
     }
+    .noselect {
+      -webkit-touch-callout: none; /* iOS Safari */
+      -webkit-user-select: none;   /* Chrome/Safari/Opera */
+      -khtml-user-select: none;    /* Konqueror */
+      -moz-user-select: none;      /* Firefox */
+      -ms-user-select: none;       /* IE/Edge */
+      user-select: none;           /* non-prefixed version, currently
+                                  not supported by any browser */
+      user-drag: none; 
+     }
   </style>
   <template>
     <div id="reg-area">
@@ -144,7 +154,7 @@
                     on-dragleave="onDirDragLeave"
                     on-drop="dirDrop">
                   <iron-icon icon="folder" item-icon class="folder"></iron-icon>
-                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">{{item.name}}</a>
+                  <a ondragstart="startDrag" name="{{item.name}}" class="dir" class="noselect" is="app-link" path="{{item.url}}" href="{{item.url}}">{{item.name}}</a>
                 </td>
                 <td class="label-wide"></td>
               </template>
