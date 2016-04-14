@@ -1,5 +1,5 @@
 lazy val commonSettings = Seq(
-  version := "1.0.0",
+  version := "1.0.1",
   scalaVersion := "2.11.7",
   resolvers += "bintray" at "http://jcenter.bintray.com"
 )
