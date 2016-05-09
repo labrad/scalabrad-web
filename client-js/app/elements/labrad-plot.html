@@ -54,14 +54,21 @@
       <form is="iron-form" id="formy">
       <template is="dom-repeat" items="{{deps}}">
         <div>
-          <!-- The 0 in front on {{index}} is a hack around a stupid javascript thing 
-          where value="0" makes the checkbox not exist, value="00" counts as a label :/ -->
-          <paper-checkbox checked name="traces" value="0{{index}}">{{index}}</paper-checkbox>
+          <!-- The 2 in front on {{index}} is a hack around a stupid javascript thing 
+          where value="0" makes the checkbox not exist, value="s0" counts as a label :/ -->
+          <paper-checkbox checked name="traces" value="s{{index}}">{{index}}</paper-checkbox>
           <span> - </span>
           <span>{{item.label}}</span>
         </div>
       </template>
-      <paper-button on-click="submitTraces">OK</paper-button>
+      <div id="selectButtons">
+        <paper-button >ALL</paper-button>
+        <paper-button >NONE</paper-button>
+      </div>
+      <div id="submitButtons" style="display:inline">
+        <paper-button raised on-click="submitTraces">OK</paper-button>
+        <paper-button raised dialog-dismiss>cancel</paper-button>
+      </div>
       </form>
     </paper-dialog>
   </template>

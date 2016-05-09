@@ -423,9 +423,6 @@ export class Plot extends polymer.Base {
 
   private plotData1D(data: Array<Array<number>>, lastData?: Array<number>) {
     // update data limits
-    console.log(data);
-
-//    this.parseData(data);
     for (let row of data) {
       let x = row[0];
       this.dataLimits.xMin = safeMin(this.dataLimits.xMin, x);
@@ -591,12 +588,15 @@ export class Plot extends polymer.Base {
   }
   
   private submitTraces() {
-    var selected = this.$.formy.serialize().traces;
-    this.displayTraces.splice(0, this.displayTraces.length); 
+    var selected: Array<number> = [];
+    selected = [].concat.apply(this.$.formy.serialize().traces);
+    this.displayTraces.splice(0, this.displayTraces.length);//clear displayTraces
+    console.log("Serialized Traces ", this.$.formy.serialize().traces, "as array: ", selected); 
     for (let ent of selected) {
-      this.displayTraces.push(parseInt(ent));
+      console.log(ent, parseInt(ent.substr(1), 10));
+      this.displayTraces.push(parseInt(ent.substr(1), 10));//get rid of superflous 's'
     }
-    console.log("display Traces filled: ", this.displayTraces);
+    console.log("displayTraces filled: ", selected, this.displayTraces);
     this.$.traceSelector.close();
     this.userTraces = true;
     this.redraw();
