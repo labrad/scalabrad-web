@@ -103,6 +103,9 @@ export class Plot extends polymer.Base {
 
   @property({type: String, value: 'zoomRect'})
   mouseMode: string;
+  
+  @property({type: Object, value: ''})
+  deps: any;
 
   private data: Array<Array<number>> = []
   private lastData: Array<number> = null;
@@ -133,6 +136,8 @@ export class Plot extends polymer.Base {
   private y0: number = null;
   private dx0: number = -1;
   private dy0: number = -1;
+  private displayTraces: Array<number>;
+  
 
   attached() {
     this.redraw();
@@ -385,6 +390,7 @@ export class Plot extends polymer.Base {
     if (data.length === 0) return;
 
     this.numTraces = data[0].length - 1;
+    this.displayTraces = Array.apply(null, Array(this.numTraces)).map(function (x, i) { return i; });
 
     // plot data
     switch (this.numIndeps) {
@@ -412,11 +418,14 @@ export class Plot extends polymer.Base {
 
   private plotData1D(data: Array<Array<number>>, lastData?: Array<number>) {
     // update data limits
+    console.log(data);
+    //var displayTraces = [1,5,4];
+//    this.parseData(data);
     for (let row of data) {
       let x = row[0];
       this.dataLimits.xMin = safeMin(this.dataLimits.xMin, x);
       this.dataLimits.xMax = safeMax(this.dataLimits.xMax, x);
-      for (let i = 0; i < this.numTraces; i++) {
+      for (let i of this.displayTraces) {
         let y = row[i+1];
         this.dataLimits.yMin = safeMin(this.dataLimits.yMin, y);
         this.dataLimits.yMax = safeMax(this.dataLimits.yMax, y);
@@ -428,9 +437,10 @@ export class Plot extends polymer.Base {
     this.limits.xMax = isNaN(this.dataLimits.xMax) ? 0 : this.dataLimits.xMax;
     this.limits.yMin = isNaN(this.dataLimits.yMin) ? 0 : this.dataLimits.yMin;
     this.limits.yMax = isNaN(this.dataLimits.yMax) ? 0 : this.dataLimits.yMax;
-
-    for (var i = 0; i < this.numTraces; i++) {
+    
+    for (let i of this.displayTraces) {
       // extract data for trace i, starting with the last datapoint to avoid gaps
+      
       var traceData = [];
       if (lastData) {
         traceData.push([lastData[0], lastData[i+1]]);
@@ -453,6 +463,7 @@ export class Plot extends polymer.Base {
 
   private plotData2D(data: Array<Array<number>>, lastData?: Array<number>) {
     // update data limits
+    
     for (let row of data) {
       let x = row[0];
       if (this.x0 === null) {
@@ -566,6 +577,22 @@ export class Plot extends polymer.Base {
       }
       break;
     }
+  }
+  
+  private selectTraces() {
+    this.$.traceSelector.open();
+    console.log(this.displayTraces);
+    console.log(this.deps);
+  }
+  
+  private submitTraces() {
+    this.$.formy.submit();
+    console.log(this.$.formy);
+  }
+  
+  @listen("iron-form-submit")
+  private sumitty(event) {
+    console.log(event);
   }
 
   // Reset to original window size after zoom-in

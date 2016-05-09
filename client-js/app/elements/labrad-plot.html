@@ -36,17 +36,29 @@
   </style>
   <template>
     <div id="plot"></div>
-    <div id="pos">current position: <span>{{currPos}}</span></div>
+    <div id="pos">Current position: <span>{{currPos}}</span></div>
     <div id="buttons">
       <paper-icon-button icon="tab-unselected" id="rect" on-click="mouseModeZoomRect" title="drag to zoom"></paper-icon-button>
       <paper-icon-button icon="open-with" id="pan" on-click="mouseModePan" title="drag to pan"></paper-icon-button>
       <paper-icon-button icon="home" id="home" on-click="resetZoom" title="zoom out"></paper-icon-button>
-
+      <paper-icon-button icon="list" id="home" on-click="selectTraces" title="select trace"></paper-icon-button>
       <div id="modes2d">
         <paper-icon-button icon="av:stop" id="dots" on-click="drawMode2DDots" title="draw with dots"></paper-icon-button>
         <paper-icon-button icon="dashboard" id="rectfill" on-click="drawMode2DRectfill" title="draw with rect fill"></paper-icon-button>
         <paper-icon-button icon="view-list" id="vargrid" on-click="drawMode2DVargrid" title="draw with vargrid"></paper-icon-button>
       </div>
     </div>
+    
+    <paper-dialog id="traceSelector">
+      <h1>Select Traces</h1>
+      <form is="iron-form" id="formy">
+      <template is="dom-repeat" items="{{deps}}">
+        <div>
+          <paper-checkbox checked name="foo">{{index}}</paper-checkbox> <span>{{item.label}}</span>
+        </div>
+      </template>
+      <paper-button on-click="submitTraces">OK</paper-button>
+      </form>
+    </paper-dialog>
   </template>
 </dom-module>
