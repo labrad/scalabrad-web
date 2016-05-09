@@ -1,6 +1,7 @@
 import 'd3';
 
 import {viridisData} from '../scripts/colormaps';
+import * as datavault from "../scripts/datavault";
 
 
 /**
@@ -433,7 +434,7 @@ export class Plot extends polymer.Base {
         this.dataLimits.yMax = safeMax(this.dataLimits.yMax, y);
       }
     }
-
+    this.yLabel = datavault.makeAxisLabel(this.deps[this.displayTraces[0]]);
     // update view limits
     this.limits.xMin = isNaN(this.dataLimits.xMin) ? 0 : this.dataLimits.xMin;
     this.limits.xMax = isNaN(this.dataLimits.xMax) ? 0 : this.dataLimits.xMax;

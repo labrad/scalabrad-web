@@ -52,19 +52,19 @@
     <paper-dialog id="traceSelector">
       <h1>Select Traces</h1>
       <form is="iron-form" id="selectForm">
-        <template is="dom-repeat" items="{{deps}}">
-          <div>
-            <!-- The 2 in front on {{index}} is a hack around a stupid javascript thing 
-            where value="0" makes the checkbox not exist, value="s0" counts as a label :/ -->
-            <paper-checkbox checked name="traces" value="s{{index}}">{{index}}</paper-checkbox>
-            <span> - </span>
-            <span>{{item.label}}</span>
-          </div>
-        </template>
+          <template is="dom-repeat" items="{{deps}}">
+            <div>
+              <!-- The 2 in front on {{index}} is a hack around a stupid javascript thing 
+              where value="0" makes the checkbox not exist, value="s0" counts as a label :/ -->
+              <paper-checkbox checked name="traces" value="s{{index}}">{{index}}</paper-checkbox>
+              <span> - </span>
+              <span>{{item.label}}</span>
+            </div>
+          </template>
         <div id="selectButtons">
-        <!--  -->
-          <paper-button disabled label="TODO">ALL</paper-button>
-          <paper-button disabled label="TODO">NONE</paper-button>
+        <!-- TODO implement these  -->
+          <paper-button disabled>ALL</paper-button>
+          <paper-button disabled>NONE</paper-button>
         </div>
         <div id="submitButtons" style="display:inline">
           <paper-button raised on-click="submitTraces">OK</paper-button>
