@@ -593,8 +593,8 @@ export class Plot extends polymer.Base {
       checkboxes[i].checked = true;
     }
   }
-  
-    private diselectAll() {
+
+  private deselectAll() {
     var checkboxes: any = document.getElementsByName('traces');
     for (var i = 0; i < checkboxes.length; i++){
       checkboxes[i].checked = false;

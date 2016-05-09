@@ -36,7 +36,7 @@
   </style>
   <template>
     <div id="plot"></div>
-    <div id="pos">Current position: <span>{{currPos}}</span></div>
+    <div id="pos">current position: <span>{{currPos}}</span></div>
     <div id="buttons">
       <paper-icon-button icon="tab-unselected" id="rect" on-click="mouseModeZoomRect" title="drag to zoom"></paper-icon-button>
       <paper-icon-button icon="open-with" id="pan" on-click="mouseModePan" title="drag to pan"></paper-icon-button>
@@ -71,8 +71,8 @@
       </div>
       <div id="selectButtons">
       <!-- TODO implement these  -->
-        <paper-button on-click="selectAll">ALL</paper-button>
-        <paper-button on-click="diselectAll">NONE</paper-button>
+        <paper-button on-click="selectAll">select all</paper-button>
+        <paper-button on-click="deselectAll">select none</paper-button>
       </div>
     </paper-dialog>
 
