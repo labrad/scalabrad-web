@@ -51,7 +51,8 @@
     
     <paper-dialog id="traceSelector">
       <h1>Select Traces</h1>
-      <form is="iron-form" id="selectForm">
+      <paper-dialog-scrollable>
+        <form is="iron-form" id="selectForm">
           <template is="dom-repeat" items="{{deps}}">
             <div>
               <!-- The 2 in front on {{index}} is a hack around a stupid javascript thing 
@@ -61,16 +62,18 @@
               <span>{{item.label}}</span>
             </div>
           </template>
+        </form>
+      </paper-dialog-scrollable>
+        <div id="submitButtons" style="display:inline">
+          <paper-button raised on-click="submitTraces">OK</paper-button>
+          <paper-button raised dialog-dismiss>cancel</paper-button>
+        </div>
         <div id="selectButtons">
         <!-- TODO implement these  -->
           <paper-button disabled>ALL</paper-button>
           <paper-button disabled>NONE</paper-button>
         </div>
-        <div id="submitButtons" style="display:inline">
-          <paper-button raised on-click="submitTraces">OK</paper-button>
-          <paper-button raised dialog-dismiss>cancel</paper-button>
-        </div>
-      </form>
+      
     </paper-dialog>
   </template>
 </dom-module>
