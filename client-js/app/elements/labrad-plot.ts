@@ -588,18 +588,21 @@ export class Plot extends polymer.Base {
   }
   
   private submitTraces() {
-    var selected: Array<number> = [];
-    selected = [].concat.apply(this.$.formy.serialize().traces);
-    this.displayTraces.splice(0, this.displayTraces.length);//clear displayTraces
-    console.log("Serialized Traces ", this.$.formy.serialize().traces, "as array: ", selected); 
-    for (let ent of selected) {
-      console.log(ent, parseInt(ent.substr(1), 10));
-      this.displayTraces.push(parseInt(ent.substr(1), 10));//get rid of superflous 's'
+    var selected: Array<string> = [];
+    var serialized = this.$.formy.serialize().traces;
+    if (serialized) {
+      selected = [].concat.apply(serialized); //add selected traces to an array
+      this.displayTraces.splice(0, this.displayTraces.length);//clear displayTraces
+      console.log("Serialized Traces ", serialized, "as array: ", selected); 
+      for (let ent of selected) {//complains about the
+        console.log(ent, parseInt(ent.substr(1), 10));
+        this.displayTraces.push(parseInt(ent.substr(1), 10));//get rid of superflous 's'
+      }
+      console.log("displayTraces filled: ", selected, this.displayTraces);
+      this.$.traceSelector.close();
+      this.userTraces = true;
+      this.redraw();
     }
-    console.log("displayTraces filled: ", selected, this.displayTraces);
-    this.$.traceSelector.close();
-    this.userTraces = true;
-    this.redraw();
   }
 
 
