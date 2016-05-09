@@ -237,6 +237,7 @@ export class Plot extends polymer.Base {
 
       case 2:
         this.$$('rect.background').style.fill = '#222222';
+        this.$.select.style.visibility = 'hidden';
         break;
     }
   }
@@ -587,7 +588,17 @@ export class Plot extends polymer.Base {
   }
 
   private selectAll() {
-    console.log(this.$.selectForm.traces);
+    var checkboxes: any = document.getElementsByName('traces');
+    for (var i = 0; i < checkboxes.length; i++){
+      checkboxes[i].checked = true;
+    }
+  }
+  
+    private diselectAll() {
+    var checkboxes: any = document.getElementsByName('traces');
+    for (var i = 0; i < checkboxes.length; i++){
+      checkboxes[i].checked = false;
+    }
   }
 
   private submitTraces() {

@@ -41,7 +41,7 @@
       <paper-icon-button icon="tab-unselected" id="rect" on-click="mouseModeZoomRect" title="drag to zoom"></paper-icon-button>
       <paper-icon-button icon="open-with" id="pan" on-click="mouseModePan" title="drag to pan"></paper-icon-button>
       <paper-icon-button icon="home" id="home" on-click="resetZoom" title="zoom out"></paper-icon-button>
-      <paper-icon-button icon="list" id="home" on-click="selectTraces" title="select trace"></paper-icon-button>
+      <paper-icon-button icon="list" id="select" on-click="selectTraces" title="select trace"></paper-icon-button>
       <div id="modes2d">
         <paper-icon-button icon="av:stop" id="dots" on-click="drawMode2DDots" title="draw with dots"></paper-icon-button>
         <paper-icon-button icon="dashboard" id="rectfill" on-click="drawMode2DRectfill" title="draw with rect fill"></paper-icon-button>
@@ -58,8 +58,9 @@
               <!-- The 2 in front on {{index}} is a hack around a stupid javascript thing 
               where value="0" makes the checkbox not exist, value="s0" counts as a label :/ -->
               <paper-checkbox checked name="traces" value="s{{index}}">{{index}}</paper-checkbox>
+              <span> - </span><span>{{item.label}}</span>
               <span> - </span>
-              <span>{{item.label}}</span>
+              <span>{{item.legend}}</span> [<span>{{item.unit}}</span>]
             </div>
           </template>
         </form>
@@ -70,8 +71,8 @@
       </div>
       <div id="selectButtons">
       <!-- TODO implement these  -->
-        <paper-button disabled>ALL</paper-button>
-        <paper-button disabled>NONE</paper-button>
+        <paper-button on-click="selectAll">ALL</paper-button>
+        <paper-button on-click="diselectAll">NONE</paper-button>
       </div>
     </paper-dialog>
 
