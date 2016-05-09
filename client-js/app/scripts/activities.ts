@@ -269,7 +269,6 @@ export class DatasetActivity implements Activity {
       dataset: this.dataset,
       includeParams: false
     });
-    console.log("info", info);
     var breadcrumbs = [];
     for (var i = 0; i <= this.path.length; i++) {
       breadcrumbs.push({

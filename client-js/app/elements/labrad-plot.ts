@@ -138,6 +138,7 @@ export class Plot extends polymer.Base {
   private dx0: number = -1;
   private dy0: number = -1;
   private displayTraces: Array<number>;
+  private allOrNone: boolean = true;
   
 
   attached() {
@@ -391,10 +392,8 @@ export class Plot extends polymer.Base {
     if (data.length === 0) return;
 
     this.numTraces = data[0].length - 1;
-    console.log("userTraces ", this.userTraces);
     if (!this.userTraces) {
       this.displayTraces = Array.apply(null, Array(this.numTraces)).map(function (x, i) { return i; });
-      console.log("In !userTraces ", this.displayTraces, this.numTraces);
     }
 
     // plot data
@@ -423,6 +422,7 @@ export class Plot extends polymer.Base {
 
   private plotData1D(data: Array<Array<number>>, lastData?: Array<number>) {
     // update data limits
+
     for (let row of data) {
       let x = row[0];
       this.dataLimits.xMin = safeMin(this.dataLimits.xMin, x);
@@ -442,7 +442,6 @@ export class Plot extends polymer.Base {
     
     for (let i of this.displayTraces) {
       // extract data for trace i, starting with the last datapoint to avoid gaps
-      
       var traceData = [];
       if (lastData) {
         traceData.push([lastData[0], lastData[i+1]]);
@@ -583,22 +582,21 @@ export class Plot extends polymer.Base {
   
   private selectTraces() {
     this.$.traceSelector.open();
-    console.log(this.displayTraces);
-    console.log(this.deps);
   }
-  
+
+  private selectAll() {
+    console.log(this.$.selectForm.traces);
+  }
+
   private submitTraces() {
     var selected: Array<string> = [];
-    var serialized = this.$.formy.serialize().traces;
+    var serialized = this.$.selectForm.serialize().traces;
     if (serialized) {
       selected = [].concat.apply(serialized); //add selected traces to an array
       this.displayTraces.splice(0, this.displayTraces.length);//clear displayTraces
-      console.log("Serialized Traces ", serialized, "as array: ", selected); 
-      for (let ent of selected) {//complains about the
-        console.log(ent, parseInt(ent.substr(1), 10));
+      for (let ent of selected) {
         this.displayTraces.push(parseInt(ent.substr(1), 10));//get rid of superflous 's'
       }
-      console.log("displayTraces filled: ", selected, this.displayTraces);
       this.$.traceSelector.close();
       this.userTraces = true;
       this.redraw();
