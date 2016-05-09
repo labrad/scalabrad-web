@@ -423,7 +423,8 @@ export class Plot extends polymer.Base {
 
   private plotData1D(data: Array<Array<number>>, lastData?: Array<number>) {
     // update data limits
-
+    this.dataLimits = {xMin: NaN, xMax: NaN, yMin: NaN, yMax: NaN, zMin: NaN, zMax: NaN};
+    
     for (let row of data) {
       let x = row[0];
       this.dataLimits.xMin = safeMin(this.dataLimits.xMin, x);
