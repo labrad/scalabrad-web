@@ -125,6 +125,7 @@ export class Plot extends polymer.Base {
   private limits = {xMin: 0, xMax: 1, yMin: 0, yMax: 1};
   private dataLimits = {xMin: NaN, xMax: NaN, yMin: NaN, yMax: NaN, zMin: NaN, zMax: NaN};
   private margin = {top: 50, right: 10, bottom: 50, left: 40};
+  private userTraces: boolean = false; //hack to enforce user defined display of traces
 
   private xs: Array<number> = [];
   private ys: Array<number> = [];
@@ -390,7 +391,11 @@ export class Plot extends polymer.Base {
     if (data.length === 0) return;
 
     this.numTraces = data[0].length - 1;
-    this.displayTraces = Array.apply(null, Array(this.numTraces)).map(function (x, i) { return i; });
+    console.log("userTraces ", this.userTraces);
+    if (!this.userTraces) {
+      this.displayTraces = Array.apply(null, Array(this.numTraces)).map(function (x, i) { return i; });
+      console.log("In !userTraces ", this.displayTraces, this.numTraces);
+    }
 
     // plot data
     switch (this.numIndeps) {
@@ -419,7 +424,7 @@ export class Plot extends polymer.Base {
   private plotData1D(data: Array<Array<number>>, lastData?: Array<number>) {
     // update data limits
     console.log(data);
-    //var displayTraces = [1,5,4];
+
 //    this.parseData(data);
     for (let row of data) {
       let x = row[0];
@@ -586,14 +591,17 @@ export class Plot extends polymer.Base {
   }
   
   private submitTraces() {
-    this.$.formy.submit();
-    console.log(this.$.formy);
+    var selected = this.$.formy.serialize().traces;
+    this.displayTraces.splice(0, this.displayTraces.length); 
+    for (let ent of selected) {
+      this.displayTraces.push(parseInt(ent));
+    }
+    console.log("display Traces filled: ", this.displayTraces);
+    this.$.traceSelector.close();
+    this.userTraces = true;
+    this.redraw();
   }
-  
-  @listen("iron-form-submit")
-  private sumitty(event) {
-    console.log(event);
-  }
+
 
   // Reset to original window size after zoom-in
   private resetZoom() {
