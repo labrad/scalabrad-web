@@ -539,7 +539,6 @@ export class Plot extends polymer.Base {
     case 'dots':
       var w = 4, h = 4;
       for (let row of data) {
-        //console.log("WTF", row, p.displayTraces[0] + 3, row[ p.displayTraces[0] + 3], zMax, zMin, getColor(row[3], zMax, zMin));
         this.chartBody
               .append('rect')
               .datum(row)
@@ -651,7 +650,6 @@ export class Plot extends polymer.Base {
   }
 
   private zoomData2D() {
-    console.log("zoom data?");
     var zMin = this.dataLimits.zMin,
         zMax = this.dataLimits.zMax,
         p = this;
