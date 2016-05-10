@@ -56,7 +56,7 @@
           <template is="dom-if" if="{{oneIndep}}">
             <template is="dom-repeat" items="{{deps}}">
               <div>
-                <!-- The 2 in front on {{index}} is a hack around a stupid javascript thing 
+                <!-- The 's' in front on {{index}} is a hack around a stupid javascript thing 
                 where value="0" makes the checkbox not exist, value="s0" counts as a label :/ -->
                 <paper-checkbox checked name="traces" value="s{{index}}">{{index}}</paper-checkbox>
                 <span> - </span><span>{{item.label}}</span>
@@ -70,6 +70,8 @@
             </div>
           </template>
           <template is="dom-if" if="{{!oneIndep}}">
+            <!-- The 's' in front on {{index}} is a hack around a stupid javascript thing 
+            where value="0" makes the checkbox not exist, value="s0" counts as a label :/ -->
             <paper-radio-group selected="s0">
               <template is="dom-repeat" items="{{deps}}">
                 <paper-radio-button name="s{{index}}">
