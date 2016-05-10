@@ -53,15 +53,32 @@
       <h1>Select Traces</h1>
       <paper-dialog-scrollable>
         <form is="iron-form" id="selectForm">
-          <template is="dom-repeat" items="{{deps}}">
-            <div>
-              <!-- The 2 in front on {{index}} is a hack around a stupid javascript thing 
-              where value="0" makes the checkbox not exist, value="s0" counts as a label :/ -->
-              <paper-checkbox checked name="traces" value="s{{index}}">{{index}}</paper-checkbox>
-              <span> - </span><span>{{item.label}}</span>
-              <span> - </span>
-              <span>{{item.legend}}</span> [<span>{{item.unit}}</span>]
+          <template is="dom-if" if="{{oneIndep}}">
+            <template is="dom-repeat" items="{{deps}}">
+              <div>
+                <!-- The 2 in front on {{index}} is a hack around a stupid javascript thing 
+                where value="0" makes the checkbox not exist, value="s0" counts as a label :/ -->
+                <paper-checkbox checked name="traces" value="s{{index}}">{{index}}</paper-checkbox>
+                <span> - </span><span>{{item.label}}</span>
+                <span> - </span>
+                <span>{{item.legend}}</span> [<span>{{item.unit}}</span>]
+              </div>
+            </template>
+            <div id="selectButtons">
+              <paper-button on-click="selectAll">select all</paper-button>
+              <paper-button on-click="deselectAll">select none</paper-button>
             </div>
+          </template>
+          <template is="dom-if" if="{{!oneIndep}}">
+            <paper-radio-group selected="s0">
+              <template is="dom-repeat" items="{{deps}}">
+                <paper-radio-button name="s{{index}}">
+                  <span>{{item.label}}</span>
+                  <span> - </span>
+                  <span>{{item.legend}}</span> [<span>{{item.unit}}</span>]
+                </paper-radio-button>
+              </template>
+            </paper-radio-group>
           </template>
         </form>
       </paper-dialog-scrollable>
@@ -69,11 +86,7 @@
         <paper-button raised on-click="submitTraces">OK</paper-button>
         <paper-button raised dialog-dismiss>cancel</paper-button>
       </div>
-      <div id="selectButtons">
-      <!-- TODO implement these  -->
-        <paper-button on-click="selectAll">select all</paper-button>
-        <paper-button on-click="deselectAll">select none</paper-button>
-      </div>
+
     </paper-dialog>
 
   </template>

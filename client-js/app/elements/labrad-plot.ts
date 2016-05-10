@@ -140,7 +140,7 @@ export class Plot extends polymer.Base {
   private dy0: number = -1;
   private displayTraces: Array<number>;
   private allOrNone: boolean = true;
-  
+  private oneIndep: boolean;
 
   attached() {
     this.redraw();
@@ -233,11 +233,12 @@ export class Plot extends polymer.Base {
       case 1:
         this.$$('rect.background').style.fill = '#ffffff';
         this.$.modes2d.style.visibility = 'hidden';
+        this.oneIndep = true;
         break;
 
       case 2:
         this.$$('rect.background').style.fill = '#222222';
-//        this.$.select.style.visibility = 'hidden';
+        this.oneIndep = false;
         break;
     }
   }
@@ -514,7 +515,6 @@ export class Plot extends polymer.Base {
       }
 
         let z = row[this.displayTraces[0]+2];
-        console.log("z", row[0], row[1], row[2] , row[3], "trace to display: ", this.displayTraces[0] + 2);
         this.dataLimits.zMin = safeMin(this.dataLimits.zMin, z);
         this.dataLimits.zMax = safeMax(this.dataLimits.zMax, z);
       //}
@@ -604,7 +604,16 @@ export class Plot extends polymer.Base {
 
   private submitTraces() {
     var selected: Array<string> = [];
-    var serialized = this.$.selectForm.serialize().traces;
+    var serialized: Array<string>;
+    switch (this.numIndeps) {
+      case 1:
+        serialized = this.$.selectForm.serialize().traces;
+        break;
+
+      case 2:
+        serialized = Object.keys(this.$.selectForm.serialize());
+        break;
+    }
     if (serialized) {
       selected = [].concat.apply(serialized); //add selected traces to an array
       this.displayTraces.splice(0, this.displayTraces.length);//clear displayTraces
