@@ -237,7 +237,7 @@ export class Plot extends polymer.Base {
 
       case 2:
         this.$$('rect.background').style.fill = '#222222';
-        this.$.select.style.visibility = 'hidden';
+//        this.$.select.style.visibility = 'hidden';
         break;
     }
   }
@@ -467,7 +467,7 @@ export class Plot extends polymer.Base {
 
   private plotData2D(data: Array<Array<number>>, lastData?: Array<number>) {
     // update data limits
-    
+
     for (let row of data) {
       let x = row[0];
       if (this.x0 === null) {
@@ -513,11 +513,11 @@ export class Plot extends polymer.Base {
         }
       }
 
-      for (let i = 2; i < row.length; i++) {
-        let z = row[i];
+        let z = row[this.displayTraces[0]+2];
+        console.log("z", row[0], row[1], row[2] , row[3], "trace to display: ", this.displayTraces[0] + 2);
         this.dataLimits.zMin = safeMin(this.dataLimits.zMin, z);
         this.dataLimits.zMax = safeMax(this.dataLimits.zMax, z);
-      }
+      //}
     }
 
     // update view limits
@@ -539,6 +539,7 @@ export class Plot extends polymer.Base {
     case 'dots':
       var w = 4, h = 4;
       for (let row of data) {
+        //console.log("WTF", row, p.displayTraces[0] + 3, row[ p.displayTraces[0] + 3], zMax, zMin, getColor(row[3], zMax, zMin));
         this.chartBody
               .append('rect')
               .datum(row)
@@ -547,7 +548,7 @@ export class Plot extends polymer.Base {
               .attr('y', (d) => p.yScale(d[1]) - h)
               .attr('width', w)
               .attr('height', h)
-              .style('fill', (d) => getColor(d[2], zMin, zMax));
+              .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
       }
       break;
 
@@ -563,12 +564,13 @@ export class Plot extends polymer.Base {
               .attr('y', (d) => p.yScale(d[1]) - h)
               .attr('width', w)
               .attr('height', h)
-              .style('fill', (d) => getColor(d[2], zMin, zMax));
+              .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
       }
       break;
 
     case 'vargrid':
       for (let row of data) {
+        
         this.chartBody
               .append('rect')
               .datum(row)
@@ -577,7 +579,7 @@ export class Plot extends polymer.Base {
               .attr('y', (d) => p.yScale(p.yNext[d[1]]))
               .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
               .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
-              .style('fill', (d) => getColor(d[2], zMin, zMax));
+              .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
       }
       break;
     }
@@ -649,6 +651,7 @@ export class Plot extends polymer.Base {
   }
 
   private zoomData2D() {
+    console.log("zoom data?");
     var zMin = this.dataLimits.zMin,
         zMax = this.dataLimits.zMax,
         p = this;
@@ -662,7 +665,7 @@ export class Plot extends polymer.Base {
           .attr('y', (d) => p.yScale(d[1]) - h)
           .attr('width', w)
           .attr('height', h)
-          .style('fill', (d) => getColor(d[2], zMin, zMax));
+          .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
       break;
 
     case 'rectfill':
@@ -673,7 +676,7 @@ export class Plot extends polymer.Base {
           .attr('y', (d) => p.yScale(d[1]) - h)
           .attr('width', w)
           .attr('height', h)
-          .style('fill', (d) => getColor(d[2], zMin, zMax));
+          .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
       break;
 
     case 'vargrid':
@@ -682,7 +685,7 @@ export class Plot extends polymer.Base {
           .attr('y', (d) => p.yScale(p.yNext[d[1]]))
           .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
           .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
-          .style('fill', (d) => getColor(d[2], zMin, zMax));
+          .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
       break;
     }
   }

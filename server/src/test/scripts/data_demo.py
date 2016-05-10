@@ -66,6 +66,20 @@ def demo_2d_simple(dv):
             dv.add([x, y, z])
             time.sleep(0.002)
 
+@demo
+def demo_2d_multi(dv):
+    dv.new('demo_2d_multi', ['x [GHz]', 'y [V]'],
+	   ['z1 [a.u.]', 'z2 [a.u]'])
+    add_params(dv)
+    for i in xrange(50):
+        x = i / 10
+        for j in xrange(50):
+            y = j / 10
+            z1 = 5 * math.cos((x**2 + y**2) / 10) + random.random() - 0.5
+	    z2 = 5 * 0
+            dv.add([x, y, z1, z2])
+            time.sleep(0.002)
+
 
 @demo
 def demo_2d_vargrid(dv):
