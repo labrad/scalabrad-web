@@ -5,7 +5,8 @@
 This project aims to implement a web-based graphical interface to labrad.
 The web server is written in scala (http://scala-lang.org) and built with sbt (http://scala-sbt.org).
 
-To run the server in production mode, download and extract a pre-built binary package from bintray: https://bintray.com/labrad/generic/scalabrad-web.
+To run the server in production mode, download and extract a pre-built binary package from bintray
+(https://bintray.com/labrad/generic/scalabrad-web, then select the latest version and then "Files").
 The extracted archive includes a startup script in its `bin/` directory.
 This will start a webserver which you can see by browsing to `localhost:7667`.
 
