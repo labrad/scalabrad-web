@@ -583,47 +583,50 @@ export class Plot extends polymer.Base {
       break;
     }
   }
-  
+
   private selectTraces() {
     this.$.traceSelector.open();
   }
 
   private selectAll() {
-    var checkboxes: any = document.getElementsByName('traces');
-    for (var i = 0; i < checkboxes.length; i++){
-      checkboxes[i].checked = true;
+    var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
+    for (let checkbox of checkboxes) {
+      (<HTMLInputElement>checkbox).checked = true;
     }
   }
 
   private deselectAll() {
-    var checkboxes: any = document.getElementsByName('traces');
-    for (var i = 0; i < checkboxes.length; i++){
-      checkboxes[i].checked = false;
+    var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
+    for (let checkbox of checkboxes) {
+      (<HTMLInputElement>checkbox).checked = false;
     }
   }
 
   private submitTraces() {
-    var selected: Array<string> = [];
-    var serialized: Array<string>;
+    var selected: Array<number> = [];
+    var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
     switch (this.numIndeps) {
       case 1:
-        serialized = this.$.selectForm.serialize().traces;
+        for (let checkbox of checkboxes) {
+          if (checkbox.checked) {
+            selected.push(checkbox.dataIndex);
+          }
+        }
         break;
 
       case 2:
-        serialized = Object.keys(this.$.selectForm.serialize());
+        //serialized = Object.keys(this.$.selectForm.serialize());
         break;
     }
-    if (serialized) {
-      selected = [].concat.apply(serialized); //add selected traces to an array
-      this.displayTraces.splice(0, this.displayTraces.length);//clear displayTraces
-      for (let ent of selected) {
-        this.displayTraces.push(parseInt(ent.substr(1), 10));//get rid of superflous 's'
-      }
-      this.$.traceSelector.close();
-      this.userTraces = true;
-      this.redraw();
+    console.log("selected Traces: ", selected);
+    this.displayTraces.splice(0, this.displayTraces.length);//clear displayTraces
+    for (let ent of selected) {
+      this.displayTraces.push(ent);
     }
+    console.log("this.displayTraces: ", this.displayTraces);
+    this.$.traceSelector.close();
+    this.userTraces = true;
+    this.redraw();
   }
 
 

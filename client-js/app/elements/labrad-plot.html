@@ -58,7 +58,7 @@
               <div>
                 <!-- The 's' in front on {{index}} is a hack around a stupid javascript thing 
                 where value="0" makes the checkbox not exist, value="s0" counts as a label :/ -->
-                <paper-checkbox checked name="traces" value="s{{index}}">{{index}}</paper-checkbox>
+                <paper-checkbox checked name="traces" data-index="{{index}}">{{index}}</paper-checkbox>
                 <span> - </span><span>{{item.label}}</span>
                 <span> - </span>
                 <span>{{item.legend}}</span> [<span>{{item.unit}}</span>]
