@@ -614,13 +614,13 @@ export class Plot extends polymer.Base {
       case 1:
         for (let checkbox of checkboxes) {
           if ((<HTMLInputElement>checkbox).checked) {
-            selected.push((<CustomSelector>checkbox).dataIndex);
+            selected.push((<any>checkbox).traceIndex);
           }
         }
         break;
 
       case 2:
-        selected.push(parseInt((<CustomSelector>radio).selected)); 
+        selected.push(parseInt((<any>radio).selected)); 
         break;
     }
     console.log("selected Traces: ", selected);
@@ -808,10 +808,5 @@ function prettyNumber(value: number, min: number, max: number, res: number): str
   } else {
     return exp;
   }
-}
-class CustomSelector extends HTMLElement {
-  //Is this a hack?
-  selected: string;
-  dataIndex: number;
 }
 

@@ -58,7 +58,7 @@
           <template is="dom-if" if="{{is1D}}">
             <template is="dom-repeat" items="{{deps}}">
               <div>
-                <paper-checkbox checked name="traces" data-index="{{index}}">{{index}}</paper-checkbox>
+                <paper-checkbox checked name="traces" trace-index="{{index}}">{{index}}</paper-checkbox>
                 <span> - </span><span>{{item.label}}</span>
                 (<span>{{item.legend}}</span>) [<span>{{item.unit}}</span>]
               </div>
