@@ -105,8 +105,8 @@ export class Plot extends polymer.Base {
   @property({type: String, value: 'zoomRect'})
   mouseMode: string;
   
-  @property({type: Object, value: ''})
-  deps: any;
+  @property({type: Array})
+  deps: Array<{label: string, legend: string, unit: string}>;
 
   private data: Array<Array<number>> = []
   private lastData: Array<number> = null;
@@ -140,7 +140,9 @@ export class Plot extends polymer.Base {
   private dy0: number = -1;
   private displayTraces: Array<number>;
   private allOrNone: boolean = true;
-  private oneIndep: boolean;
+  private is1D: boolean;
+  private is2D: boolean;
+  private displaySurface: number = 2;
 
   attached() {
     this.redraw();
@@ -233,12 +235,14 @@ export class Plot extends polymer.Base {
       case 1:
         this.$$('rect.background').style.fill = '#ffffff';
         this.$.modes2d.style.visibility = 'hidden';
-        this.oneIndep = true;
+        this.is1D = true;
+        this.is2D = false;
         break;
 
       case 2:
         this.$$('rect.background').style.fill = '#222222';
-        this.oneIndep = false;
+        this.is1D = false;
+        this.is2D = true;
         break;
     }
   }
@@ -514,10 +518,9 @@ export class Plot extends polymer.Base {
         }
       }
 
-        let z = row[this.displayTraces[0]+2];
+        let z = row[this.displaySurface];
         this.dataLimits.zMin = safeMin(this.dataLimits.zMin, z);
         this.dataLimits.zMax = safeMax(this.dataLimits.zMax, z);
-      //}
     }
 
     // update view limits
@@ -547,7 +550,7 @@ export class Plot extends polymer.Base {
               .attr('y', (d) => p.yScale(d[1]) - h)
               .attr('width', w)
               .attr('height', h)
-              .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
+              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       }
       break;
 
@@ -563,7 +566,7 @@ export class Plot extends polymer.Base {
               .attr('y', (d) => p.yScale(d[1]) - h)
               .attr('width', w)
               .attr('height', h)
-              .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
+              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       }
       break;
 
@@ -578,7 +581,7 @@ export class Plot extends polymer.Base {
               .attr('y', (d) => p.yScale(p.yNext[d[1]]))
               .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
               .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
-              .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
+              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       }
       break;
     }
@@ -586,6 +589,7 @@ export class Plot extends polymer.Base {
 
   private selectTraces() {
     this.$.traceSelector.open();
+
   }
 
   private selectAll() {
@@ -605,28 +609,32 @@ export class Plot extends polymer.Base {
   private submitTraces() {
     var selected: Array<number> = [];
     var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
+    var radio = Polymer.dom(this.$.traceSelector).querySelector('[name=radioGroup]');
     switch (this.numIndeps) {
       case 1:
         for (let checkbox of checkboxes) {
-          if (checkbox.checked) {
-            selected.push(checkbox.dataIndex);
+          if ((<HTMLInputElement>checkbox).checked) {
+            selected.push((<HTMLElement><any>checkbox).dataIndex);
           }
         }
         break;
 
       case 2:
-        //serialized = Object.keys(this.$.selectForm.serialize());
+        selected.push(parseInt((<HTMLElement><any>radio).selected)); 
         break;
     }
     console.log("selected Traces: ", selected);
-    this.displayTraces.splice(0, this.displayTraces.length);//clear displayTraces
-    for (let ent of selected) {
-      this.displayTraces.push(ent);
+    if (selected.length > 0) {
+      this.displayTraces.splice(0, this.displayTraces.length);
+      for (let ent of selected) {
+        this.displayTraces.push(ent);
+      }
+      console.log("this.displayTraces: ", this.displayTraces);
+      this.displaySurface = this.displayTraces[0] + 2;
+      this.$.traceSelector.close();
+      this.userTraces = true;
+      this.redraw();
     }
-    console.log("this.displayTraces: ", this.displayTraces);
-    this.$.traceSelector.close();
-    this.userTraces = true;
-    this.redraw();
   }
 
 
@@ -675,7 +683,7 @@ export class Plot extends polymer.Base {
           .attr('y', (d) => p.yScale(d[1]) - h)
           .attr('width', w)
           .attr('height', h)
-          .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
+          .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       break;
 
     case 'rectfill':
@@ -686,7 +694,7 @@ export class Plot extends polymer.Base {
           .attr('y', (d) => p.yScale(d[1]) - h)
           .attr('width', w)
           .attr('height', h)
-          .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
+          .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       break;
 
     case 'vargrid':
@@ -695,7 +703,7 @@ export class Plot extends polymer.Base {
           .attr('y', (d) => p.yScale(p.yNext[d[1]]))
           .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
           .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
-          .style('fill', (d) => getColor(d[p.displayTraces[0] + 2], zMin, zMax));
+          .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       break;
     }
   }
