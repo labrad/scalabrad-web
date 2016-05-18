@@ -289,6 +289,7 @@ export class DatasetActivity implements Activity {
       plot.setAttribute('class', 'flex');
       plot.numIndeps = info.independents.length;
       plot.xLabel = datavault.makeAxisLabel(info.independents[0]);
+      plot.deps = info.dependents;
       if (plot.numIndeps == 1) {
         plot.yLabel = datavault.makeAxisLabel(info.dependents[0]);
       } else {

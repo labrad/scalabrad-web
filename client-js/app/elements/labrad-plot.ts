@@ -1,6 +1,7 @@
 import 'd3';
 
 import {viridisData} from '../scripts/colormaps';
+import * as datavault from "../scripts/datavault";
 
 
 /**
@@ -103,6 +104,9 @@ export class Plot extends polymer.Base {
 
   @property({type: String, value: 'zoomRect'})
   mouseMode: string;
+  
+  @property({type: Array})
+  deps: Array<{label: string, legend: string, unit: string}>;
 
   private data: Array<Array<number>> = []
   private lastData: Array<number> = null;
@@ -122,6 +126,7 @@ export class Plot extends polymer.Base {
   private limits = {xMin: 0, xMax: 1, yMin: 0, yMax: 1};
   private dataLimits = {xMin: NaN, xMax: NaN, yMin: NaN, yMax: NaN, zMin: NaN, zMax: NaN};
   private margin = {top: 50, right: 10, bottom: 50, left: 40};
+  private userTraces: boolean = false; //hack to enforce user defined display of traces
 
   private xs: Array<number> = [];
   private ys: Array<number> = [];
@@ -133,6 +138,11 @@ export class Plot extends polymer.Base {
   private y0: number = null;
   private dx0: number = -1;
   private dy0: number = -1;
+  private displayTraces: Array<number>;
+  private allOrNone: boolean = true;
+  private is1D: boolean;
+  private is2D: boolean;
+  private displaySurface: number = 2;
 
   attached() {
     this.redraw();
@@ -225,10 +235,14 @@ export class Plot extends polymer.Base {
       case 1:
         this.$$('rect.background').style.fill = '#ffffff';
         this.$.modes2d.style.visibility = 'hidden';
+        this.is1D = true;
+        this.is2D = false;
         break;
 
       case 2:
         this.$$('rect.background').style.fill = '#222222';
+        this.is1D = false;
+        this.is2D = true;
         break;
     }
   }
@@ -385,6 +399,9 @@ export class Plot extends polymer.Base {
     if (data.length === 0) return;
 
     this.numTraces = data[0].length - 1;
+    if (!this.userTraces) {
+      this.displayTraces = Array.apply(null, Array(this.numTraces)).map(function (x, i) { return i; });
+    }
 
     // plot data
     switch (this.numIndeps) {
@@ -412,24 +429,26 @@ export class Plot extends polymer.Base {
 
   private plotData1D(data: Array<Array<number>>, lastData?: Array<number>) {
     // update data limits
+    this.dataLimits = {xMin: NaN, xMax: NaN, yMin: NaN, yMax: NaN, zMin: NaN, zMax: NaN};
+    
     for (let row of data) {
       let x = row[0];
       this.dataLimits.xMin = safeMin(this.dataLimits.xMin, x);
       this.dataLimits.xMax = safeMax(this.dataLimits.xMax, x);
-      for (let i = 0; i < this.numTraces; i++) {
+      for (let i of this.displayTraces) {
         let y = row[i+1];
         this.dataLimits.yMin = safeMin(this.dataLimits.yMin, y);
         this.dataLimits.yMax = safeMax(this.dataLimits.yMax, y);
       }
     }
-
+    this.yLabel = datavault.makeAxisLabel(this.deps[this.displayTraces[0]]);
     // update view limits
     this.limits.xMin = isNaN(this.dataLimits.xMin) ? 0 : this.dataLimits.xMin;
     this.limits.xMax = isNaN(this.dataLimits.xMax) ? 0 : this.dataLimits.xMax;
     this.limits.yMin = isNaN(this.dataLimits.yMin) ? 0 : this.dataLimits.yMin;
     this.limits.yMax = isNaN(this.dataLimits.yMax) ? 0 : this.dataLimits.yMax;
-
-    for (var i = 0; i < this.numTraces; i++) {
+    
+    for (let i of this.displayTraces) {
       // extract data for trace i, starting with the last datapoint to avoid gaps
       var traceData = [];
       if (lastData) {
@@ -453,6 +472,7 @@ export class Plot extends polymer.Base {
 
   private plotData2D(data: Array<Array<number>>, lastData?: Array<number>) {
     // update data limits
+
     for (let row of data) {
       let x = row[0];
       if (this.x0 === null) {
@@ -498,11 +518,9 @@ export class Plot extends polymer.Base {
         }
       }
 
-      for (let i = 2; i < row.length; i++) {
-        let z = row[i];
+        let z = row[this.displaySurface];
         this.dataLimits.zMin = safeMin(this.dataLimits.zMin, z);
         this.dataLimits.zMax = safeMax(this.dataLimits.zMax, z);
-      }
     }
 
     // update view limits
@@ -532,7 +550,7 @@ export class Plot extends polymer.Base {
               .attr('y', (d) => p.yScale(d[1]) - h)
               .attr('width', w)
               .attr('height', h)
-              .style('fill', (d) => getColor(d[2], zMin, zMax));
+              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       }
       break;
 
@@ -548,12 +566,13 @@ export class Plot extends polymer.Base {
               .attr('y', (d) => p.yScale(d[1]) - h)
               .attr('width', w)
               .attr('height', h)
-              .style('fill', (d) => getColor(d[2], zMin, zMax));
+              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       }
       break;
 
     case 'vargrid':
       for (let row of data) {
+        
         this.chartBody
               .append('rect')
               .datum(row)
@@ -562,11 +581,62 @@ export class Plot extends polymer.Base {
               .attr('y', (d) => p.yScale(p.yNext[d[1]]))
               .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
               .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
-              .style('fill', (d) => getColor(d[2], zMin, zMax));
+              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       }
       break;
     }
   }
+
+  private selectTraces() {
+    this.$.traceSelector.open();
+
+  }
+
+  private selectAll() {
+    var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
+    for (let checkbox of checkboxes) {
+      (<HTMLInputElement>checkbox).checked = true;
+    }
+  }
+
+  private deselectAll() {
+    var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
+    for (let checkbox of checkboxes) {
+      (<HTMLInputElement>checkbox).checked = false;
+    }
+  }
+
+  private submitTraces() {
+    var selected: Array<number> = [];
+    var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
+    var radio = Polymer.dom(this.$.traceSelector).querySelector('[name=radioGroup]');
+    switch (this.numIndeps) {
+      case 1:
+        for (let checkbox of checkboxes) {
+          if ((<HTMLInputElement>checkbox).checked) {
+            selected.push((<any>checkbox).traceIndex);
+          }
+        }
+        break;
+
+      case 2:
+        selected.push(parseInt((<any>radio).selected)); 
+        break;
+    }
+    console.log("selected Traces: ", selected);
+    if (selected.length > 0) {
+      this.displayTraces.splice(0, this.displayTraces.length);
+      for (let ent of selected) {
+        this.displayTraces.push(ent);
+      }
+      console.log("this.displayTraces: ", this.displayTraces);
+      this.displaySurface = this.displayTraces[0] + 2;
+      this.$.traceSelector.close();
+      this.userTraces = true;
+      this.redraw();
+    }
+  }
+
 
   // Reset to original window size after zoom-in
   private resetZoom() {
@@ -613,7 +683,7 @@ export class Plot extends polymer.Base {
           .attr('y', (d) => p.yScale(d[1]) - h)
           .attr('width', w)
           .attr('height', h)
-          .style('fill', (d) => getColor(d[2], zMin, zMax));
+          .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       break;
 
     case 'rectfill':
@@ -624,7 +694,7 @@ export class Plot extends polymer.Base {
           .attr('y', (d) => p.yScale(d[1]) - h)
           .attr('width', w)
           .attr('height', h)
-          .style('fill', (d) => getColor(d[2], zMin, zMax));
+          .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       break;
 
     case 'vargrid':
@@ -633,7 +703,7 @@ export class Plot extends polymer.Base {
           .attr('y', (d) => p.yScale(p.yNext[d[1]]))
           .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
           .attr('height', (d) => Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1])))
-          .style('fill', (d) => getColor(d[2], zMin, zMax));
+          .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       break;
     }
   }
