@@ -93,9 +93,21 @@ window.addEventListener('WebComponentsReady', () => {
   LabeledPlot.register();
 
   var prefix = "";
-  var prefixElem = document.querySelector("base");
-  if (prefixElem !== null) {
-    prefix = prefixElem.getAttribute("href");
+  var baseElem = document.querySelector("base");
+  if (baseElem !== null) {
+    var href = baseElem.getAttribute("href");
+
+    // If href does not end with a trailing slash, remove the last segment.
+    // Resolving relative URLs against /a/b/c.html is the same as against /a/b/
+    // and we don't want c.html in the prefix.
+    if (!href.endsWith("/")) {
+      var segments = href.split("/");
+      segments[segments.length - 1] = "";
+      href = segments.join("/");
+    }
+
+    // Strip trailing slash, since routes have leading slash already.
+    prefix = href.substring(0, href.length - 1);
   }
   console.log('urlPrefix', prefix);
 
