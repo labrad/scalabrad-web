@@ -23,7 +23,8 @@ case class WebServerConfig(
   host: String,
   port: Int,
   urlPrefix: Option[String],
-  managerHosts: Map[String, String]
+  managerHosts: Map[String, String],
+  managerSuffix: Option[String]
 )
 
 object WebServerConfig {
@@ -77,6 +78,16 @@ object WebServerConfig {
         "in the form alias=hostname, for example: " +
         "foo=foo.example.com,bar=bar.example.com"
     )
+    val managerSuffixOpt = parser.option[String](
+      names = List("manager-suffix"),
+      valueName = "string",
+      description = "A suffix that will be appended to manager host names " +
+        "specified without any periods in the application url. This is an " +
+        "alternative to using an explicit list of aliases in manager-hosts. " +
+        "If you specify manager-suffix as .example.com, then trying to " +
+        "connect to either foo or bar would instead connect to " +
+        "foo.example.com or bar.example.com, respectively."
+    )
     val help = parser.flag[Boolean](List("h", "help"),
       "Print usage information and exit")
 
@@ -93,7 +104,8 @@ object WebServerConfig {
             val Array(alias, hostname) = pair.split("=")
             (alias, hostname)
           }.toMap
-        }.getOrElse(Map())
+        }.getOrElse(Map()),
+        managerSuffix = managerSuffixOpt.value
       )
     }
   }
@@ -123,7 +135,8 @@ class WebServer(config: WebServerConfig) {
     }
   }
   val appFunc = () => staticHandler.makeResponse(appPath, appBytes)
-  val connectionConfig = LabradConnectionConfig(config.managerHosts)
+  val connectionConfig = LabradConnectionConfig(config.managerHosts,
+                                                config.managerSuffix)
 
   val b = new ServerBootstrap()
   b.group(bossGroup, workerGroup)

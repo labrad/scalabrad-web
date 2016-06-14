@@ -9,7 +9,10 @@ import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 
-case class LabradConnectionConfig(hosts: Map[String, String])
+case class LabradConnectionConfig(
+  hosts: Map[String, String],
+  suffix: Option[String]
+)
 
 object LabradConnection {
   val timer = new Timer(true)
@@ -45,7 +48,13 @@ class LabradConnection(
   }
 
   def login(username: String, password: String, host: String/* = ""*/): Unit = {
-    val hostname = config.hosts.get(host).getOrElse(host)
+    val hostname = config.hosts.get(host).getOrElse {
+      if (!host.isEmpty && !host.contains(".")) {
+        host + config.suffix.getOrElse("")
+      } else {
+        host
+      }
+    }
     if (hostname == host) {
       println(s"logging in to host: '$host'")
     } else {
