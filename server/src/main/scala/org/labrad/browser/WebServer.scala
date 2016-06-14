@@ -11,6 +11,7 @@ import io.netty.handler.logging.{LogLevel, LoggingHandler}
 import java.nio.charset.StandardCharsets.UTF_8
 import org.clapper.argot._
 import org.clapper.argot.ArgotConverters._
+import org.jsoup.Jsoup
 import org.labrad.util.Util
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Try, Success, Failure}
@@ -113,8 +114,12 @@ class WebServer(config: WebServerConfig) {
       case None => (path, bytes)
       case Some(prefix) =>
         val appString = new String(bytes, UTF_8)
-        val newAppString = appString.replace("__LABRAD_URL_PREFIX__", prefix)
-        (path, newAppString.getBytes(UTF_8))
+        val appDom = Jsoup.parse(appString)
+
+        // Change the page base url to match urlPrefix
+        appDom.getElementsByTag("base").first().attr("href", prefix)
+
+        (path, appDom.toString.getBytes(UTF_8))
     }
   }
   val appFunc = () => staticHandler.makeResponse(appPath, appBytes)

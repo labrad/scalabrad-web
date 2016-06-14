@@ -7,11 +7,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LabRAD</title>
 
+  <!-- Resolve relative URLs against the root path, not the current route path -->
+  <base href="/">
+
   <!-- Chrome for Android theme color -->
   <meta name="theme-color" content="#303F9F">
 
   <!-- Web Application Manifest -->
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="manifest.json">
 
   <!-- Tile color for Win8 -->
   <meta name="msapplication-TileColor" content="#3372DF">
@@ -19,20 +22,20 @@
   <!-- Add to homescreen for Chrome on Android -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="application-name" content="LabRAD">
-  <link rel="icon" href="/images/labrad.png">
+  <link rel="icon" href="images/labrad.png">
 
   <!-- Add to homescreen for Safari on iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="LabRAD">
-  <link rel="apple-touch-icon" href="/images/touch/apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="images/touch/apple-touch-icon.png">
 
   <!-- Tile icon for Win8 (144x144) -->
-  <meta name="msapplication-TileImage" content="/images/touch/ms-touch-icon-144x144-precomposed.png">
+  <meta name="msapplication-TileImage" content="images/touch/ms-touch-icon-144x144-precomposed.png">
 
-  <link rel="stylesheet" href="/styles/main.css">
-  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-  <link rel="import" href="/elements/elements.html">
+  <link rel="stylesheet" href="styles/main.css">
+  <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="elements/elements.html">
 
   <!-- Dev mode configuration. The following comment is a placeholder
        that gets replaced in dev mode by an inline script that configures
@@ -40,14 +43,9 @@
        websocket api connections should be made. Comments are stripped
        when we built the dist version, so this has no effect in prod. -->
   <!-- DEV_MODE_CONFIG -->
-
-  <script type="application/javascript">
-    window['org.labrad.urlPrefix'] = "__LABRAD_URL_PREFIX__";
-    window['org.labrad.managers'] = "__LABRAD_MANAGERS__";
-  </script>
 </head>
 
 <body unresolved class="fullbleed layout vertical">
-  <script src="/scripts/bundle.js"></script>
+  <script src="scripts/bundle.js"></script>
 </body>
 </html>

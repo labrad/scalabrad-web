@@ -92,16 +92,12 @@ window.addEventListener('WebComponentsReady', () => {
   Plot.register();
   LabeledPlot.register();
 
-  var prefix = window['org.labrad.urlPrefix'];
-  if (prefix == "__LABRAD_URL_PREFIX__") {
-    prefix = "";
+  var prefix = "";
+  var prefixElem = document.querySelector("base");
+  if (prefixElem !== null) {
+    prefix = prefixElem.getAttribute("href");
   }
   console.log('urlPrefix', prefix);
-
-  var managers = window['org.labrad.managers'];
-  if (managers == "__LABRAD_MANAGERS__") {
-    managers = [];
-  }
 
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
