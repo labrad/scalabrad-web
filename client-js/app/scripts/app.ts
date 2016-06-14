@@ -111,6 +111,17 @@ window.addEventListener('WebComponentsReady', () => {
   }
   console.log('urlPrefix', prefix);
 
+  function getMeta<A>(name: string, fallback: A): A {
+    var elem = document.querySelector(`meta[name=${name}]`);
+    if (elem === null) {
+      return fallback;
+    }
+    return <A>JSON.parse(elem.getAttribute("content"));
+  }
+
+  var redirectGrapher = getMeta<boolean>("labrad-redirectGrapher", false);
+  var redirectRegistry = getMeta<boolean>("labrad-redirectRegistry", false);
+
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
   body.addEventListener('app-link-click', (e: any) => {
@@ -218,7 +229,11 @@ window.addEventListener('WebComponentsReady', () => {
 
     function mkRegRoute(n: number) {
       page(pref + '/registry/' + pathRoute(n), (ctx, next) => {
-        activate(getManager(ctx), (s) => new activities.RegistryActivity(s.places, s.reg, getPath(ctx)));
+        if (withManager && redirectRegistry && !ctx.params['manager'].includes(".")) {
+          page.redirect(prefix + '/registry/' + pathRoute(n));
+        } else {
+          activate(getManager(ctx), (s) => new activities.RegistryActivity(s.places, s.reg, getPath(ctx)));
+        }
       })
     }
     for (var i = 0; i <= 20; i++) {
@@ -227,15 +242,23 @@ window.addEventListener('WebComponentsReady', () => {
 
     function mkDvRoutes(n: number) {
       page(pref + '/grapher/' + pathRoute(n), (ctx, next) => {
-        var path = getPath(ctx);
-        if (ctx.querystring === "live") {
-          activate(getManager(ctx), (s) => new activities.DatavaultLiveActivity(s.places, s.dv, path));
+        if (withManager && redirectGrapher && !ctx.params['manager'].includes(".")) {
+          page.redirect(prefix + '/grapher/' + pathRoute(n));
         } else {
-          activate(getManager(ctx), (s) => new activities.DatavaultActivity(s.places, s.dv, path));
+          var path = getPath(ctx);
+          if (ctx.querystring === "live") {
+            activate(getManager(ctx), (s) => new activities.DatavaultLiveActivity(s.places, s.dv, path));
+          } else {
+            activate(getManager(ctx), (s) => new activities.DatavaultActivity(s.places, s.dv, path));
+          }
         }
       });
       page(pref + '/dataset/' + pathRoute(n) + ':dataset', (ctx, next) => {
-        activate(getManager(ctx), (s) => new activities.DatasetActivity(s.places, s.dv, getPath(ctx), Number(ctx.params['dataset'])));
+        if (withManager && redirectGrapher && !ctx.params['manager'].includes(".")) {
+          page.redirect(prefix + '/dataset/' + pathRoute(n));
+        } else {
+          activate(getManager(ctx), (s) => new activities.DatasetActivity(s.places, s.dv, getPath(ctx), Number(ctx.params['dataset'])));
+        }
       });
     }
     for (var i = 0; i <= 20; i++) {

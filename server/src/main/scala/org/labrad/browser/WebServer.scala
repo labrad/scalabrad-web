@@ -24,7 +24,9 @@ case class WebServerConfig(
   port: Int,
   urlPrefix: Option[String],
   managerHosts: Map[String, String],
-  managerSuffix: Option[String]
+  managerSuffix: Option[String],
+  redirectGrapher: Boolean,
+  redirectRegistry: Boolean
 )
 
 object WebServerConfig {
@@ -88,6 +90,18 @@ object WebServerConfig {
         "connect to either foo or bar would instead connect to " +
         "foo.example.com or bar.example.com, respectively."
     )
+    val redirectGrapherOpt = parser.option[String](
+      names = List("redirect-grapher"),
+      valueName = "bool",
+      description = "Redirect grapher access on other managers to always use " +
+        "the datavault on the default manager (default=false)."
+    )
+    val redirectRegistryOpt = parser.option[String](
+      names = List("redirect-registry"),
+      valueName = "bool",
+      description = "Redirect registry access on other managers to always use " +
+        "the registry on the default manager (default=false)."
+    )
     val help = parser.flag[Boolean](List("h", "help"),
       "Print usage information and exit")
 
@@ -105,7 +119,9 @@ object WebServerConfig {
             (alias, hostname)
           }.toMap
         }.getOrElse(Map()),
-        managerSuffix = managerSuffixOpt.value
+        managerSuffix = managerSuffixOpt.value,
+        redirectGrapher = redirectGrapherOpt.value.map(Util.parseBooleanOpt).getOrElse(false),
+        redirectRegistry = redirectRegistryOpt.value.map(Util.parseBooleanOpt).getOrElse(false)
       )
     }
   }
@@ -117,22 +133,29 @@ class WebServer(config: WebServerConfig) {
   val workerGroup = new NioEventLoopGroup()
   val staticHandler = new StaticResourceHandler()
   val (appPath, appBytes) = {
-    val (path, bytes) = staticHandler.getBytes("/index.html").getOrElse {
-      // When running in dev mode, index.html may not exist yet, so we'll
-      // stuff in a placeholder to remind the user to run gulp.
-      ("index.html", "run gulp to build app".getBytes(UTF_8))
+    val (path, appString) = staticHandler.getBytes("/index.html") match {
+      case Some((path, bytes)) => (path, new String(bytes, UTF_8))
+      case None =>
+        // When running in dev mode, index.html may not exist yet, so we'll
+        // stuff in a placeholder to remind the user to run gulp.
+        ("index.html", """<html><body>run gulp to build app</body></html>""")
     }
-    config.urlPrefix match {
-      case None => (path, bytes)
-      case Some(prefix) =>
-        val appString = new String(bytes, UTF_8)
-        val appDom = Jsoup.parse(appString)
 
-        // Change the page base url to match urlPrefix
-        appDom.getElementsByTag("base").first().attr("href", prefix)
+    val appDom = Jsoup.parse(appString)
 
-        (path, appDom.toString.getBytes(UTF_8))
+    // Change the page base url to match urlPrefix
+    for (prefix <- config.urlPrefix) {
+      appDom.getElementsByTag("base").first().attr("href", prefix)
     }
+
+    // Add redirect settings to page
+    val head = appDom.getElementsByTag("head").first()
+    head.appendElement("meta").attr("name", "labrad-redirectGrapher")
+                              .attr("content", config.redirectGrapher.toString)
+    head.appendElement("meta").attr("name", "labrad-redirectRegistry")
+                              .attr("content", config.redirectRegistry.toString)
+
+    (path, appDom.toString.getBytes(UTF_8))
   }
   val appFunc = () => staticHandler.makeResponse(appPath, appBytes)
   val connectionConfig = LabradConnectionConfig(config.managerHosts,
