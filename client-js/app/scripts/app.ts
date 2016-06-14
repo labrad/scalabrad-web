@@ -420,6 +420,9 @@ window.addEventListener('WebComponentsReady', () => {
 
     var mgr = new manager.ManagerServiceJsonRpc(socket);
     if (topLevel) {
+      mgr.version().then((version) => {
+        app.serverVersion = version;
+      });
       mgr.disconnected.add((msg) => {
         reconnect("Manager connection closed.");
       });

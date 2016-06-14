@@ -60,6 +60,17 @@
       direction: rtl;
     }
 
+    #tech-info {
+      margin: 20px;
+    }
+    #tech-info h1 {
+      font-size: 16px;
+    }
+    #tech-info p {
+      font-size: 12px;
+      font-family: monospace;
+    }
+
   </style>
   <template>
     <paper-drawer-panel id="drawerPanel" force-narrow disable-edge-swipe>
@@ -91,6 +102,11 @@
             <span>Grapher</span>
           </a>
         </paper-menu>
+
+        <div id="tech-info">
+          <h1>Technical Info</h1>
+          <p>server: <span>{{serverVersion}}</span></p>
+        </div>
       </div>
 
       <paper-header-panel main mode="standard">

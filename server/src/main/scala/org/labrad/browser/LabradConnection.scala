@@ -72,6 +72,10 @@ class LabradConnection(
   def ping(): Unit = {
   }
 
+  def version(): String = {
+    WebServer.VERSION
+  }
+
   def get: Connection = {
     cxnOpt.getOrElse { sys.error("not connected") }
   }

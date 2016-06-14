@@ -155,6 +155,10 @@ class WebServer(config: WebServerConfig) {
     head.appendElement("meta").attr("name", "labrad-redirectRegistry")
                               .attr("content", config.redirectRegistry.toString)
 
+    // Add version info to page
+    head.appendElement("meta").attr("name", "labrad-serverVersion")
+                              .attr("content", WebServer.VERSION)
+
     (path, appDom.toString.getBytes(UTF_8))
   }
   val appFunc = () => staticHandler.makeResponse(appPath, appBytes)
@@ -194,6 +198,11 @@ class WebServer(config: WebServerConfig) {
 }
 
 object WebServer {
+  val VERSION = {
+    val url = getClass.getResource("/org/labrad/browser/version.txt")
+    scala.io.Source.fromURL(url).mkString
+  }
+
   def main(args: Array[String]): Unit = {
     val config = WebServerConfig.fromCommandLine(args) match {
       case Success(config) => config
