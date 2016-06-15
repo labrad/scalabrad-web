@@ -111,16 +111,25 @@ window.addEventListener('WebComponentsReady', () => {
   }
   console.log('urlPrefix', prefix);
 
-  function getMeta<A>(name: string, fallback: A): A {
+  function getMeta(name: string): string {
     var elem = document.querySelector(`meta[name=${name}]`);
     if (elem === null) {
-      return fallback;
+      return null;
     }
-    return <A>JSON.parse(elem.getAttribute("content"));
+    return elem.getAttribute("content");
   }
 
-  var redirectGrapher = getMeta<boolean>("labrad-redirectGrapher", false);
-  var redirectRegistry = getMeta<boolean>("labrad-redirectRegistry", false);
+  function getMetaJSON<A>(name: string, fallback: A): A {
+    var value = getMeta(name);
+    if (value === null) {
+      return fallback;
+    }
+    return <A>JSON.parse(value);
+  }
+
+  var clientVersion = getMeta("labrad-clientVersion");
+  var redirectGrapher = getMetaJSON<boolean>("labrad-redirectGrapher", false);
+  var redirectRegistry = getMetaJSON<boolean>("labrad-redirectRegistry", false);
 
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
@@ -129,6 +138,7 @@ window.addEventListener('WebComponentsReady', () => {
   });
 
   var app = <LabradApp> LabradApp.create();
+  app.clientVersion = clientVersion;
   body.appendChild(app);
 
   // Construct a websocket url relative to this page based on window.location
@@ -144,7 +154,7 @@ window.addEventListener('WebComponentsReady', () => {
   // Get the url for the api backend websocket connection.
   // If the apiHost variable has been set globally, use that,
   // otherwise construct a url relative to the page host.
-  var apiUrl = (window['apiHost'] || relativeWebSocketUrl()) + prefix + "/api/socket";
+  var apiUrl = (getMeta("labrad-apiHost") || relativeWebSocketUrl()) + prefix + "/api/socket";
 
   // The current activity, which encapsulates the current URL and the UI
   // rendered for that URL.
