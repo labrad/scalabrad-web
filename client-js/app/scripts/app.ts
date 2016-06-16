@@ -92,16 +92,24 @@ window.addEventListener('WebComponentsReady', () => {
   Plot.register();
   LabeledPlot.register();
 
-  var prefix = window['org.labrad.urlPrefix'];
-  if (prefix == "__LABRAD_URL_PREFIX__") {
-    prefix = "";
+  var prefix = "";
+  var baseElem = document.querySelector("base");
+  if (baseElem !== null) {
+    var href = baseElem.getAttribute("href");
+
+    // If href does not end with a trailing slash, remove the last segment.
+    // Resolving relative URLs against /a/b/c.html is the same as against /a/b/
+    // and we don't want c.html in the prefix.
+    if (!href.endsWith("/")) {
+      var segments = href.split("/");
+      segments[segments.length - 1] = "";
+      href = segments.join("/");
+    }
+
+    // Strip trailing slash, since routes have leading slash already.
+    prefix = href.substring(0, href.length - 1);
   }
   console.log('urlPrefix', prefix);
-
-  var managers = window['org.labrad.managers'];
-  if (managers == "__LABRAD_MANAGERS__") {
-    managers = [];
-  }
 
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
