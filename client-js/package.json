@@ -48,7 +48,7 @@
   "jspm": {
     "directories": {},
     "dependencies": {
-      "d3": "github:mbostock/d3@^3.5.6",
+      "d3": "github:d3/d3@^3.5.6",
       "page": "npm:page@^1.6.3"
     },
     "devDependencies": {
