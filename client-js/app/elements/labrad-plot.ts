@@ -125,7 +125,7 @@ export class Plot extends polymer.Base {
   private zoom: any;
   private limits = {xMin: 0, xMax: 1, yMin: 0, yMax: 1};
   private dataLimits = {xMin: NaN, xMax: NaN, yMin: NaN, yMax: NaN, zMin: NaN, zMax: NaN};
-  private margin = {top: 50, right: 10, bottom: 50, left: 40};
+  private margin = {top: 50, right: 10, bottom: 80, left: 80};
   private userTraces: boolean = false; //hack to enforce user defined display of traces
 
   private xs: Array<number> = [];
