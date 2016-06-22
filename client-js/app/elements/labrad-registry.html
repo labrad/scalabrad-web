@@ -141,7 +141,9 @@
       <table>
         <tbody is="selectable-table" id="combinedList" selected="{{selectedIdx}}">
           <template id="fullList" is="dom-repeat" items="{{listItems}}" filter="filterFunc">
-            <tr name="{{item.name}}">
+            <tr name="{{item.name}}"
+                key-name="{{item.name}}"
+                on-dblclick="editValueClicked">
               <template is="dom-if" if="{{item.isParent}}">
                 <td class="label-wide" colspan="2">
                   <iron-icon icon="arrow-back" item-icon></iron-icon>
@@ -163,17 +165,12 @@
               <template is="dom-if" if="{{item.isKey}}">
                 <td class="key mono"
                     name="{{item.name}}"
-                    key-name="{{item.name}}"
-                    on-dblclick="editValueClicked"
                     draggable="true">
-                  <iron-icon icon="communication:vpn-key" item-icon class="key"
-                             key-name="{{item.name}}" on-dblclick="editValueClicked"></iron-icon>
-                  <span key-name="{{item.name}}" on-dblclick="editValueClicked">{{item.name}}</span>
+                  <iron-icon icon="communication:vpn-key" item-icon class="key"></iron-icon>
+                  <span>{{item.name}}</span>
                 </td>
-                <td class="value label-wide mono"
-                    key-name="{{item.name}}"
-                    on-dblclick="editValueClicked">
-                  <span key-name="{{item.name}}" on-dblclick="editValueClicked">{{item.value}}</span>
+                <td class="value label-wide mono">
+                  <span>{{item.value}}</span>
                 </td>
               </template>
             </tr>
