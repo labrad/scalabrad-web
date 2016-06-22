@@ -362,7 +362,7 @@ window.addEventListener('WebComponentsReady', () => {
         await promises.sleep(5000);
         var services: Services = null;
         try {
-          console.log('Attempting to connect');
+          console.info('Attempting to connect');
           services = await login(host, false);
           break;
         } catch (e) {
