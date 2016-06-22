@@ -22,6 +22,17 @@ var jasmineBrowser = require('gulp-jasmine-browser');
 var jasmine = require('gulp-jasmine');
 var gitDescribe = require('git-describe');
 
+var minimist = require('minimist');
+
+var knownOptions = {
+  string: 'api-host',
+  default: { 
+    'api-host': 'localhost:7667'
+  }
+};
+
+var options = minimist(process.argv.slice(2), knownOptions);
+
 var AUTOPREFIXER_BROWSERS = [
   'ie >= 10',
   'ie_mob >= 10',
@@ -245,7 +256,7 @@ gulp.task('insert-dev-config', function () {
   return gulp.src(['app/index.html'])
     .pipe($.replace('<!-- DEV_MODE_CONFIG -->', [
                       '<!-- DEV_MODE_CONFIG -->',
-                      metaTag("labrad-apiHost", "ws://localhost:7667"),
+                      metaTag("labrad-apiHost", "ws://" + options['api-host']),
                       metaTag("labrad-clientVersion", gitVersion())
                     ].join("\n    ")))
     .pipe(gulp.dest('.tmp'));
