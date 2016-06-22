@@ -137,8 +137,8 @@ export class LabradRegistry extends polymer.Base {
   }
 
   handleError(error) {
-    //we can add a more creative way of displaying errors here
-    console.log(error);
+    // We can add a more creative way of displaying errors here.
+    console.error(error);
   }
 
 
@@ -203,7 +203,6 @@ export class LabradRegistry extends polymer.Base {
 
   @listen('dragend')
   endDrag(event) {
-    console.log('drag ended',event);
   }
 
   /**

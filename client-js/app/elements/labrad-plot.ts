@@ -623,13 +623,12 @@ export class Plot extends polymer.Base {
         selected.push(parseInt((<any>radio).selected)); 
         break;
     }
-    console.log("selected Traces: ", selected);
+
     if (selected.length > 0) {
       this.displayTraces.splice(0, this.displayTraces.length);
       for (let ent of selected) {
         this.displayTraces.push(ent);
       }
-      console.log("this.displayTraces: ", this.displayTraces);
       this.displaySurface = this.displayTraces[0] + 2;
       this.$.traceSelector.close();
       this.userTraces = true;

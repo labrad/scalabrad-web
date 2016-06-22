@@ -48,19 +48,19 @@ export class LabradInstanceController extends polymer.Base {
 
   @listen('start.click')
   doStart() {
-    console.log(`start: server='${this.name}', node='${this.node}'`);
+    console.info(`Start: server='${this.name}', node='${this.node}'`);
     this.api.startServer({node: this.node, server: this.name});
   }
 
   @listen('stop.click')
   doStop() {
-    console.log(`stop: server='${this.name}', node='${this.node}'`);
+    console.info(`Stop: server='${this.name}', node='${this.node}'`);
     this.api.stopServer({node: this.node, server: this.instanceName});
   }
 
   @listen('restart.click')
   doRestart() {
-    console.log(`restart: server='${this.name}', node='${this.node}'`);
+    console.info(`Restart: server='${this.name}', node='${this.node}'`);
     this.api.restartServer({node: this.node, server: this.instanceName});
   }
 
@@ -184,7 +184,6 @@ export class LabradNodes extends polymer.Base {
 
   @observe('api')
   apiChanged(newApi: NodeApi, oldApi: NodeApi) {
-    console.log('apiChanged', newApi, oldApi);
     if (this.defined(newApi)) {
       newApi.nodeStatus.add((msg) => this.onNodeStatus(msg), this.lifetime);
       newApi.serverStatus.add((msg) => this.onServerStatus(msg), this.lifetime);
@@ -193,7 +192,6 @@ export class LabradNodes extends polymer.Base {
 
   @observe('managerApi')
   managerChanged(newManager: ManagerApi, oldManager: ManagerApi) {
-    console.log('managerChanged', newManager, oldManager);
     if (this.defined(newManager)) {
       newManager.serverDisconnected.add((msg) => this.onServerDisconnected(msg), this.lifetime);
     }
@@ -202,7 +200,6 @@ export class LabradNodes extends polymer.Base {
   // callbacks invoked when we receive remote messages
 
   onNodeStatus(msg: NodeStatus): void {
-    console.log('onNodeStatus', msg);
     // we need to splice this new NodeStatus into the current info array.
     // first, check to see whether we already have status for this node.
     var idx = this._nodeIndex(msg.name);
@@ -216,7 +213,7 @@ export class LabradNodes extends polymer.Base {
   }
 
   onServerDisconnected(msg: ServerDisconnectMessage): void {
-    console.log('server disconnected:', msg.name);
+    console.warn('Server disconnected:', msg.name);
     var idx = this._nodeIndex(msg.name);
 
     if (idx >= 0) {
@@ -226,7 +223,6 @@ export class LabradNodes extends polymer.Base {
   }
 
   onServerStatus(msg: ServerStatusMessage): void {
-    console.log('onServerStatus', msg);
     var instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
     for (var i = 0; i < instances.length; i++) {
       var instance = <any>instances[i];
