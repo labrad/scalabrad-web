@@ -61,6 +61,7 @@ class ApiBackend(config: LabradConnectionConfig)(implicit ec: ExecutionContext) 
     routes = JsonRpc.routes("""
       CALL  org.labrad.manager.login  cxn.login
       CALL                    .ping      .ping
+      CALL                    .version   .version
 
       CALL  org.labrad.datavault.dir          datavaultApi.dir
       CALL                      .datasetInfo              .datasetInfo

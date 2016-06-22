@@ -2,6 +2,12 @@ import {Places} from '../scripts/places';
 
 @component('labrad-app')
 export class LabradApp extends polymer.Base {
+  @property({type: String, value: '<unknwon>'})
+  clientVersion: string;
+
+  @property({type: String, value: '<unknwon>'})
+  serverVersion: string;
+
   @property({type: String, value: ''})
   host: string;
 

@@ -1,8 +1,11 @@
 lazy val commonSettings = Seq(
-  version := "1.0.1",
+  useJGit,
+  git.useGitDescribe := true,
   scalaVersion := "2.11.7",
   resolvers += "bintray" at "http://jcenter.bintray.com"
 )
+
+enablePlugins(GitVersioning)
 
 lazy val jsonrpc = project.in(file("jsonrpc"))
   .settings(commonSettings)
@@ -36,6 +39,17 @@ lazy val server = project.in(file("server"))
     fork in run := true,
     connectInput in run := true,
     javaOptions += "-Dorg.labrad.stopOnEOF=true",
+
+    // add a resource generator that saves the git version in a file
+    resourceGenerators in Compile += Def.task {
+      val versionStr = version.value
+      val s = streams.value
+      s.log.info(s"git version: $versionStr")
+      val dstDir = (resourceManaged in Compile).value
+      val dstFile = dstDir / "org" / "labrad" / "browser" / "version.txt"
+      IO.write(dstFile, versionStr)
+      Seq(dstFile)
+    }.taskValue,
 
     // add a resource generator that copies compiled files from the client project
     resourceGenerators in Compile += Def.task {

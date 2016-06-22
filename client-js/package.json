@@ -5,6 +5,7 @@
   "devDependencies": {
     "browser-sync": "^2.6.4",
     "del": "^1.1.1",
+    "git-describe": "^3.0.0",
     "glob": "^5.0.6",
     "gulp": "^3.8.5",
     "gulp-autoprefixer": "^2.1.0",

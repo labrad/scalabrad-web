@@ -20,6 +20,7 @@ var merge = require('merge2');
 var exec = require('child_process').exec;
 var jasmineBrowser = require('gulp-jasmine-browser');
 var jasmine = require('gulp-jasmine');
+var gitDescribe = require('git-describe');
 
 var AUTOPREFIXER_BROWSERS = [
   'ie >= 10',
@@ -32,6 +33,18 @@ var AUTOPREFIXER_BROWSERS = [
   'android >= 4.4',
   'bb >= 10'
 ];
+
+// Get version of the client code from git
+function gitVersion() {
+  // use raw version from git-describe, but drop leading 'v'
+  return gitDescribe.gitDescribeSync(__dirname).raw.substring(1);
+}
+
+// Get a tag that can be inserted in index.html to pass info to app
+function metaTag(name, content) {
+  // TODO: should properly escape strings here
+  return '<meta name="' + name + '" content="' + content + '">';
+}
 
 // Lint all custom TypeScript files.
 gulp.task('tslint', function () {
@@ -203,6 +216,9 @@ gulp.task('html', function () {
   var assets = $.useref.assets({searchPath: ['.tmp', 'app', 'dist']});
 
   return gulp.src(['app/**/*.html', '!app/{elements,test}/**/*.html'])
+    // Add version info
+    .pipe($.if('*.html', $.replace('<!-- DEV_MODE_CONFIG -->',
+                                   metaTag("labrad-clientVersion", gitVersion()))))
     // Replace path for vulcanized assets
     .pipe($.if('*.html', $.replace('elements/elements.html', 'elements/elements.vulcanized.html')))
     .pipe(assets)
@@ -224,13 +240,15 @@ gulp.task('html', function () {
     .pipe($.size({title: 'html'}));
 });
 
-// Inject a script into index.html to configure the app for dev mode.
+// Inject dev mode app configuration into index.html.
 gulp.task('insert-dev-config', function () {
   return gulp.src(['app/index.html'])
-    .pipe($.replace('<!-- DEV_MODE_CONFIG -->',
-                    '<script type="text/javascript">window.apiHost = "ws://localhost:7667";</script>'))
-    .pipe(gulp.dest('.tmp'))
-    .pipe($.size({title: 'insert-dev-config'}));
+    .pipe($.replace('<!-- DEV_MODE_CONFIG -->', [
+                      '<!-- DEV_MODE_CONFIG -->',
+                      metaTag("labrad-apiHost", "ws://localhost:7667"),
+                      metaTag("labrad-clientVersion", gitVersion())
+                    ].join("\n    ")))
+    .pipe(gulp.dest('.tmp'));
 });
 
 // Vulcanize imports

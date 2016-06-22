@@ -23,7 +23,10 @@ case class WebServerConfig(
   host: String,
   port: Int,
   urlPrefix: Option[String],
-  managerHosts: Map[String, String]
+  managerHosts: Map[String, String],
+  managerSuffix: Option[String],
+  redirectGrapher: Boolean,
+  redirectRegistry: Boolean
 )
 
 object WebServerConfig {
@@ -77,6 +80,28 @@ object WebServerConfig {
         "in the form alias=hostname, for example: " +
         "foo=foo.example.com,bar=bar.example.com"
     )
+    val managerSuffixOpt = parser.option[String](
+      names = List("manager-suffix"),
+      valueName = "string",
+      description = "A suffix that will be appended to manager host names " +
+        "specified without any periods in the application url. This is an " +
+        "alternative to using an explicit list of aliases in manager-hosts. " +
+        "If you specify manager-suffix as .example.com, then trying to " +
+        "connect to either foo or bar would instead connect to " +
+        "foo.example.com or bar.example.com, respectively."
+    )
+    val redirectGrapherOpt = parser.option[String](
+      names = List("redirect-grapher"),
+      valueName = "bool",
+      description = "Redirect grapher access on other managers to always use " +
+        "the datavault on the default manager (default=false)."
+    )
+    val redirectRegistryOpt = parser.option[String](
+      names = List("redirect-registry"),
+      valueName = "bool",
+      description = "Redirect registry access on other managers to always use " +
+        "the registry on the default manager (default=false)."
+    )
     val help = parser.flag[Boolean](List("h", "help"),
       "Print usage information and exit")
 
@@ -93,7 +118,10 @@ object WebServerConfig {
             val Array(alias, hostname) = pair.split("=")
             (alias, hostname)
           }.toMap
-        }.getOrElse(Map())
+        }.getOrElse(Map()),
+        managerSuffix = managerSuffixOpt.value,
+        redirectGrapher = redirectGrapherOpt.value.map(Util.parseBooleanOpt).getOrElse(false),
+        redirectRegistry = redirectRegistryOpt.value.map(Util.parseBooleanOpt).getOrElse(false)
       )
     }
   }
@@ -105,25 +133,37 @@ class WebServer(config: WebServerConfig) {
   val workerGroup = new NioEventLoopGroup()
   val staticHandler = new StaticResourceHandler()
   val (appPath, appBytes) = {
-    val (path, bytes) = staticHandler.getBytes("/index.html").getOrElse {
-      // When running in dev mode, index.html may not exist yet, so we'll
-      // stuff in a placeholder to remind the user to run gulp.
-      ("index.html", "run gulp to build app".getBytes(UTF_8))
+    val (path, appString) = staticHandler.getBytes("/index.html") match {
+      case Some((path, bytes)) => (path, new String(bytes, UTF_8))
+      case None =>
+        // When running in dev mode, index.html may not exist yet, so we'll
+        // stuff in a placeholder to remind the user to run gulp.
+        ("index.html", """<html><body>run gulp to build app</body></html>""")
     }
-    config.urlPrefix match {
-      case None => (path, bytes)
-      case Some(prefix) =>
-        val appString = new String(bytes, UTF_8)
-        val appDom = Jsoup.parse(appString)
 
-        // Change the page base url to match urlPrefix
-        appDom.getElementsByTag("base").first().attr("href", prefix)
+    val appDom = Jsoup.parse(appString)
 
-        (path, appDom.toString.getBytes(UTF_8))
+    // Change the page base url to match urlPrefix
+    for (prefix <- config.urlPrefix) {
+      appDom.getElementsByTag("base").first().attr("href", prefix)
     }
+
+    // Add redirect settings to page
+    val head = appDom.getElementsByTag("head").first()
+    head.appendElement("meta").attr("name", "labrad-redirectGrapher")
+                              .attr("content", config.redirectGrapher.toString)
+    head.appendElement("meta").attr("name", "labrad-redirectRegistry")
+                              .attr("content", config.redirectRegistry.toString)
+
+    // Add version info to page
+    head.appendElement("meta").attr("name", "labrad-serverVersion")
+                              .attr("content", WebServer.VERSION)
+
+    (path, appDom.toString.getBytes(UTF_8))
   }
   val appFunc = () => staticHandler.makeResponse(appPath, appBytes)
-  val connectionConfig = LabradConnectionConfig(config.managerHosts)
+  val connectionConfig = LabradConnectionConfig(config.managerHosts,
+                                                config.managerSuffix)
 
   val b = new ServerBootstrap()
   b.group(bossGroup, workerGroup)
@@ -158,6 +198,11 @@ class WebServer(config: WebServerConfig) {
 }
 
 object WebServer {
+  val VERSION = {
+    val url = getClass.getResource("/org/labrad/browser/version.txt")
+    scala.io.Source.fromURL(url).mkString
+  }
+
   def main(args: Array[String]): Unit = {
     val config = WebServerConfig.fromCommandLine(args) match {
       case Success(config) => config
