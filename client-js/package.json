@@ -4,9 +4,14 @@
   "description": "A web interface for labrad",
   "repository": "labrad/scalabrad-web",
   "license": "MIT",
-
+  "scripts": {
+    "gulp": "gulp",
+    "jspm": "jspm",
+    "bower": "bower"
+  },
   "dependencies": {},
   "devDependencies": {
+    "bower": "^1.7.9",
     "browser-sync": "^2.6.4",
     "del": "^1.1.1",
     "git-describe": "^3.0.0",
