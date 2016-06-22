@@ -31,7 +31,6 @@ the node package manager `npm`. Then, from inside the `client-js` directory you 
 global and project-level dependencies:
 
 ```
-$ npm install gulp typescript jspm bower
 $ npm install
 $ npm run jspm install
 $ npm run bower install
