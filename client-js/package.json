@@ -4,7 +4,11 @@
   "description": "A web interface for labrad",
   "repository": "labrad/scalabrad-web",
   "license": "MIT",
-
+  "scripts": {
+    "gulp": "gulp",
+    "jspm": "jspm",
+    "bower": "bower"
+  },
   "dependencies": {},
   "devDependencies": {
     "browser-sync": "^2.6.4",
