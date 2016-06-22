@@ -300,8 +300,10 @@ export class LabradRegistry extends polymer.Base {
     var dialog = this.$.editValueDialog,
         editValueElem = this.$.editValueInput,
         name = event.currentTarget.keyName,
+        isKey = event.currentTarget.isKey,
         value: string = null,
         found = false;
+    if (!isKey) return;
     for (let item of this.keys) {
       if (item.name == name) {
         value = item.value;

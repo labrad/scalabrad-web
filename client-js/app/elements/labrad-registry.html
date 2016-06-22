@@ -143,6 +143,7 @@
           <template id="fullList" is="dom-repeat" items="{{listItems}}" filter="filterFunc">
             <tr name="{{item.name}}"
                 key-name="{{item.name}}"
+                is-key="{{item.isKey}}"
                 on-dblclick="editValueClicked">
               <template is="dom-if" if="{{item.isParent}}">
                 <td class="label-wide" colspan="2">
