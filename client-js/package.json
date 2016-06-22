@@ -1,6 +1,10 @@
 {
   "name": "labrad-browser",
   "version": "0.0.0",
+  "description": "A web interface for labrad",
+  "repository": "labrad/scalabrad-web",
+  "license": "MIT",
+
   "dependencies": {},
   "devDependencies": {
     "browser-sync": "^2.6.4",
