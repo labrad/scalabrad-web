@@ -25,8 +25,10 @@ var gitDescribe = require('git-describe');
 var minimist = require('minimist');
 
 var knownOptions = {
-  string: 'host',
-  default: { host: 'localhost:7667' }
+  string: 'api-host',
+  default: { 
+    'api-host': 'localhost:7667'
+  }
 };
 
 var options = minimist(process.argv.slice(2), knownOptions);
@@ -254,7 +256,7 @@ gulp.task('insert-dev-config', function () {
   return gulp.src(['app/index.html'])
     .pipe($.replace('<!-- DEV_MODE_CONFIG -->', [
                       '<!-- DEV_MODE_CONFIG -->',
-                      metaTag("labrad-apiHost", "ws://" + options.host),
+                      metaTag("labrad-apiHost", "ws://" + options['api-host']),
                       metaTag("labrad-clientVersion", gitVersion())
                     ].join("\n    ")))
     .pipe(gulp.dest('.tmp'));
