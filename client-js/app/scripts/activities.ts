@@ -25,7 +25,7 @@ export class RegistryActivity implements Activity {
 
   async start(): Promise<ActivityState> {
     this.api.newItem.add(() => this.onNewItem(), this.lifetime);
-    console.log('loading registry:', this.path);
+    console.info('Loading registry:', this.path);
     await this.api.watch({path: this.path});
     var listing = await this.api.dir({path: this.path});
     var breadcrumbs = [];
@@ -73,7 +73,7 @@ export class DatavaultActivity implements Activity {
               public path: Array<string>) {}
 
   async start(): Promise<ActivityState> {
-    console.log('loading datavault:', this.path);
+    console.info('Loading datavault:', this.path);
     this.api.newDir.add(x => this.onNewDir(), this.lifetime);
     this.api.newDataset.add(x => this.onNewDataset(), this.lifetime);
     this.api.tagsUpdated.add(x => this.tagsUpdated(), this.lifetime);
@@ -259,7 +259,7 @@ export class DatasetActivity implements Activity {
   }
 
   async start(): Promise<ActivityState> {
-    console.log('loading dataset:', this.path, this.dataset);
+    console.info('Loading dataset:', this.path, this.dataset);
     this.api.dataAvailable.add(msg => {
       if (msg.token === this.token) this.dataAvailable.offer(null);
     }, this.lifetime);

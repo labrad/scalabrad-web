@@ -109,7 +109,6 @@ window.addEventListener('WebComponentsReady', () => {
     // Strip trailing slash, since routes have leading slash already.
     prefix = href.substring(0, href.length - 1);
   }
-  console.log('urlPrefix', prefix);
 
   var body = document.querySelector('body');
   body.removeAttribute('unresolved');
@@ -181,7 +180,7 @@ window.addEventListener('WebComponentsReady', () => {
       content.appendChild(state.elem);
       activity = newActivity;
     } catch (error) {
-      console.log('error while starting activity', error);
+      console.error('Error while starting activity', error);
     }
   }
 
@@ -363,11 +362,11 @@ window.addEventListener('WebComponentsReady', () => {
         await promises.sleep(5000);
         var services: Services = null;
         try {
-          console.log('attempting to connect');
+          console.log('Attempting to connect');
           services = await login(host, false);
           break;
         } catch (e) {
-          console.log('connection failed', e);
+          console.error('Connection failed', e);
           if (isPasswordError(e)) {
             break;
           }

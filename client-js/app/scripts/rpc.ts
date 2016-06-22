@@ -75,11 +75,8 @@ export class JsonRpcSocket {
         }
       } else if (json.hasOwnProperty("id")) {
         // call
-        console.log('call', json);
         this.callMethod(json);
       } else {
-        // notification
-        console.log('notification', json);
         var method = json["method"];
         if (this.notifiables.hasOwnProperty(method)) {
           this.notifiables[method](json["params"]);
