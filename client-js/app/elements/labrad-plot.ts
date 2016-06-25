@@ -249,14 +249,16 @@ export class Plot extends polymer.Base {
 
   @listen('plot.mousemove')
   mouseMove(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
     var xMin = this.xScale.invert(0),
         xMax = this.xScale.invert(this.width),
         yMin = this.yScale.invert(this.height),
         yMax = this.yScale.invert(0),
         dx = (xMax - xMin) / this.width,
         dy = (yMax - yMin) / this.height,
-        x = this.mouseToDataX(event.offsetX),
-        y = this.mouseToDataY(event.offsetY);
+        x = this.mouseToDataX(event.pageX - rect.left),
+        y = this.mouseToDataY(event.pageY - rect.top);
+
     this.currPos = `(${prettyNumber(x, xMin, xMax, dx)}, ${prettyNumber(y, yMin, yMax, dy)})`;
   }
 
