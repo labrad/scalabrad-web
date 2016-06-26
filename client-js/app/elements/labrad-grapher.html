@@ -41,19 +41,19 @@
     #buttons paper-icon-button {
       margin: 5px;
     }
-    #listing iron-icon {
+    #listing .iron-icon {
       margin: 5px;
     }
-    #listing iron-icon.folder {
+    #listing .iron-icon.folder {
       color: #CFBA78;
     }
-    #listing iron-icon.dataset {
+    #listing .iron-icon.dataset {
       color: #209131;
     }
-    #listing iron-icon.star {
+    #listing .iron-icon.star {
       color: #FF2299;
     }
-    #listing iron-icon.trash {
+    #listing .iron-icon.trash {
       color: #773300;
     }
     #right-column {
@@ -103,31 +103,8 @@
           </div>
           <div id="listing">
             <table>
-              <tbody is="selectable-table" selected="{{selectedId}}" attr-for-selected="selid">
-                <template is="dom-repeat" items="{{listItems}}">
-                  <tr selid="{{item.id}}">
-                    <td class="item">
-                      <template is="dom-if" if="{{item.isParent}}">
-                        <iron-icon icon="arrow-back" item-icon></iron-icon>
-                      </template>
-                      <template is="dom-if" if="{{item.isDir}}">
-                        <iron-icon icon="folder" item-icon class="folder"></iron-icon>
-                      </template>
-                      <template is="dom-if" if="{{item.isDataset}}">
-                        <iron-icon icon="editor:insert-chart" item-icon class="dataset"></iron-icon>
-                      </template>
-                      <a is="app-link" path="{{item.url}}" href="{{item.url}}">{{item.name}}</a>
-                    </td>
-                    <td class="label-wide">
-                      <template is="dom-if" if="{{item.starred}}">
-                        <iron-icon icon="stars" class="star"></iron-icon>
-                      </template>
-                      <template is="dom-if" if="{{item.trashed}}">
-                        <iron-icon icon="delete" class="trash"></iron-icon>
-                      </template>
-                    </td>
-                  </tr>
-                </template>
+              <tbody id='selectable-table' is="selectable-table" selected="{{selectedId}}" attr-for-selected="selid">
+                
               </tbody>
             </table>
           </div>

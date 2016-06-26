@@ -1,5 +1,7 @@
 import * as datavault from '../scripts/datavault';
 import {Places} from '../scripts/places';
+import {ListBuilder} from '../scripts/listbuilder';
+import {IronIconBakery} from '../scripts/ironiconbakery';
 
 @component('labrad-grapher')
 export class LabradGrapher extends polymer.Base {
@@ -29,18 +31,31 @@ export class LabradGrapher extends polymer.Base {
 
   private showStars: boolean = false;
   private showTrash: boolean = false;
+  private iconBakery: IronIconBakery = new IronIconBakery('labrad-grapher');
+  private listBuilder: ListBuilder = new ListBuilder();
 
   attached() {
     this.tabIndex = 0;
     this.showStars = false;
     this.showTrash = false;
     this.updateButtons();
+    this.updateList();
+  }
+
+  updateList() {
+    const element = Polymer.dom(document.getElementById('selectable-table'));
+    while (element.firstElementChild) {
+      element.removeChild(element.firstElementChild);
+    }
+    const items = this.listItems(this.path, this.dirs, this.datasets, this.kick);
+    this.listBuilder.render(items, element, (item) => this.listItem(item));
   }
 
   starClicked() {
     this.showStars = !this.showStars;
     if (this.showStars) this.showTrash = false;
     this.updateButtons();
+    this.updateList();
     this.kick++;
   }
 
@@ -48,12 +63,57 @@ export class LabradGrapher extends polymer.Base {
     this.showTrash = !this.showTrash;
     if (this.showTrash) this.showStars = false;
     this.updateButtons();
+    this.updateList();
     this.kick++;
   }
 
   updateButtons() {
     this.$.star.style.color = this.showStars ? 'black' : '#AAAAAA';
     this.$.trash.style.color = this.showTrash ? 'black' : '#AAAAAA';
+  }
+
+  listItem(item: Object) : HTMLElement {
+    const tr = document.createElement('tr');
+
+    tr.className = 'style-scope labrad-grapher ';
+    tr.setAttribute('selid', item.id);
+
+    const td1 = document.createElement('td');
+    td1.className = 'style-scope labrad-grapher ' + 'item';
+
+    if (item.isParent) {
+      td1.appendChild(this.iconBakery.get('arrow-back'));
+    }
+
+    if (item.isDir) {
+      td1.appendChild(this.iconBakery.get('folder'));
+    }
+
+    if (item.isDataset) {
+      td1.appendChild(this.iconBakery.get('editor:insert-chart', 'dataset'));
+    }
+
+    const aItem = document.createElement('a');
+    aItem.setAttribute('path', item.url);
+    aItem.setAttribute('href', item.url);
+    aItem.text = item.name;
+    td1.appendChild(aItem);
+
+    const td2 = document.createElement('td');
+    td2.className = 'style-scope labrad-grapher ' + 'label-wide';
+
+    if (item.starred) {
+      td2.appendChild(this.iconBakery.get('stars'));
+    }
+
+    if (item.trashed) {
+      td2.appendChild(this.iconBakery.get('trash'));
+    }
+
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+
+    return tr;
   }
 
   @listen("keypress")
@@ -99,7 +159,6 @@ export class LabradGrapher extends polymer.Base {
     }
   }
 
-  @computed()
   listItems(
     path: Array<string>,
     dirs: Array<{name: string; url: string; tags: Array<string>}>,
@@ -162,6 +221,7 @@ export class LabradGrapher extends polymer.Base {
         });
       }
     }
+
     return items;
   }
 
