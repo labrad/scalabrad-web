@@ -20,15 +20,15 @@ const COLOR_LIST = [
 /**
  * Colors for 2D plots, using viridis colormap from matplotlib.
  */
-var COLOR_MAP = viridisData.map((rgb) => {
-  var [r, g, b] = rgb;
+const COLOR_MAP = viridisData.map((rgb) => {
+  const [r, g, b] = rgb;
   return d3.rgb(255 * r, 255 * g, 255 * b);
 });
 
 
 @component('labrad-plot')
 export class Plot extends polymer.Base {
-.
+
   @property({type: String, value: ''})
   xLabel: string;
 
@@ -105,7 +105,7 @@ export class Plot extends polymer.Base {
    */
   public addData(data: Array<Array<number>>) {
     if (data.length === 0) return;
-    var lastData = this.data.length > 0 ? this.data[this.data.length - 1] : null;
+    const lastData = this.data.length > 0 ? this.data[this.data.length - 1] : null;
     for (let row of data) {
       this.splice('data', this.data.length, 0, row);
     }
@@ -114,10 +114,10 @@ export class Plot extends polymer.Base {
 
 
   private createPlot_(area: HTMLElement, totWidth: number, totHeight: number): void {
-    var p = this;
+    const p = this;
 
-    var width = totWidth - p.margin.left - p.margin.right;
-    var height = totHeight - p.margin.top - p.margin.bottom;
+    const width = totWidth - p.margin.left - p.margin.right;
+    const height = totHeight - p.margin.top - p.margin.bottom;
 
     p.width = width;
     p.height = height;
@@ -261,7 +261,7 @@ export class Plot extends polymer.Base {
 
     for (let i of this.displayTraces) {
       // Extract data for trace i, starting with the last datapoint to avoid gaps.
-      var traceData = [];
+      const traceData = [];
       if (lastData) {
         traceData.push([lastData[0], lastData[i+1]]);
       }
@@ -341,7 +341,7 @@ export class Plot extends polymer.Base {
     this.limits.yMin = isNaN(this.dataLimits.yMin) ? 0 : this.dataLimits.yMin;
     this.limits.yMax = isNaN(this.dataLimits.yMax + this.dy) ? 0 : this.dataLimits.yMax + this.dy;
 
-    var zMin = this.dataLimits.zMin,
+    let zMin = this.dataLimits.zMin,
         zMax = this.dataLimits.zMax;
     if (zMin == zMax) {
       zMin -= 1;
@@ -349,10 +349,12 @@ export class Plot extends polymer.Base {
     }
 
     // Add a dot to the plot.
-    var p = this;
+    let w = 0,
+        h = 0;
+    const p = this;
     switch (this.drawMode2D) {
     case 'dots':
-      var w = 4, h = 4;
+      w = h = 4;
       for (let row of data) {
         this.chartBody
               .append('rect')
@@ -367,8 +369,8 @@ export class Plot extends polymer.Base {
       break;
 
     case 'rectfill':
-      var w = Math.abs(p.xScale(this.dx0) - p.xScale(0)),
-          h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
+      w = Math.abs(p.xScale(this.dx0) - p.xScale(0));
+      h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
       for (let row of data) {
         this.chartBody
               .append('rect')
@@ -439,7 +441,7 @@ export class Plot extends polymer.Base {
 
 
   private redraw_() {
-    var area = this.$.plot,
+    const area = this.$.plot,
         rect = area.getBoundingClientRect();
     while (area.firstChild) {
       area.removeChild(area.firstChild);
@@ -465,7 +467,7 @@ export class Plot extends polymer.Base {
 
   private zoomData1D_() {
     // Adjust data for each trace.
-    for (var k = 0; k < this.numTraces; k++) {
+    for (let k = 0; k < this.numTraces; k++) {
       this.svg.selectAll(`.line${k}`)
           .attr('class', `line${k}`)
           .attr('d', this.line);
@@ -474,14 +476,17 @@ export class Plot extends polymer.Base {
 
 
   private zoomData2D_() {
-    var zMin = this.dataLimits.zMin,
-        zMax = this.dataLimits.zMax,
-        p = this;
+    const zMin = this.dataLimits.zMin,
+          zMax = this.dataLimits.zMax,
+          p = this;
 
+    let w = 0,
+        h = 0;
     // Adjust size, position, and color of each data rect.
     switch (this.drawMode2D) {
     case 'dots':
-      var w = 4, h = 4;
+      w = 4;
+      h = 4;
       this.svg.selectAll('rect.data')
           .attr('x', (d) => p.xScale(d[0]))
           .attr('y', (d) => p.yScale(d[1]) - h)
@@ -491,8 +496,8 @@ export class Plot extends polymer.Base {
       break;
 
     case 'rectfill':
-      var w = Math.abs(p.xScale(this.dx0) - p.xScale(0)),
-          h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
+      w = Math.abs(p.xScale(this.dx0) - p.xScale(0));
+      h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
       this.svg.selectAll('rect.data')
           .attr('x', (d) => p.xScale(d[0]))
           .attr('y', (d) => p.yScale(d[1]) - h)
@@ -521,15 +526,15 @@ export class Plot extends polymer.Base {
     // area. The d3.mouse function returns coordinates relative to the full html
     // element, so we must account for the margins. We also clip the coordinates
     // to the available plot area.
-    var mousePos = () => {
-      var [x, y] = d3.mouse(this);
+    const mousePos = () => {
+      const [x, y] = d3.mouse(this);
       return [
         clip(x - this.margin.left, 0, this.width),
         clip(y - this.margin.top, 0, this.height)
       ];
     }
 
-    var [originX, originY] = mousePos(),
+    const [originX, originY] = mousePos(),
         rect = this.svg.append('rect')
                        .classed('zoom', true)
                        .attr('stroke', 'red')
@@ -537,14 +542,14 @@ export class Plot extends polymer.Base {
 
     d3.select(window)
       .on('mousemove', () => {
-        var [x, y] = mousePos();
+        const [x, y] = mousePos();
         rect.attr('x', Math.min(originX, x))
             .attr('y', Math.min(originY, y))
             .attr('width', Math.abs(x - originX))
             .attr('height', Math.abs(y - originY));
       })
       .on('mouseup', () => {
-        var [x, y] = mousePos();
+        const [x, y] = mousePos();
         d3.select(window)
           .on('mousemove', null)
           .on('mouseup', null);
@@ -552,12 +557,12 @@ export class Plot extends polymer.Base {
           // Convert box limits from screen to data coordinates and make sure
           // they are in the right order, regardless of which way the user
           // dragged the box.
-          var xScale = this.xScale,
-              yScale = this.yScale,
-              xMin = Math.min(xScale.invert(originX), xScale.invert(x)),
-              xMax = Math.max(xScale.invert(originX), xScale.invert(x)),
-              yMin = Math.min(yScale.invert(originY), yScale.invert(y)),
-              yMax = Math.max(yScale.invert(originY), yScale.invert(y));
+          const xScale = this.xScale,
+                yScale = this.yScale,
+                xMin = Math.min(xScale.invert(originX), xScale.invert(x)),
+                xMax = Math.max(xScale.invert(originX), xScale.invert(x)),
+                yMin = Math.min(yScale.invert(originY), yScale.invert(y)),
+                yMax = Math.max(yScale.invert(originY), yScale.invert(y));
           this.zoom.x(xScale.domain([xMin, xMax]))
                    .y(yScale.domain([yMin, yMax]));
         }
@@ -647,7 +652,7 @@ export class Plot extends polymer.Base {
    * Selects all available traces.
    */
   public traceSelectorSelectAll() {
-    var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
+    const checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
       (<HTMLInputElement>checkbox).checked = true;
     }
@@ -658,7 +663,7 @@ export class Plot extends polymer.Base {
    * Selects none of the available traces.
    */
   public traceSelectorSelectNone() {
-    var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
+    const checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
       (<HTMLInputElement>checkbox).checked = false;
     }
@@ -670,9 +675,9 @@ export class Plot extends polymer.Base {
    * selected.
    */
   public traceSelectorSubmit() {
-    var selected: Array<number> = [];
-    var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
-    var radio = Polymer.dom(this.$.traceSelector).querySelector('[name=radioGroup]');
+    const selected: Array<number> = [];
+    const checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
+    const radio = Polymer.dom(this.$.traceSelector).querySelector('[name=radioGroup]');
     switch (this.numIndeps) {
       case 1:
         for (let checkbox of checkboxes) {
@@ -769,14 +774,14 @@ export class Plot extends polymer.Base {
   @listen('plot.mousemove')
   private listenPlotMouseMove_(event) {
     const rect = event.currentTarget.getBoundingClientRect();
-    var xMin = this.xScale.invert(0),
-        xMax = this.xScale.invert(this.width),
-        yMin = this.yScale.invert(this.height),
-        yMax = this.yScale.invert(0),
-        dx = (xMax - xMin) / this.width,
-        dy = (yMax - yMin) / this.height,
-        x = this.mouseToDataX_(event.pageX - rect.left),
-        y = this.mouseToDataY_(event.pageY - rect.top);
+    const xMin = this.xScale.invert(0),
+          xMax = this.xScale.invert(this.width),
+          yMin = this.yScale.invert(this.height),
+          yMax = this.yScale.invert(0),
+          dx = (xMax - xMin) / this.width,
+          dy = (yMax - yMin) / this.height,
+          x = this.mouseToDataX_(event.pageX - rect.left),
+          y = this.mouseToDataY_(event.pageY - rect.top);
 
     this.currPos = `(${prettyNumber(x, xMin, xMax, dx)}, ${prettyNumber(y, yMin, yMax, dy)})`;
   }
@@ -809,10 +814,10 @@ function expDigits(value: number, res: number): number {
  * point format to numbers less than a million in absolute value.
  */
 function prettyNumber(value: number, min: number, max: number, res: number): string {
-  var numFixed = fixedDigits(res),
-      numExp = Math.max(expDigits(min, res), expDigits(max, res)),
-      fixed = value.toFixed(numFixed),
-      exp = value.toExponential(numExp);
+  const numFixed = fixedDigits(res),
+        numExp = Math.max(expDigits(min, res), expDigits(max, res)),
+        fixed = value.toFixed(numFixed),
+        exp = value.toExponential(numExp);
   if ((fixed.length < exp.length) && (Math.abs(value) < 1e6)) {
     return fixed;
   } else {
@@ -826,7 +831,7 @@ function prettyNumber(value: number, min: number, max: number, res: number): str
  * limits (zMin <= z <= zMax).
  */
 function getColor(z: number, zMin: number, zMax: number) {
-  var index = 128;
+  let index = 128;
   if (zMin !== zMax) {
     index = Math.floor(255 * (z - zMin) / (zMax - zMin));
   }
@@ -854,7 +859,7 @@ function clip(x: number, xMin: number, xMax: number): number {
 
 
 function insertInRange(xs: Array<number>, x: number, lh: number, rh: number): number {
-  var m = lh + Math.floor((rh - lh)/2);
+  const m = lh + Math.floor((rh - lh)/2);
   if (x > xs[rh]) {
     xs.splice(rh + 1, 0, x);
     return rh + 1;
@@ -876,7 +881,7 @@ function insertInRange(xs: Array<number>, x: number, lh: number, rh: number): nu
 
 
 function insertSorted(xs: Array<number>, x: number): number {
-  var len = xs.length;
+  const len = xs.length;
   if (len === 0) {
     xs.push(x);
     return 0;
