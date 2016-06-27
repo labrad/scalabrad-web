@@ -398,6 +398,7 @@ export class Plot extends polymer.Base {
     }
   }
 
+
   private installMouseListeners_() {
     if (!this.svg) return;
     switch (this.mouseMode) {
@@ -416,6 +417,7 @@ export class Plot extends polymer.Base {
         break;
     }
   }
+
 
   private updatePlotStyles_() {
     if (!this.svg) return;
@@ -593,38 +595,57 @@ export class Plot extends polymer.Base {
   }
 
 
-  // Switch to specific mouse modes.
+  /**
+   * Sets the control mode to pan/zoom.
+   */
   public mouseModePan() {
     this.mouseMode = 'pan';
   }
 
 
+  /**
+   * Sets the control mode to zoom rectangle.
+   */
   public mouseModeZoomRect() {
     this.mouseMode = 'zoomRect';
   }
 
 
-  // Switch to specific draw modes.
+  /**
+   * Sets the 2D draw mode to dots.
+   */
   public drawMode2DDots() {
     this.drawMode2D = 'dots';
   }
 
 
+  /**
+   * Sets the 2D draw mode to rect fill.
+   */
   public drawMode2DRectfill() {
     this.drawMode2D = 'rectfill';
   }
 
 
+  /**
+   * Sets the 2D draw mode to vargrid.
+   */
   public drawMode2DVargrid() {
     this.drawMode2D = 'vargrid';
   }
 
 
+  /**
+   * Opens the trace selector dialog window.
+   */
   public traceSelectorOpen() {
     this.$.traceSelector.open();
   }
 
 
+  /**
+   * Selects all available traces.
+   */
   public traceSelectorSelectAll() {
     var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
@@ -633,6 +654,9 @@ export class Plot extends polymer.Base {
   }
 
 
+  /**
+   * Selects none of the available traces.
+   */
   public traceSelectorSelectNone() {
     var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
@@ -641,6 +665,10 @@ export class Plot extends polymer.Base {
   }
 
 
+  /**
+   * Submit the users trace selection. Will not submit if no traces are
+   * selected.
+   */
   public traceSelectorSubmit() {
     var selected: Array<number> = [];
     var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
