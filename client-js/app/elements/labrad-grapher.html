@@ -10,9 +10,6 @@
       width: 100%;
       border-collapse: collapse;
     }
-    tbody tr:nth-child(1n).iron-selected {
-      background-color: #ccc;
-    }
     .label-wide {
       width: 100%;
       min-width: 60px;
@@ -81,17 +78,20 @@
       font-family: courier;
       text-overflow: ellipsis;
     }
-    tbody tr:nth-child(odd) {
+    .row {
+      cursor: pointer;
+    }
+    .row:nth-child(odd) {
       background-color: #EEEEEE;
     }
-    tbody tr:nth-child(odd):hover {
+    .row:nth-child(odd):hover {
       background-color: #F6F699;
     }
-    tbody tr:nth-child(even):hover {
+    .row:nth-child(even):hover {
       background-color: #FFFFAA;
     }
-    td.item {
-      white-space: nowrap;
+    .row.iron-selected {
+      background-color: #ccc;
     }
     #listing {
       min-width: 375px;
@@ -115,9 +115,11 @@
             <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="show trashed items"></paper-icon-button>
           </div>
           <div id="listing">
-            <iron-list items="{{listItems}}" as="item" class='fit' selected-item="{{selected}}" selection-enabled>
+            <iron-list items="{{listItems}}" as="item" class='fit'
+                                             selected-item="{{selected}}"
+                                             selection-enabled>
               <template>
-                <div class='row' selid="[[item.id]]">
+                <div class$='row [[computeSelectedClass(selected)]]'>
                   <div class="item">
                     <template is="dom-if" if="[[item.isParent]]">
                       <iron-icon icon="arrow-back" item-icon></iron-icon>

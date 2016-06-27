@@ -74,8 +74,8 @@ export class DatavaultActivity implements Activity {
 
   async start(): Promise<ActivityState> {
     console.info('Loading datavault:', this.path);
-    this.api.newDir.add(x => this.onNewDir(), this.lifetime);
-    this.api.newDataset.add(x => this.onNewDataset(), this.lifetime);
+    this.api.newDir.add(x => this.onNewDir(x), this.lifetime);
+    this.api.newDataset.add(x => this.onNewDataset(x), this.lifetime);
     this.api.tagsUpdated.add(x => this.tagsUpdated(), this.lifetime);
     var listing = await this.api.dir(this.path);
     var breadcrumbs = [];
@@ -112,14 +112,22 @@ export class DatavaultActivity implements Activity {
     };
   }
 
-  async onNewDir() {
-    var listing = await this.api.dir(this.path);
-    this.elem.dirs = this.getDirs(listing);
+  private onNewDir(item: {name: string, tags?: Array<string>}) {
+    const dir = {
+      name: item.name,
+      url: this.places.grapherUrl(this.path, item.name),
+      tags: (item.tags) ? item.tags : []
+    };
+    this.elem.newDir(dir);
   }
 
-  async onNewDataset() {
-    var listing = await this.api.dir(this.path);
-    this.elem.datasets = this.getDatasets(listing);
+  private onNewDataset(item: {name: string, tags?: Array<string>}) {
+    const dataset = {
+      name: item.name,
+      url: this.places.datasetUrl(this.path, item.name.split(" - ")[0]),
+      tags: (item.tags) ? item.tags : []
+    };
+    this.elem.newDataset(dataset);
   }
 
   async tagsUpdated() {

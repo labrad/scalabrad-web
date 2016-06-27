@@ -1,19 +1,39 @@
 import * as datavault from '../scripts/datavault';
 import {Places} from '../scripts/places';
 
+type ListItem = {
+  id: string,
+  name: string,
+  url: string,
+  isDir: boolean,
+  isDataset: boolean,
+  isParent: boolean,
+  starred: boolean,
+  trashed: boolean
+};
+
 @component('labrad-grapher')
 export class LabradGrapher extends polymer.Base {
   @property({type: Array, notify: true})
   path: Array<string>;
 
-  @property({type: Array})
+  @property({type: Array, value: () => { return []; }})
   dirs: Array<{name: string; url: string; tags: Array<string>}>;
 
-  @property({type: Array})
+  @property({type: Array, value: () => { return []; }})
   datasets: Array<{name: string; url: string; tags: Array<string>}>;
 
-  @property({type: String, notify: true})
-  selected: {id: string};
+  @property({type: Array, value: () => { return []; }})
+  listItems: Array<ListItem>;
+
+  @property({type: Array, value: () => { return []; }})
+  listItems_: Array<ListItem>;
+
+  @property({type: Object, notify: true})
+  selected: ListItem;
+
+  @property({type: Number, notify: true})
+  selectedIndex: number;
 
   @property({type: Object})
   selectedDatasetInfo: datavault.DatasetInfo = null;
@@ -35,25 +55,35 @@ export class LabradGrapher extends polymer.Base {
     this.showStars = false;
     this.showTrash = false;
     this.updateButtons();
+
+    this.initializeListItems_(
+      this.path,
+      this.dirs,
+      this.datasets);
+    this.applyListFilter_();
   }
 
   starClicked() {
     this.showStars = !this.showStars;
     if (this.showStars) this.showTrash = false;
     this.updateButtons();
-    this.kick++;
+    this.applyListFilter_();
   }
 
   trashClicked() {
     this.showTrash = !this.showTrash;
     if (this.showTrash) this.showStars = false;
     this.updateButtons();
-    this.kick++;
+    this.applyListFilter_();
   }
 
-  updateButtons() {
+  updateButtons(): void {
     this.$.star.style.color = this.showStars ? 'black' : '#AAAAAA';
     this.$.trash.style.color = this.showTrash ? 'black' : '#AAAAAA';
+  }
+
+  computeSelectedClass(selected: boolean): string {
+    return (selected) ? "iron-selected" : "";
   }
 
   @listen("keypress")
@@ -61,6 +91,9 @@ export class LabradGrapher extends polymer.Base {
     if (!this.selected) {
       return "";
     }
+
+    const selectedIndex = this.listItems.indexOf(this.selected);
+
     var id = this.selected.id;
     if (!id) return;
     switch (event.charCode) {
@@ -80,6 +113,8 @@ export class LabradGrapher extends polymer.Base {
             tags: ['^star']
           });
         }
+        this.set('listItems.' + selectedIndex + '.starred',
+                 !this.selected.starred);
         break;
 
       case 116 /* t */:
@@ -98,35 +133,50 @@ export class LabradGrapher extends polymer.Base {
             tags: ['^trash']
           });
         }
+        this.set('listItems.' + selectedIndex + '.trashed',
+                 !this.selected.trashed);
+
+        if (this.filterListItems_([this.selected]).length == 0) {
+          this.splice('listItems', selectedIndex, 1);
+        }
         break;
     }
   }
 
-  @computed()
-  listItems(
-    path: Array<string>,
-    dirs: Array<{name: string; url: string; tags: Array<string>}>,
-    datasets: Array<{name: string; url: string; tags: Array<string>}>,
-    kick: number
-  ) {
-    if (!dirs) dirs = [];
-    if (!datasets) datasets = [];
+  newDir(dir: {name: string; url: string; tags: Array<string>}): void {
+    const obj = {
+      id: 'dir:' + dir.name,
+      name: dir.name,
+      url: dir.url,
+      isDir: true,
+      isDataset: false,
+      isParent: false,
+      starred: this.isTagged_(dir, 'star'),
+      trashed: this.isTagged_(dir, 'trash')
+    };
+    this.addItemToList_(obj);
+  }
 
-    var isTagged = (item: {tags: Array<string>}, tag: string) => {
-      for (let t of item.tags) {
-        if (t === tag) return true;
-      }
-      return false;
-    }
-    var isIncluded = (item: {tags: Array<string>}) => {
-      if (this.showStars) return isTagged(item, 'star');
-      if (!this.showTrash) return !isTagged(item, 'trash');
-      return true;
-    }
+  newDataset(dataset: {name: string; url: string; tags: Array<string>}): void {
+    const obj = {
+      id: 'dataset:' + dataset.name,
+      name: dataset.name,
+      url: dataset.url,
+      isDir: false,
+      isDataset: true,
+      isParent: false,
+      starred: this.isTagged_(dataset, 'star'),
+      trashed: this.isTagged_(dataset, 'trash')
+    };
+    this.addItemToList_(obj);
+  }
 
-    var items = [];
+  private initializeListItems_(
+      path: Array<string>,
+      dirs: Array<{name: string; url: string; tags: Array<string>}>,
+      datasets: Array<{name: string; url: string; tags: Array<string>}>) {
     if (path.length > 0 && this.places) {
-      items.push({
+      this.push('listItems_', {
         id: '..',
         name: '..',
         url: this.places.grapherUrl(path.slice(0, -1)),
@@ -137,35 +187,50 @@ export class LabradGrapher extends polymer.Base {
         trashed: false
       });
     }
+
     for (let dir of dirs) {
-      if (isIncluded(dir)) {
-        items.push({
-          id: 'dir:' + dir.name,
-          name: dir.name,
-          url: dir.url,
-          isDir: true,
-          isDataset: false,
-          isParent: false,
-          starred: isTagged(dir, 'star'),
-          trashed: isTagged(dir, 'trash')
-        });
-      }
+      this.newDir(dir);
     }
+
     for (let dataset of datasets) {
-      if (isIncluded(dataset)) {
-        items.push({
-          id: 'dataset:' + dataset.name,
-          name: dataset.name,
-          url: dataset.url,
-          isDir: false,
-          isDataset: true,
-          isParent: false,
-          starred: isTagged(dataset, 'star'),
-          trashed: isTagged(dataset, 'trash')
-        });
-      }
+      this.newDataset(dataset);
     }
-    return items;
+  }
+
+  private addItemToList_(item: ListItem): void {
+    this.push('listItems_', item);
+    if (this.filterListItems_([item]).length == 1) {
+      this.push('listItems', item);
+    }
+  }
+
+  private filterListItems_(items: Array<ListItem>) {
+    if (this.showTrash) {
+      return items.filter((x) => {
+        return (x.trashed || x.isParent);
+      });
+    }
+
+    if (this.showStars) {
+      return items.filter((x) => {
+        return (x.starred && !x.trashed) || x.isParent;
+      });
+    }
+
+    return items.filter((x) => {
+      return !x.trashed || x.isParent;
+    });
+  }
+
+  private applyListFilter_(): void {
+    this.set('listItems', this.filterListItems_(this.listItems_));
+  }
+
+  private isTagged_(item: {tags: Array<string>}, tag: string) {
+    for (let t of item.tags) {
+      if (t === tag) return true;
+    }
+    return false;
   }
 
   @computed()
