@@ -147,7 +147,7 @@
     .label-wide .back-link:visited {
       color: #555;
     }
-    .label-wide .back-link:hover {
+    .label-wide .back-link:hover,
     .label-wide .back-link:visited:hover {
       color: #3f51b5;
     }
@@ -177,7 +177,7 @@
                     on-dragover="onDirDragOver"
                     on-dragleave="onDirDragLeave"
                     on-drop="dirDrop">
-                  <a is="app-link" path="{{item.url}}" href="{{item.url}"}>
+                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">
                     <iron-icon icon="folder" item-icon class="folder"></iron-icon>
                     <span>{{item.name}}</span>
                   </a>
