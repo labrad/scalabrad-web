@@ -673,7 +673,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('xLabel')
-  xLabelChanged(newLabel: string, oldLabel: string) {
+  private observeXLabel_(newLabel: string, oldLabel: string) {
     if (this.svg) {
       this.svg.select('#x-label').text(newLabel);
     }
@@ -681,7 +681,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('yLabel')
-  yLabelChanged(newLabel: string, oldLabel: string) {
+  private observeYLabel_(newLabel: string, oldLabel: string) {
     if (this.svg) {
       this.svg.select('#y-label').text(newLabel);
     }
@@ -689,7 +689,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('mouseMode')
-  mouseModeChanged(newMode: string, oldMode: string) {
+  private observeMouseMode_(newMode: string, oldMode: string) {
     switch (newMode) {
       case 'pan':
         this.$.pan.style.color = 'black';
@@ -706,7 +706,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('drawMode2D')
-  drawMode2DChanged(newMode: string, oldMode: string) {
+  private observeDrawMode2D_(newMode: string, oldMode: string) {
     switch (newMode) {
       case 'dots':
         this.$.dots.style.color = 'black';
@@ -733,13 +733,13 @@ export class Plot extends polymer.Base {
 
 
   @observe('numIndeps')
-  numIndepsChanged(newNum: number, oldNum: number) {
+  private observeNumIndeps_(newNum: number, oldNum: number) {
     this.updatePlotStyles();
   }
 
 
   @listen('plot.mousemove')
-  mouseMove(event) {
+  private listenPlotMouseMove_(event) {
     const rect = event.currentTarget.getBoundingClientRect();
     var xMin = this.xScale.invert(0),
         xMax = this.xScale.invert(this.width),
