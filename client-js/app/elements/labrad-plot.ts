@@ -68,7 +68,9 @@ export class Plot extends polymer.Base {
   private limits = {xMin: 0, xMax: 1, yMin: 0, yMax: 1};
   private dataLimits = {xMin: NaN, xMax: NaN, yMin: NaN, yMax: NaN, zMin: NaN, zMax: NaN};
   private margin = {top: 50, right: 10, bottom: 50, left: 40};
-  private userTraces: boolean = false; //hack to enforce user defined display of traces
+
+  // Hack to enforce user defined display of traces.
+  private userTraces: boolean = false;
 
   private xs: Array<number> = [];
   private ys: Array<number> = [];
@@ -98,7 +100,7 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Add new data to the plot and rezoom.
+   * Add new data to the plot and re-zoom.
    * Fires when new data arrives via the socket.
    */
   public addData(data: Array<Array<number>>) {
@@ -148,7 +150,7 @@ export class Plot extends polymer.Base {
             .y(p.yScale)
             .on('zoom', () => this.handleZoom());
 
-    // plot area
+    // Plot area.
     p.svg = d3.select(area)
             .append('svg:svg')
             .attr('width', width + p.margin.left + p.margin.right)
@@ -156,7 +158,7 @@ export class Plot extends polymer.Base {
             .append('g')
             .attr('transform', `translate(${p.margin.left}, ${p.margin.top})`)
 
-    // background rectangle
+    // Background rectangle.
     p.svg.append('rect')
             .classed('background', true)
             .attr('stroke', 'black')
@@ -165,7 +167,7 @@ export class Plot extends polymer.Base {
             .attr('height', height)
             .style('fill', '#222222');
 
-    // x-axis ticks and label
+    // X-axis ticks and label.
     p.svg.append('g')
             .attr('class', 'x axis')
             .attr('transform', `translate(0, ${height})`)
@@ -176,7 +178,7 @@ export class Plot extends polymer.Base {
             .style('text-anchor', 'middle')
             .text(this.xLabel);
 
-    // y-axis ticks and label
+    // Y-axis ticks and label.
     p.svg.append('g')
             .attr('class', 'y axis')
             .call(p.yAxis);
@@ -189,8 +191,8 @@ export class Plot extends polymer.Base {
             .style('text-anchor', 'middle')
             .text(this.yLabel);
 
-    // draw the graph object (from http://jsfiddle.net/KSAbK/)
-    // This keeps the data from exceeding the limits of the plot
+    // Draw the graph object (from http://jsfiddle.net/KSAbK/)
+    // This keeps the data from exceeding the limits of the plot.
     p.chartBody = p.svg.append('g')
             .attr('clip-path', 'url(#clip)');
     p.clip = p.svg.append('svg:clipPath')
@@ -216,10 +218,10 @@ export class Plot extends polymer.Base {
       case 2: this.plotData2D(data, lastData); break;
     }
 
-    // update the last data point we've seen
+    // Update the last data point we've seen.
     this.lastData = data[data.length - 1];
 
-    // if min and max view limits are the same (e.g. because we have just one
+    // If min and max view limits are the same (e.g. because we have just one
     // datapoint so far), then offset the view limits by a small amount.
     if (this.limits.xMin === this.limits.xMax) {
       this.limits.xMin -= 1;
@@ -230,13 +232,14 @@ export class Plot extends polymer.Base {
       this.limits.yMax += 1;
     }
 
-    // zoom to fit the data. (TODO: only if the zoom has not changed)
+    // Zoom to fit the data.
+    // TODO: Only if the zoom has not changed.
     this.resetZoom();
   }
 
 
   private plotData1D(data: Array<Array<number>>, lastData?: Array<number>) {
-    // update data limits
+    // Update data limits.
     this.dataLimits = {xMin: NaN, xMax: NaN, yMin: NaN, yMax: NaN, zMin: NaN, zMax: NaN};
 
     for (let row of data) {
@@ -257,7 +260,7 @@ export class Plot extends polymer.Base {
     this.limits.yMax = isNaN(this.dataLimits.yMax) ? 0 : this.dataLimits.yMax;
 
     for (let i of this.displayTraces) {
-      // extract data for trace i, starting with the last datapoint to avoid gaps
+      // Extract data for trace i, starting with the last datapoint to avoid gaps.
       var traceData = [];
       if (lastData) {
         traceData.push([lastData[0], lastData[i+1]]);
@@ -266,7 +269,7 @@ export class Plot extends polymer.Base {
         traceData.push([row[0], row[i+1]]);
       }
 
-      // add this trace to the plot
+      // Add this trace to the plot.
       if (traceData.length > 1) {
         this.chartBody.append('svg:path')
                 .datum(traceData)
@@ -280,7 +283,7 @@ export class Plot extends polymer.Base {
 
 
   private plotData2D(data: Array<Array<number>>, lastData?: Array<number>) {
-    // update data limits
+    // Update data limits.
 
     for (let row of data) {
       let x = row[0];
@@ -332,7 +335,7 @@ export class Plot extends polymer.Base {
         this.dataLimits.zMax = safeMax(this.dataLimits.zMax, z);
     }
 
-    // update view limits
+    // Update view limits.
     this.limits.xMin = isNaN(this.dataLimits.xMin) ? 0 : this.dataLimits.xMin;
     this.limits.xMax = isNaN(this.dataLimits.xMax + this.dx) ? 0 : this.dataLimits.xMax + this.dx;
     this.limits.yMin = isNaN(this.dataLimits.yMin) ? 0 : this.dataLimits.yMin;
@@ -345,7 +348,7 @@ export class Plot extends polymer.Base {
       zMax += 1;
     }
 
-    // add a dot to the plot
+    // Add a dot to the plot.
     var p = this;
     switch (this.drawMode2D) {
     case 'dots':
@@ -447,7 +450,7 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Reset to original window size after zoom-in
+   * Reset to original window size after zoom-in.
    */
   private resetZoom() {
     this.xScale.domain([this.limits.xMin, this.limits.xMax]);
@@ -461,7 +464,7 @@ export class Plot extends polymer.Base {
 
 
   private handleZoom() {
-    // Zoom and pan axes
+    // Zoom and pan axes.
     this.svg.select('.x.axis').call(this.xAxis);
     this.svg.select('.y.axis').call(this.yAxis);
 
@@ -473,7 +476,7 @@ export class Plot extends polymer.Base {
 
 
   private zoomData1D() {
-    // adjust data for each trace
+    // Adjust data for each trace.
     for (var k = 0; k < this.numTraces; k++) {
       this.svg.selectAll(`.line${k}`)
           .attr('class', `line${k}`)
@@ -487,7 +490,7 @@ export class Plot extends polymer.Base {
         zMax = this.dataLimits.zMax,
         p = this;
 
-    // adjust size, position, and color of each data rect
+    // Adjust size, position, and color of each data rect.
     switch (this.drawMode2D) {
     case 'dots':
       var w = 4, h = 4;
@@ -523,7 +526,7 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Zoom into a selected rectangular region on the graph
+   * Zoom into a selected rectangular region on the graph.
    */
   private zoomRectangle() {
     // Helper function to get mouse position in the coordinates of the svg plot
@@ -590,7 +593,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  // Switch to specific mouse modes
+  // Switch to specific mouse modes.
   private mouseModePan() {
     this.mouseMode = 'pan';
   }
@@ -601,7 +604,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  // Switch to specific draw modes
+  // Switch to specific draw modes.
   private drawMode2DDots() {
     this.drawMode2D = 'dots';
   }
