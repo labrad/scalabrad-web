@@ -425,7 +425,7 @@ export class Plot extends polymer.Base {
               .attr('y', (d) => p.yScale(p.yNext[d[1]]))
               .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
               .attr('height', (d) => {
-                Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1]))
+                return Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1]));
               })
               .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       }
@@ -547,7 +547,7 @@ export class Plot extends polymer.Base {
           .attr('y', (d) => p.yScale(p.yNext[d[1]]))
           .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
           .attr('height', (d) => {
-            Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1]))
+            return Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1]));
           })
           .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
       break;
