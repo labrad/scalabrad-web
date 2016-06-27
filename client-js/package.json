@@ -60,8 +60,8 @@
     "directories": {},
     "dependencies": {
       "d3": "github:d3/d3@^3.5.17",
-      "three": "github:mrdoob/three.js@master",
-      "page": "npm:page@^1.6.3"
+      "page": "npm:page@^1.6.3",
+      "three": "github:mrdoob/three.js@master"
     },
     "devDependencies": {
       "traceur": "github:jmcriffey/bower-traceur@0.0.88",
