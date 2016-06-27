@@ -35,10 +35,19 @@
     #dots {
       margin-top: 40px;
     }
+    #plot {
+      position: relative;
+    }
+    #canvas {
+      position: absolute;
+      top: 50px;
+      left: 40px;
+    }
   </style>
   <template>
     <div id="plot"></div>
-    <div id="pos">current position: <span>{{currPos}}</span></div>
+    <div id="canvas"></div>
+    <div id="pos">Current Position: <span>{{currPos}}</span></div>
     <div id="buttons">
       <paper-icon-button icon="tab-unselected" id="rect" on-click="mouseModeSelectorZoomRect" title="drag to zoom"></paper-icon-button>
       <paper-icon-button icon="open-with" id="pan" on-click="mouseModeSelectorPan" title="drag to pan"></paper-icon-button>

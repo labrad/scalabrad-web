@@ -232,7 +232,7 @@ export class DatavaultLiveActivity implements Activity {
     // resize all plots to ensure they fit the view.
     if (this.activities.length <= 3) {
       for (const activity of this.activities) {
-        activity.plot.redraw();
+        activity.plot.redrawScene();
       }
     }
 
