@@ -13,7 +13,7 @@ System.config({
     "d3": "github:mbostock/d3@3.5.17",
     "three": "github:mrdoob/three.js@master",
     "page": "npm:page@1.6.3",
-    "three": "github:mrdoob/three.js@master",
+    "three": "github:mrdoob/three.js@r78",
     "traceur": "github:jmcriffey/bower-traceur@0.0.88",
     "traceur-runtime": "github:jmcriffey/bower-traceur-runtime@0.0.88",
     "github:jspm/nodelibs-process@0.1.1": {
