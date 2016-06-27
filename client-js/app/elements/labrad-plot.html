@@ -43,14 +43,14 @@
       <paper-icon-button icon="tab-unselected" id="rect" on-click="mouseModeZoomRect" title="drag to zoom"></paper-icon-button>
       <paper-icon-button icon="open-with" id="pan" on-click="mouseModePan" title="drag to pan"></paper-icon-button>
       <paper-icon-button icon="home" id="home" on-click="resetZoom" title="zoom out"></paper-icon-button>
-      <paper-icon-button icon="list" id="select" on-click="selectTraces" title="select trace"></paper-icon-button>
+      <paper-icon-button icon="list" id="select" on-click="traceSelectorOpen" title="select trace"></paper-icon-button>
       <div id="modes2d">
         <paper-icon-button icon="av:stop" id="dots" on-click="drawMode2DDots" title="draw with dots"></paper-icon-button>
         <paper-icon-button icon="dashboard" id="rectfill" on-click="drawMode2DRectfill" title="draw with rect fill"></paper-icon-button>
         <paper-icon-button icon="view-list" id="vargrid" on-click="drawMode2DVargrid" title="draw with vargrid"></paper-icon-button>
       </div>
     </div>
-    
+
     <paper-dialog id="traceSelector">
       <h1>Select Traces</h1>
       <paper-dialog-scrollable>
@@ -64,8 +64,8 @@
               </div>
             </template>
             <div id="selectButtons">
-              <paper-button on-click="selectAll">select all</paper-button>
-              <paper-button on-click="deselectAll">select none</paper-button>
+              <paper-button on-click="traceSelectorSelectAll">Select All</paper-button>
+              <paper-button on-click="traceSelectorSelectNone">Select None</paper-button>
             </div>
           </template>
           <template is="dom-if" if="{{is2D}}">
@@ -75,17 +75,15 @@
                   <span>{{item.label}}</span>
                   (<span>{{item.legend}}</span>) [<span>{{item.unit}}</span>]
                 </paper-radio-button>
-              </template> 
+              </template>
             </paper-radio-group>
           </template>
         </form>
       </paper-dialog-scrollable>
       <div id="submitButtons" style="display:inline">
-        <paper-button raised on-click="submitTraces">OK</paper-button>
-        <paper-button raised dialog-dismiss>cancel</paper-button>
+        <paper-button raised on-click="traceSelectorSubmit">OK</paper-button>
+        <paper-button raised dialog-dismiss>Cancel</paper-button>
       </div>
-
     </paper-dialog>
-
   </template>
 </dom-module>

@@ -620,12 +620,12 @@ export class Plot extends polymer.Base {
   }
 
 
-  private selectTraces() {
+  public traceSelectorOpen() {
     this.$.traceSelector.open();
   }
 
 
-  private selectAll() {
+  public traceSelectorSelectAll() {
     var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
       (<HTMLInputElement>checkbox).checked = true;
@@ -633,7 +633,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private deselectAll() {
+  public traceSelectorSelectNone() {
     var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
       (<HTMLInputElement>checkbox).checked = false;
@@ -641,7 +641,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private submitTraces() {
+  public traceSelectorSubmit() {
     var selected: Array<number> = [];
     var checkboxes = Polymer.dom(this.$.traceSelector).querySelectorAll('[name=traces]');
     var radio = Polymer.dom(this.$.traceSelector).querySelector('[name=radioGroup]');
