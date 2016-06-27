@@ -28,7 +28,7 @@ var COLOR_MAP = viridisData.map((rgb) => {
 
 @component('labrad-plot')
 export class Plot extends polymer.Base {
-
+.
   @property({type: String, value: ''})
   xLabel: string;
 
@@ -598,7 +598,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the control mode to pan/zoom.
    */
-  public mouseModePan() {
+  public mouseModeSelectorPan() {
     this.mouseMode = 'pan';
   }
 
@@ -606,7 +606,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the control mode to zoom rectangle.
    */
-  public mouseModeZoomRect() {
+  public mouseModeSelectorZoomRect() {
     this.mouseMode = 'zoomRect';
   }
 
@@ -614,7 +614,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to dots.
    */
-  public drawMode2DDots() {
+  public drawMode2DSelectorDots() {
     this.drawMode2D = 'dots';
   }
 
@@ -622,7 +622,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to rect fill.
    */
-  public drawMode2DRectfill() {
+  public drawMode2DSelectorRectfill() {
     this.drawMode2D = 'rectfill';
   }
 
@@ -630,7 +630,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to vargrid.
    */
-  public drawMode2DVargrid() {
+  public drawMode2DSelectorVargrid() {
     this.drawMode2D = 'vargrid';
   }
 
