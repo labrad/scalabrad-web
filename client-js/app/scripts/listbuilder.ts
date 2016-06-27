@@ -36,52 +36,65 @@ export class ListBuilder {
    * passing each element in `listItems` to `func` which should return a
    * `HTMLElement`.
    */
-  public render(listItems: Array, element: HTMLElement, func: Function, chunkSize?: number) {
-    chunkSize = chunkSize || 200;
+  public render(listItems: Array, element: HTMLElement, func: Function,
+                initialChunkSize?: number, chunkSize?: number) {
+    initialChunkSize = (initialChunkSize != undefined) ? initialChunkSize : 20;
+    chunkSize = (chunkSize != undefined) ? chunkSize : 200;
 
-    // If we are currently rendering, interuppt all elements currently in the
+    // If we are currently rendering, interrupt all elements currently in the
     // queue and increment the renderId.
     if (this.isRendering) {
-      this.renderInterrupt_ = renderId;
+      this.renderInterrupt_ = this.renderId_;
       this.renderId_++;
     }
 
     this.isRendering = true;
 
-    const list = listItems;
-    const length = list.length;
-    const numChunks = Math.ceil(length / chunkSize);
+    const listLength = listItems.length;
+    const chunkCount = Math.ceil((listLength - initialChunkSize) / chunkSize);
 
-    for (let chunkId = 0; chunkId < numChunks; ++chunkId) {
-      const chunkLength = (chunkId == numChunks - 1) ? list.length % chunkSize : chunkSize;
+    this.chunkListToQueue_(listItems, func, element, 0, 1, initialChunkSize);
+    this.chunkListToQueue_(listItems, func, element,
+                           initialChunkSize, chunkCount, chunkSize);
+    this.emptyChunkQueue_();
+  }
 
+
+  /**
+   * Splits a list into chunks and enqueues them to be rendered.
+   */
+  chunkListToQueue_(list: Array, func: Function, element: HTMLElement,
+                    chunkOffset: number, chunkCount: number, chunkSize: number) {
+    for (let chunkId = 0; chunkId < chunkCount; ++chunkId) {
       this.chunkQueue_.push({
         renderId: this.renderId_,
         func: () => {
-          const docFragment = document.createDocumentFragment();
+          let length = chunkSize;
+          const index = chunkOffset + chunkId * chunkSize;
+          if (index + length > list.length) {
+            length = list.length - index;
+          }
 
-          const index = chunkSize * chunkId;
-          for (let i = 0; i < chunkLength; ++i) {
+          const docFragment = document.createDocumentFragment();
+          for (let i = 0; i < length; ++i) {
             const item = list[index + i];
             docFragment.appendChild(func(item));
           }
-
           element.appendChild(docFragment);
         }
       });
     }
-
-    // Render the first chunk immediately
-    this.dequeueChunk_();
-    this.emptyChunkQueue_();
   }
-
 
   /**
    * Takes the chunk from the head of the list and renders it if it has not
    * been interrupted.
    */
   dequeueChunk_() {
+    if (this.chunkQueue_.length == 0) {
+      return;
+    }
+
     const {renderId, func} = this.chunkQueue_.shift();
     if (renderId > this.renderInterrupt_) {
       func();

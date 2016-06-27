@@ -44,11 +44,15 @@ export class LabradGrapher extends polymer.Base {
 
   updateList() {
     const element = Polymer.dom(document.getElementById('selectable-table'));
-    while (element.firstElementChild) {
-      element.removeChild(element.firstElementChild);
-    }
-    const items = this.listItems(this.path, this.dirs, this.datasets, this.kick);
-    this.listBuilder.render(items, element, (item) => this.listItem(item));
+    requestAnimationFrame(() => {
+      while (element.firstElementChild) {
+        element.removeChild(element.firstElementChild);
+      }
+    });
+    const items = this.listItems(
+        this.path, this.dirs, this.datasets, this.kick);
+    this.listBuilder.render(
+        items, element, (item) => this.listItem(item), 50, 250);
   }
 
   starClicked() {
@@ -74,12 +78,10 @@ export class LabradGrapher extends polymer.Base {
 
   listItem(item: Object) : HTMLElement {
     const tr = document.createElement('tr');
-
-    tr.className = 'style-scope labrad-grapher ';
     tr.setAttribute('selid', item.id);
 
     const td1 = document.createElement('td');
-    td1.className = 'style-scope labrad-grapher ' + 'item';
+    td1.className = 'item';
 
     if (item.isParent) {
       td1.appendChild(this.iconBakery.get('arrow-back'));
@@ -100,7 +102,7 @@ export class LabradGrapher extends polymer.Base {
     td1.appendChild(aItem);
 
     const td2 = document.createElement('td');
-    td2.className = 'style-scope labrad-grapher ' + 'label-wide';
+    td2.className = 'label-wide';
 
     if (item.starred) {
       td2.appendChild(this.iconBakery.get('stars'));
