@@ -60,6 +60,7 @@
     "directories": {},
     "dependencies": {
       "d3": "github:d3/d3@^3.5.17",
+      "three": "github:mrdoob/three.js@master",
       "page": "npm:page@^1.6.3"
     },
     "devDependencies": {
