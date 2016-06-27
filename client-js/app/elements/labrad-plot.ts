@@ -253,7 +253,7 @@ export class Plot extends polymer.Base {
       }
     }
     this.yLabel = datavault.makeAxisLabel(this.deps[this.displayTraces[0]]);
-    // update view limits
+    // Update view limits.
     this.limits.xMin = isNaN(this.dataLimits.xMin) ? 0 : this.dataLimits.xMin;
     this.limits.xMax = isNaN(this.dataLimits.xMax) ? 0 : this.dataLimits.xMax;
     this.limits.yMin = isNaN(this.dataLimits.yMin) ? 0 : this.dataLimits.yMin;
