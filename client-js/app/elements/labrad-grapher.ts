@@ -38,9 +38,6 @@ export class LabradGrapher extends polymer.Base {
   @property({type: Object})
   selectedDatasetInfo: datavault.DatasetInfo = null;
 
-  @property({type: Number, value: 0})
-  kick: number;
-
   @property({type: Object})
   places: Places;
 
