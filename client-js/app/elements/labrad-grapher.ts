@@ -167,8 +167,12 @@ export class LabradGrapher extends polymer.Base {
 
   @computed()
   selectedDataset(selectedId: string): string {
-    if (selectedId.startsWith('dataset:')) {
-      var name = selectedId.substring(8);
+    if (!selectedId) {
+      return "";
+    }
+
+    if (selectedId.id.startsWith('dataset:')) {
+      var name = selectedId.id.substring(8);
       this.fetchInfo(name);
       return name;
     } else {
