@@ -133,6 +133,7 @@ export class LabradGrapher extends polymer.Base {
         this.set('listItems.' + selectedIndex + '.trashed',
                  !this.selected.trashed);
 
+        // Whenever we toggle trash, it will be removed from the view.
         if (this.filterListItems_([this.selected]).length == 0) {
           this.splice('listItems', selectedIndex, 1);
         }
@@ -220,6 +221,7 @@ export class LabradGrapher extends polymer.Base {
   }
 
   private applyListFilter_(): void {
+    // Will cause `iron-list` to jump to the top.
     this.set('listItems', this.filterListItems_(this.listItems_));
   }
 
