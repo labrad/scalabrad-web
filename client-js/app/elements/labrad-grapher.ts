@@ -58,7 +58,10 @@ export class LabradGrapher extends polymer.Base {
 
   @listen("keypress")
   onKeyPress(event) {
-    var id = this.selectedId;
+    if (!this.selectedId) {
+      return "";
+    }
+    var id = this.selectedId.id;
     if (!id) return;
     switch (event.charCode) {
       case 115 /* s */:

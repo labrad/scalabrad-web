@@ -93,7 +93,16 @@
       white-space: nowrap;
     }
     #listing {
-      min-width: 350px;
+      min-width: 375px;
+    }
+    .row {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: no-wrap;
+    }
+    .label-wide {
+      width: auto;
+      margin-left: auto;
     }
   </style>
   <template>
@@ -107,7 +116,7 @@
           <div id="listing">
             <iron-list items="{{listItems}}" as="item" class='fit' selected-item="{{selectedId}}" selection-enabled>
               <template>
-                <div selid="[[item.id]]">
+                <div class='row' selid="[[item.id]]">
                   <div class="item">
                     <template is="dom-if" if="[[item.isParent]]">
                       <iron-icon icon="arrow-back" item-icon></iron-icon>
