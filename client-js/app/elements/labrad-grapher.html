@@ -114,7 +114,7 @@
             <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="show trashed items"></paper-icon-button>
           </div>
           <div id="listing">
-            <iron-list items="{{listItems}}" as="item" class='fit' selected-item="{{selectedId}}" selection-enabled>
+            <iron-list items="{{listItems}}" as="item" class='fit' selected-item="{{selected}}" selection-enabled>
               <template>
                 <div class='row' selid="[[item.id]]">
                   <div class="item">

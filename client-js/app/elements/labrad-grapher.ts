@@ -13,7 +13,7 @@ export class LabradGrapher extends polymer.Base {
   datasets: Array<{name: string; url: string; tags: Array<string>}>;
 
   @property({type: String, notify: true})
-  selectedId: string;
+  selected: {id: string};
 
   @property({type: Object})
   selectedDatasetInfo: datavault.DatasetInfo = null;
@@ -58,10 +58,10 @@ export class LabradGrapher extends polymer.Base {
 
   @listen("keypress")
   onKeyPress(event) {
-    if (!this.selectedId) {
+    if (!this.selected) {
       return "";
     }
-    var id = this.selectedId.id;
+    var id = this.selected.id;
     if (!id) return;
     switch (event.charCode) {
       case 115 /* s */:
@@ -169,13 +169,13 @@ export class LabradGrapher extends polymer.Base {
   }
 
   @computed()
-  selectedDataset(selectedId: string): string {
-    if (!selectedId) {
+  selectedDataset(selected: {id: string}): string {
+    if (!selected) {
       return "";
     }
 
-    if (selectedId.id.startsWith('dataset:')) {
-      var name = selectedId.id.substring(8);
+    if (selected.id.startsWith('dataset:')) {
+      var name = selected.id.substring(8);
       this.fetchInfo(name);
       return name;
     } else {
