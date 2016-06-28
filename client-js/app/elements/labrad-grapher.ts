@@ -215,7 +215,9 @@ export class LabradGrapher extends polymer.Base {
   }
 
   private applyFilterToListItems(): void {
-    // Will cause the `iron-list` view to scroll (jump) to the top.
+    // Will cause the `iron-list` view to scroll (jump) to the top when
+    // rendering even if no changes to the filter are applied. Only use when
+    // this behavior is desired, such as swapping filtering modes.
     const filterFunction = this.filterListItemsFunction();
     this.set('filteredListItems', this.listItems.filter(filterFunction));
   }
