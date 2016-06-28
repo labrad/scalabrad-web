@@ -238,7 +238,7 @@ export class LabradGrapher extends polymer.Base {
     }
 
     if (selected.id.startsWith('dataset:')) {
-      var name = selected.id.substring(8);
+      const name = selected.id.substring(8);
       this.fetchInfo(name);
       return name;
     } else {
@@ -247,7 +247,7 @@ export class LabradGrapher extends polymer.Base {
   }
 
   async fetchInfo(name: string) {
-    var info = await this.api.datasetInfo({
+    const info = await this.api.datasetInfo({
       path: this.path,
       dataset: datavault.datasetNumber(name),
       includeParams: true
