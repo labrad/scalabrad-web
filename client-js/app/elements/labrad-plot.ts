@@ -35,6 +35,9 @@ export class Plot extends polymer.Base {
   @property({type: String, value: ''})
   yLabel: string;
 
+  @property({type: String, value: ''})
+  zLabel: string;
+
   @property({type: Number, value: 0})
   numIndeps: number;
 
@@ -61,8 +64,10 @@ export class Plot extends polymer.Base {
   private height: number;
   private xAxis: any;
   private yAxis: any;
+  private zAxis: any;
   private xScale: any;
   private yScale: any;
+  private zScale: any;
   private line: any;
   private zoom: any;
   private limits = {
@@ -149,6 +154,10 @@ export class Plot extends polymer.Base {
             .domain([p.limits.yMin, p.limits.yMax])
             .range([height, 0]);
 
+    p.zScale = d3.scale.linear()
+            .domain([0, 1])
+            .range([height, 0]);
+
     p.xAxis = d3.svg.axis()
             .scale(p.xScale)
             .orient('bottom')
@@ -159,6 +168,12 @@ export class Plot extends polymer.Base {
             .orient('left')
             .ticks(5)
             .tickSize(-width);
+
+    p.zAxis = d3.svg.axis()
+            .scale(p.zScale)
+            .orient('right')
+            .ticks(5)
+            .tickSize(25);
 
     p.line = d3.svg.line()
             .x((d) => p.xScale(d[0]))
@@ -171,9 +186,33 @@ export class Plot extends polymer.Base {
 
     // Plot area.
     p.svg = d3.select(area)
-            .append('svg:svg')
+            .append('svg')
             .attr('width', width + p.margin.left + p.margin.right)
             .attr('height', height + p. margin.top + p.margin.bottom)
+
+    p.svg.append('defs').append("linearGradient")
+        .attr("id", "grads")
+        .attr("x1", "0%")
+        .attr("y1", "0%")
+        .attr("x2", "100%")
+        .attr("y2", "0%")
+      .selectAll("stop")
+        .data([
+          {offset: "0%", color: "#00ff00"},
+          {offset: "50%", color: "#0000ff"},
+          {offset: "100%", color: "#ff0000"}
+        ])
+      .enter().append("stop")
+        .attr("offset", function(d) { return d.offset; })
+        .attr("stop-color", function(d) { return d.color; })
+        .attr("stop-opacity", 1);
+
+    p.svg.append('rect')
+.attr('fill', "url('" + location.href + "#grads')")
+.attr('width', 50)
+.attr('height', height)
+
+    p.svg = p.svg
             .append('g')
             .attr('transform', `translate(${p.margin.left}, ${p.margin.top})`);
 
@@ -211,13 +250,28 @@ export class Plot extends polymer.Base {
             .style('text-anchor', 'middle')
             .text(this.yLabel);
 
+    // z-axis ticks and label
+    p.svg.append('g')
+            .attr('class', 'z axis')
+            .attr('transform', `translate(${width}, 0)`)
+            .call(p.zAxis);
+    p.svg.append('text')
+            .attr('id', 'z-label')
+            .attr('transform', 'rotate(90)')
+            .attr('y', this.width - p.margin.right)
+            .attr('x', this.height - (height / 2))
+            .attr('dy', '1em')
+            .attr('transform', `translate(${width}, 0)`)
+            .style('text-anchor', 'middle')
+            .text(this.zLabel);
+
     // Draw the graph object (from http://jsfiddle.net/KSAbK/)
     // This keeps the data from exceeding the limits of the plot.
     p.chartBody = p.svg.append('g')
             .attr('clip-path', 'url(#clip)');
-    p.clip = p.svg.append('svg:clipPath')
+    p.clip = p.svg.append('clipPath')
             .attr('id', 'clip')
-            .append('svg:rect')
+            .append('rect')
             .attr('x', 0)
             .attr('y', 0)
             .attr('width', width)
@@ -492,6 +546,7 @@ export class Plot extends polymer.Base {
     // Zoom and pan axes.
     this.svg.select('.x.axis').call(this.xAxis);
     this.svg.select('.y.axis').call(this.yAxis);
+    this.svg.select('.z.axis').call(this.zAxis);
 
     switch (this.numIndeps) {
       case 1: this.zoomData1D_(); break;
@@ -627,10 +682,19 @@ export class Plot extends polymer.Base {
    * Reset to original window size after zoom-in.
    */
   public resetZoom() {
+    var zMin = this.dataLimits.zMin,
+        zMax = this.dataLimits.zMax;
+    if (zMin == zMax) {
+      zMin -= 1;
+      zMax += 1;
+    }
+
     this.xScale.domain([this.limits.xMin, this.limits.xMax]);
     this.yScale.domain([this.limits.yMin, this.limits.yMax]);
+    this.zScale.domain([zMin, zMax]);
     this.xAxis.scale(this.xScale);
     this.yAxis.scale(this.yScale);
+    this.zAxis.scale(this.zScale);
     this.zoom.x(this.xScale);
     this.zoom.y(this.yScale);
     this.handleZoom_();
