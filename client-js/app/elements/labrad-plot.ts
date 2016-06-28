@@ -374,7 +374,7 @@ export class Plot extends polymer.Base {
 
     let zMin = this.dataLimits.zMin,
         zMax = this.dataLimits.zMax;
-    if (zMin == zMax) {
+    if (zMin === zMax) {
       zMin -= 1;
       zMax += 1;
     }
@@ -874,10 +874,13 @@ function prettyNumber(
  * limits (zMin <= z <= zMax).
  */
 function getColor(z: number, zMin: number, zMax: number) {
-  let index = 128;
-  if (zMin !== zMax) {
-    index = Math.floor(255 * (z - zMin) / (zMax - zMin));
+  if (zMin === zMax) {
+    return COLOR_MAP[128];
   }
+  if (z === zMax) {
+    return COLOR_MAP[255];
+  }
+  const index = Math.floor(256 * (z - zMin) / (zMax - zMin));
   return COLOR_MAP[index];
 }
 
