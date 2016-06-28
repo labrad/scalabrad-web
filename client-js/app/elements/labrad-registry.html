@@ -7,6 +7,7 @@
   <style>
     :host {
       display: block;
+      width: 100%;
     }
 
     #reg-menu {
@@ -22,6 +23,7 @@
       display: inline-block;
       @apply(--shadow-elevation-2dp);
       height: 100%;
+      width: 100%;
     }
 
     tbody tr:nth-child(1n).iron-selected {
@@ -109,7 +111,7 @@
     }
     td.dir {
       white-space: nowrap;
-      -webkit-user-select: none;  
+      -webkit-user-select: none;
     }
     td.key {
       white-space: nowrap;
@@ -135,6 +137,20 @@
       max-width: 90%;
       max-height: 90%;
     }
+    .label-wide a {
+      text-decoration: none;
+    }
+    .label-wide a span {
+      text-decoration: underline;
+    }
+    .label-wide .back-link,
+    .label-wide .back-link:visited {
+      color: #555;
+    }
+    .label-wide .back-link:hover,
+    .label-wide .back-link:visited:hover {
+      color: #3f51b5;
+    }
   </style>
   <template>
     <div id="reg-area">
@@ -147,8 +163,10 @@
                 on-dblclick="editValueClicked">
               <template is="dom-if" if="{{item.isParent}}">
                 <td class="label-wide" colspan="2">
-                  <iron-icon icon="arrow-back" item-icon></iron-icon>
-                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">{{item.name}}</a>
+                  <a class='back-link' is="app-link" path="{{item.url}}" href="{{item.url}}">
+                    <iron-icon icon="arrow-back" item-icon></iron-icon>
+                    <span>{{item.name}}</span>
+                  </a>
                 </td>
               </template>
               <template is="dom-if" if="{{item.isDir}}">
@@ -159,8 +177,10 @@
                     on-dragover="onDirDragOver"
                     on-dragleave="onDirDragLeave"
                     on-drop="dirDrop">
-                  <iron-icon icon="folder" item-icon class="folder"></iron-icon>
-                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">{{item.name}}</a>
+                  <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+                    <iron-icon icon="folder" item-icon class="folder"></iron-icon>
+                    <span>{{item.name}}</span>
+                  </a>
                 </td>
               </template>
               <template is="dom-if" if="{{item.isKey}}">
