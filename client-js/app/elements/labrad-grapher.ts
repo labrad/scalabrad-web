@@ -1,25 +1,44 @@
 import * as datavault from '../scripts/datavault';
 import {Places} from '../scripts/places';
 
+type ListItem = {
+  id: string,
+  name: string,
+  url: string,
+  isDir: boolean,
+  isDataset: boolean,
+  isParent: boolean,
+  starred: boolean,
+  trashed: boolean
+};
+
+type ListItemFilterFunction = (item: ListItem) => boolean;
+
 @component('labrad-grapher')
 export class LabradGrapher extends polymer.Base {
   @property({type: Array, notify: true})
   path: Array<string>;
 
-  @property({type: Array})
+  @property({type: Array, value: () => { return []; }})
   dirs: Array<{name: string; url: string; tags: Array<string>}>;
 
-  @property({type: Array})
+  @property({type: Array, value: () => { return []; }})
   datasets: Array<{name: string; url: string; tags: Array<string>}>;
 
-  @property({type: String, notify: true})
-  selectedId: string;
+  @property({type: Array, value: () => { return []; }})
+  filteredListItems: Array<ListItem>;
+
+  @property({type: Array, value: () => { return []; }})
+  private listItems: Array<ListItem>;
+
+  @property({type: Object, notify: true})
+  selected: ListItem;
+
+  @property({type: Number, notify: true})
+  selectedIndex: number;
 
   @property({type: Object})
   selectedDatasetInfo: datavault.DatasetInfo = null;
-
-  @property({type: Number, value: 0})
-  kick: number;
 
   @property({type: Object})
   places: Places;
@@ -30,35 +49,48 @@ export class LabradGrapher extends polymer.Base {
   private showStars: boolean = false;
   private showTrash: boolean = false;
 
-  attached() {
+  attached(): void {
     this.tabIndex = 0;
     this.showStars = false;
     this.showTrash = false;
     this.updateButtons();
+
+    this.initializeListItems(
+      this.path,
+      this.dirs,
+      this.datasets);
+    this.applyFilterToListItems();
   }
 
-  starClicked() {
+  starClicked(): void {
     this.showStars = !this.showStars;
     if (this.showStars) this.showTrash = false;
     this.updateButtons();
-    this.kick++;
+    this.applyFilterToListItems();
   }
 
-  trashClicked() {
+  trashClicked(): void {
     this.showTrash = !this.showTrash;
     if (this.showTrash) this.showStars = false;
     this.updateButtons();
-    this.kick++;
+    this.applyFilterToListItems();
   }
 
-  updateButtons() {
+  updateButtons(): void {
     this.$.star.style.color = this.showStars ? 'black' : '#AAAAAA';
     this.$.trash.style.color = this.showTrash ? 'black' : '#AAAAAA';
   }
 
+  computeSelectedClass(selected: boolean): string {
+    return (selected) ? "iron-selected" : "";
+  }
+
   @listen("keypress")
-  onKeyPress(event) {
-    var id = this.selectedId;
+  onKeyPress(event): void {
+    if (!this.selected) return;
+    const selectedIndex = this.filteredListItems.indexOf(this.selected);
+    const id = this.selected.id;
+
     if (!id) return;
     switch (event.charCode) {
       case 115 /* s */:
@@ -77,6 +109,8 @@ export class LabradGrapher extends polymer.Base {
             tags: ['^star']
           });
         }
+        this.set(`filteredListItems.${selectedIndex}.starred`,
+                 !this.selected.starred);
         break;
 
       case 116 /* t */:
@@ -95,35 +129,50 @@ export class LabradGrapher extends polymer.Base {
             tags: ['^trash']
           });
         }
+        this.set(`filteredListItems.${selectedIndex}.trashed`,
+                 !this.selected.trashed);
+
+        // Whenever we toggle trash, it will be removed from the view.
+        const filterFunction = this.filterListItemsFunction();
+        if (!filterFunction(this.selected)) {
+          this.splice('filteredListItems', selectedIndex, 1);
+        }
         break;
     }
   }
 
-  @computed()
-  listItems(
-    path: Array<string>,
-    dirs: Array<{name: string; url: string; tags: Array<string>}>,
-    datasets: Array<{name: string; url: string; tags: Array<string>}>,
-    kick: number
-  ) {
-    if (!dirs) dirs = [];
-    if (!datasets) datasets = [];
+  newDir(dir: {name: string; url: string; tags: Array<string>}): void {
+    this.addItemToList({
+      id: 'dir:' + dir.name,
+      name: dir.name,
+      url: dir.url,
+      isDir: true,
+      isDataset: false,
+      isParent: false,
+      starred: this.isTagged(dir, 'star'),
+      trashed: this.isTagged(dir, 'trash')
+    });
+  }
 
-    var isTagged = (item: {tags: Array<string>}, tag: string) => {
-      for (let t of item.tags) {
-        if (t === tag) return true;
-      }
-      return false;
-    }
-    var isIncluded = (item: {tags: Array<string>}) => {
-      if (this.showStars) return isTagged(item, 'star');
-      if (!this.showTrash) return !isTagged(item, 'trash');
-      return true;
-    }
+  newDataset(dataset: {name: string; url: string; tags: Array<string>}): void {
+    this.addItemToList({
+      id: 'dataset:' + dataset.name,
+      name: dataset.name,
+      url: dataset.url,
+      isDir: false,
+      isDataset: true,
+      isParent: false,
+      starred: this.isTagged(dataset, 'star'),
+      trashed: this.isTagged(dataset, 'trash')
+    });
+  }
 
-    var items = [];
+  private initializeListItems(
+      path: Array<string>,
+      dirs: Array<{name: string; url: string; tags: Array<string>}>,
+      datasets: Array<{name: string; url: string; tags: Array<string>}>): void {
     if (path.length > 0 && this.places) {
-      items.push({
+      this.push('listItems', {
         id: '..',
         name: '..',
         url: this.places.grapherUrl(path.slice(0, -1)),
@@ -134,41 +183,62 @@ export class LabradGrapher extends polymer.Base {
         trashed: false
       });
     }
+
     for (let dir of dirs) {
-      if (isIncluded(dir)) {
-        items.push({
-          id: 'dir:' + dir.name,
-          name: dir.name,
-          url: dir.url,
-          isDir: true,
-          isDataset: false,
-          isParent: false,
-          starred: isTagged(dir, 'star'),
-          trashed: isTagged(dir, 'trash')
-        });
-      }
+      this.newDir(dir);
     }
+
     for (let dataset of datasets) {
-      if (isIncluded(dataset)) {
-        items.push({
-          id: 'dataset:' + dataset.name,
-          name: dataset.name,
-          url: dataset.url,
-          isDir: false,
-          isDataset: true,
-          isParent: false,
-          starred: isTagged(dataset, 'star'),
-          trashed: isTagged(dataset, 'trash')
-        });
-      }
+      this.newDataset(dataset);
     }
-    return items;
+  }
+
+  private addItemToList(item: ListItem): void {
+    this.push('listItems', item);
+    const filterFunction = this.filterListItemsFunction();
+    if (filterFunction(item)) {
+      this.push('filteredListItems', item);
+    }
+  }
+
+  private filterListItemsFunction(): ListItemFilterFunction {
+    // Return trashed and parent items
+    if (this.showTrash) {
+      return (x) => (x.trashed || x.isParent);
+    }
+
+    // Return starred and parent items, no trash
+    if (this.showStars) {
+      return (x) => ((x.starred && !x.trashed) || x.isParent);
+    }
+
+    // Return all items except trash.
+    return (x) => (!x.trashed || x.isParent);
+  }
+
+  private applyFilterToListItems(): void {
+    // Will cause the `iron-list` view to scroll (jump) to the top when
+    // rendering even if no changes to the filter are applied. Only use when
+    // this behavior is desired, such as swapping filtering modes.
+    const filterFunction = this.filterListItemsFunction();
+    this.set('filteredListItems', this.listItems.filter(filterFunction));
+  }
+
+  private isTagged(item: {tags: Array<string>}, tag: string): boolean {
+    for (let t of item.tags) {
+      if (t === tag) return true;
+    }
+    return false;
   }
 
   @computed()
-  selectedDataset(selectedId: string): string {
-    if (selectedId.startsWith('dataset:')) {
-      var name = selectedId.substring(8);
+  selectedDataset(selected: {id: string}): string {
+    if (!selected) {
+      return "";
+    }
+
+    if (selected.id.startsWith('dataset:')) {
+      const name = selected.id.substring(8);
       this.fetchInfo(name);
       return name;
     } else {
@@ -177,7 +247,7 @@ export class LabradGrapher extends polymer.Base {
   }
 
   async fetchInfo(name: string) {
-    var info = await this.api.datasetInfo({
+    const info = await this.api.datasetInfo({
       path: this.path,
       dataset: datavault.datasetNumber(name),
       includeParams: true
