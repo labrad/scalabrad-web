@@ -113,21 +113,19 @@ export class DatavaultActivity implements Activity {
   }
 
   private onNewDir(item: {name: string, tags?: Array<string>}) {
-    const dir = {
+    this.elem.newDir({
       name: item.name,
       url: this.places.grapherUrl(this.path, item.name),
       tags: (item.tags) ? item.tags : []
-    };
-    this.elem.newDir(dir);
+    });
   }
 
   private onNewDataset(item: {name: string, tags?: Array<string>}) {
-    const dataset = {
+    this.elem.newDataset({
       name: item.name,
       url: this.places.datasetUrl(this.path, item.name.split(" - ")[0]),
       tags: (item.tags) ? item.tags : []
-    };
-    this.elem.newDataset(dataset);
+    });
   }
 
   async tagsUpdated() {
