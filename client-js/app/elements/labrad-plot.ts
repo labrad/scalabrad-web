@@ -821,10 +821,11 @@ export class Plot extends polymer.Base {
           dx = (xMax - xMin) / this.width,
           dy = (yMax - yMin) / this.height,
           x = this.mouseToDataX_(event.pageX - rect.left),
-          y = this.mouseToDataY_(event.pageY - rect.top);
+          y = this.mouseToDataY_(event.pageY - rect.top),
+          xStr = prettyNumber(x, xMin, xMax, dx),
+          yStr = prettyNumber(y, yMin, yMax, dy);
 
-    this.currPos = `(${prettyNumber(x, xMin, xMax, dx)}, ` +
-                   `${prettyNumber(y, yMin, yMax, dy)})`;
+    this.currPos = `(${xStr}, ${yStr})`;
   }
 }
 
@@ -854,8 +855,8 @@ function expDigits(value: number, res: number): number {
  * format, and then chooses the smaller representation. We also limit fixed
  * point format to numbers less than a million in absolute value.
  */
-function prettyNumber
-    (value: number, min: number, max: number, res: number): string {
+function prettyNumber(
+    value: number, min: number, max: number, res: number): string {
   const numFixed = fixedDigits(res),
         numExp = Math.max(expDigits(min, res), expDigits(max, res)),
         fixed = value.toFixed(numFixed),
