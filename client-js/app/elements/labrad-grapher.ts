@@ -12,6 +12,8 @@ type ListItem = {
   trashed: boolean
 };
 
+type ListItemFilterFunction = (item: ListItem) => boolean;
+
 @component('labrad-grapher')
 export class LabradGrapher extends polymer.Base {
   @property({type: Array, notify: true})
@@ -199,7 +201,7 @@ export class LabradGrapher extends polymer.Base {
     }
   }
 
-  private filterListItemsFunction() {
+  private filterListItemsFunction(): ListItemFilterFunction {
     // Return trashed and parent items
     if (this.showTrash) {
       return (x) => (x.trashed || x.isParent);
