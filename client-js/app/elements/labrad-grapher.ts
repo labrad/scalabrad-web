@@ -24,10 +24,10 @@ export class LabradGrapher extends polymer.Base {
   datasets: Array<{name: string; url: string; tags: Array<string>}>;
 
   @property({type: Array, value: () => { return []; }})
-  listItems: Array<ListItem>;
+  filteredListItems: Array<ListItem>;
 
   @property({type: Array, value: () => { return []; }})
-  listItems_: Array<ListItem>;
+  listItems: Array<ListItem>;
 
   @property({type: Object, notify: true})
   selected: ListItem;
@@ -47,31 +47,31 @@ export class LabradGrapher extends polymer.Base {
   private showStars: boolean = false;
   private showTrash: boolean = false;
 
-  attached() {
+  attached(): void {
     this.tabIndex = 0;
     this.showStars = false;
     this.showTrash = false;
     this.updateButtons();
 
-    this.initializeListItems_(
+    this.initializeListItems(
       this.path,
       this.dirs,
       this.datasets);
-    this.applyListFilter_();
+    this.applyListFilter();
   }
 
-  starClicked() {
+  starClicked(): void {
     this.showStars = !this.showStars;
     if (this.showStars) this.showTrash = false;
     this.updateButtons();
-    this.applyListFilter_();
+    this.applyListFilter();
   }
 
-  trashClicked() {
+  trashClicked(): void {
     this.showTrash = !this.showTrash;
     if (this.showTrash) this.showStars = false;
     this.updateButtons();
-    this.applyListFilter_();
+    this.applyListFilter();
   }
 
   updateButtons(): void {
@@ -84,14 +84,11 @@ export class LabradGrapher extends polymer.Base {
   }
 
   @listen("keypress")
-  onKeyPress(event) {
-    if (!this.selected) {
-      return "";
-    }
+  onKeyPress(event): void {
+    if (!this.selected) return;
+    const selectedIndex = this.filteredListItems.indexOf(this.selected);
+    const id = this.selected.id;
 
-    const selectedIndex = this.listItems.indexOf(this.selected);
-
-    var id = this.selected.id;
     if (!id) return;
     switch (event.charCode) {
       case 115 /* s */:
@@ -110,7 +107,7 @@ export class LabradGrapher extends polymer.Base {
             tags: ['^star']
           });
         }
-        this.set('listItems.' + selectedIndex + '.starred',
+        this.set(`filteredListItems.${selectedIndex}.starred`,
                  !this.selected.starred);
         break;
 
@@ -130,51 +127,49 @@ export class LabradGrapher extends polymer.Base {
             tags: ['^trash']
           });
         }
-        this.set('listItems.' + selectedIndex + '.trashed',
+        this.set(`filteredListItems.${selectedIndex}.trashed`,
                  !this.selected.trashed);
 
         // Whenever we toggle trash, it will be removed from the view.
-        if (this.filterListItems_([this.selected]).length == 0) {
-          this.splice('listItems', selectedIndex, 1);
+        if (this.filterListItems([this.selected]).length == 0) {
+          this.splice('filteredListItems', selectedIndex, 1);
         }
         break;
     }
   }
 
   newDir(dir: {name: string; url: string; tags: Array<string>}): void {
-    const obj = {
+    this.addItemToList({
       id: 'dir:' + dir.name,
       name: dir.name,
       url: dir.url,
       isDir: true,
       isDataset: false,
       isParent: false,
-      starred: this.isTagged_(dir, 'star'),
-      trashed: this.isTagged_(dir, 'trash')
-    };
-    this.addItemToList_(obj);
+      starred: this.isTagged(dir, 'star'),
+      trashed: this.isTagged(dir, 'trash')
+    });
   }
 
   newDataset(dataset: {name: string; url: string; tags: Array<string>}): void {
-    const obj = {
+    this.addItemToList({
       id: 'dataset:' + dataset.name,
       name: dataset.name,
       url: dataset.url,
       isDir: false,
       isDataset: true,
       isParent: false,
-      starred: this.isTagged_(dataset, 'star'),
-      trashed: this.isTagged_(dataset, 'trash')
-    };
-    this.addItemToList_(obj);
+      starred: this.isTagged(dataset, 'star'),
+      trashed: this.isTagged(dataset, 'trash')
+    });
   }
 
-  private initializeListItems_(
+  private initializeListItems(
       path: Array<string>,
       dirs: Array<{name: string; url: string; tags: Array<string>}>,
-      datasets: Array<{name: string; url: string; tags: Array<string>}>) {
+      datasets: Array<{name: string; url: string; tags: Array<string>}>): void {
     if (path.length > 0 && this.places) {
-      this.push('listItems_', {
+      this.push('listItems', {
         id: '..',
         name: '..',
         url: this.places.grapherUrl(path.slice(0, -1)),
@@ -195,14 +190,14 @@ export class LabradGrapher extends polymer.Base {
     }
   }
 
-  private addItemToList_(item: ListItem): void {
-    this.push('listItems_', item);
-    if (this.filterListItems_([item]).length == 1) {
-      this.push('listItems', item);
+  private addItemToList(item: ListItem): void {
+    this.push('listItems', item);
+    if (this.filterListItems([item]).length == 1) {
+      this.push('filteredListItems', item);
     }
   }
 
-  private filterListItems_(items: Array<ListItem>) {
+  private filterListItems(items: Array<ListItem>): Array<ListItem> {
     if (this.showTrash) {
       return items.filter((x) => {
         return (x.trashed || x.isParent);
@@ -220,12 +215,12 @@ export class LabradGrapher extends polymer.Base {
     });
   }
 
-  private applyListFilter_(): void {
+  private applyListFilter(): void {
     // Will cause `iron-list` to jump to the top.
-    this.set('listItems', this.filterListItems_(this.listItems_));
+    this.set('filteredListItems', this.filterListItems(this.listItems));
   }
 
-  private isTagged_(item: {tags: Array<string>}, tag: string) {
+  private isTagged(item: {tags: Array<string>}, tag: string): boolean {
     for (let t of item.tags) {
       if (t === tag) return true;
     }
