@@ -115,7 +115,7 @@
             <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="show trashed items"></paper-icon-button>
           </div>
           <div id="listing">
-            <iron-list items="{{listItemsView}}" as="item" class='fit'
+            <iron-list items="{{filteredListItems}}" as="item" class='fit'
                                              selected-item="{{selected}}"
                                              selection-enabled>
               <template>

@@ -27,7 +27,7 @@ export class LabradGrapher extends polymer.Base {
   filteredListItems: Array<ListItem>;
 
   @property({type: Array, value: () => { return []; }})
-  listItems: Array<ListItem>;
+  private listItems: Array<ListItem>;
 
   @property({type: Object, notify: true})
   selected: ListItem;
@@ -57,21 +57,21 @@ export class LabradGrapher extends polymer.Base {
       this.path,
       this.dirs,
       this.datasets);
-    this.applyListFilter();
+    this.applyFilterToListItems();
   }
 
   starClicked(): void {
     this.showStars = !this.showStars;
     if (this.showStars) this.showTrash = false;
     this.updateButtons();
-    this.applyListFilter();
+    this.applyFilterToListItems();
   }
 
   trashClicked(): void {
     this.showTrash = !this.showTrash;
     if (this.showTrash) this.showStars = false;
     this.updateButtons();
-    this.applyListFilter();
+    this.applyFilterToListItems();
   }
 
   updateButtons(): void {
@@ -131,7 +131,8 @@ export class LabradGrapher extends polymer.Base {
                  !this.selected.trashed);
 
         // Whenever we toggle trash, it will be removed from the view.
-        if (this.filterListItems([this.selected]).length == 0) {
+        const filterFunction = this.filterListItemsFunction();
+        if (!filterFunction(this.selected)) {
           this.splice('filteredListItems', selectedIndex, 1);
         }
         break;
@@ -192,32 +193,31 @@ export class LabradGrapher extends polymer.Base {
 
   private addItemToList(item: ListItem): void {
     this.push('listItems', item);
-    if (this.filterListItems([item]).length == 1) {
+    const filterFunction = this.filterListItemsFunction();
+    if (filterFunction(item)) {
       this.push('filteredListItems', item);
     }
   }
 
-  private filterListItems(items: Array<ListItem>): Array<ListItem> {
+  private filterListItemsFunction() {
+    // Return trashed and parent items
     if (this.showTrash) {
-      return items.filter((x) => {
-        return (x.trashed || x.isParent);
-      });
+      return (x) => (x.trashed || x.isParent);
     }
 
+    // Return starred and parent items, no trash
     if (this.showStars) {
-      return items.filter((x) => {
-        return (x.starred && !x.trashed) || x.isParent;
-      });
+      return (x) => ((x.starred && !x.trashed) || x.isParent);
     }
 
-    return items.filter((x) => {
-      return !x.trashed || x.isParent;
-    });
+    // Return all items except trash.
+    return (x) => (!x.trashed || x.isParent);
   }
 
-  private applyListFilter(): void {
-    // Will cause `iron-list` to jump to the top.
-    this.set('filteredListItems', this.filterListItems(this.listItems));
+  private applyFilterToListItems(): void {
+    // Will cause the `iron-list` view to scroll (jump) to the top.
+    const filterFunction = this.filterListItemsFunction();
+    this.set('filteredListItems', this.listItems.filter(filterFunction));
   }
 
   private isTagged(item: {tags: Array<string>}, tag: string): boolean {
