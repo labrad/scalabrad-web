@@ -110,9 +110,9 @@ export class Plot extends polymer.Base {
    * Redraw the plot and attach resize to the window resize event.
    * Fires when the component is attached to the DOM.
    */
-  public attached() {
-    this.redraw_();
-    window.addEventListener('resize', (event) => this.redraw_());
+  attached() {
+    this.redraw();
+    window.addEventListener('resize', (event) => this.redraw());
   }
 
 
@@ -120,18 +120,18 @@ export class Plot extends polymer.Base {
    * Add new data to the plot and re-zoom.
    * Fires when new data arrives via the socket.
    */
-  public addData(data: Array<Array<number>>) {
+  addData(data: Array<Array<number>>) {
     if (data.length === 0) return;
     const lastData = (this.data.length > 0) ?
         this.data[this.data.length - 1] : null;
     for (let row of data) {
       this.splice('data', this.data.length, 0, row);
     }
-    this.plotData_(data, lastData);
+    this.plotData(data, lastData);
   }
 
 
-  private createPlot_(
+  private createPlot(
       area: HTMLElement, totWidth: number, totHeight: number): void {
     const p = this;
 
@@ -167,7 +167,7 @@ export class Plot extends polymer.Base {
     p.zoom = d3.behavior.zoom()
             .x(p.xScale)
             .y(p.yScale)
-            .on('zoom', () => this.handleZoom_());
+            .on('zoom', () => this.handleZoom());
 
     // Plot area.
     p.svg = d3.select(area)
@@ -225,7 +225,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private plotData_(data: Array<Array<number>>, lastData?: Array<number>) {
+  private plotData(data: Array<Array<number>>, lastData?: Array<number>) {
     if (data.length === 0) return;
 
     this.numTraces = data[0].length - 1;
@@ -236,8 +236,8 @@ export class Plot extends polymer.Base {
     }
 
     switch (this.numIndeps) {
-      case 1: this.plotData1D_(data, lastData); break;
-      case 2: this.plotData2D_(data, lastData); break;
+      case 1: this.plotData1D(data, lastData); break;
+      case 2: this.plotData2D(data, lastData); break;
     }
 
     // Update the last data point we've seen.
@@ -260,7 +260,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private plotData1D_(data: Array<Array<number>>, lastData?: Array<number>) {
+  private plotData1D(data: Array<Array<number>>, lastData?: Array<number>) {
     // Update data limits.
     this.dataLimits = {
       xMin: NaN,
@@ -311,7 +311,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private plotData2D_(data: Array<Array<number>>, lastData?: Array<number>) {
+  private plotData2D(data: Array<Array<number>>, lastData?: Array<number>) {
     // Update data limits.
 
     for (let row of data) {
@@ -434,7 +434,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private installMouseListeners_() {
+  private installMouseListeners() {
     if (!this.svg) return;
     switch (this.mouseMode) {
       case 'pan':
@@ -446,7 +446,7 @@ export class Plot extends polymer.Base {
 
       case 'zoomRect':
         this.svg.on('.zoom', null)
-        this.svg.on('mousedown', () => this.zoomRectangle_());
+        this.svg.on('mousedown', () => this.zoomRectangle());
         this.$.plot.style.cursor = 'auto';
         this.$.plot.style.cursor = 'crosshair';
         break;
@@ -454,7 +454,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private updatePlotStyles_() {
+  private updatePlotStyles() {
     if (!this.svg) return;
     switch (this.numIndeps) {
       case 1:
@@ -473,34 +473,34 @@ export class Plot extends polymer.Base {
   }
 
 
-  private redraw_() {
+  private redraw() {
     const area = this.$.plot,
         rect = area.getBoundingClientRect();
     while (area.firstChild) {
       area.removeChild(area.firstChild);
     }
-    this.createPlot_(area,
+    this.createPlot(area,
                      Math.max(rect.width, 400),
                      Math.max(rect.height, 400));
-    this.updatePlotStyles_();
-    this.plotData_(this.data);
-    this.installMouseListeners_();
+    this.updatePlotStyles();
+    this.plotData(this.data);
+    this.installMouseListeners();
   }
 
 
-  private handleZoom_() {
+  private handleZoom() {
     // Zoom and pan axes.
     this.svg.select('.x.axis').call(this.xAxis);
     this.svg.select('.y.axis').call(this.yAxis);
 
     switch (this.numIndeps) {
-      case 1: this.zoomData1D_(); break;
-      case 2: this.zoomData2D_(); break;
+      case 1: this.zoomData1D(); break;
+      case 2: this.zoomData2D(); break;
     }
   }
 
 
-  private zoomData1D_() {
+  private zoomData1D() {
     // Adjust data for each trace.
     for (let k = 0; k < this.numTraces; k++) {
       this.svg.selectAll(`.line${k}`)
@@ -510,7 +510,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private zoomData2D_() {
+  private zoomData2D() {
     const zMin = this.dataLimits.zMin,
           zMax = this.dataLimits.zMax,
           p = this;
@@ -558,7 +558,7 @@ export class Plot extends polymer.Base {
   /**
    * Zoom into a selected rectangular region on the graph.
    */
-  private zoomRectangle_() {
+  private zoomRectangle() {
     // Helper function to get mouse position in the coordinates of the svg plot
     // area. The d3.mouse function returns coordinates relative to the full html
     // element, so we must account for the margins. We also clip the coordinates
@@ -604,20 +604,20 @@ export class Plot extends polymer.Base {
                    .y(yScale.domain([yMin, yMax]));
         }
         rect.remove();
-        this.handleZoom_();
+        this.handleZoom();
       }, true);
     d3.event.preventDefault();
     d3.event.stopPropagation();
   }
 
 
-  private mouseToDataX_(x: number): number {
+  private mouseToDataX(x: number): number {
     x = clip(x - this.margin.left, 0, this.width);
     return this.xScale.invert(x);
   }
 
 
-  private mouseToDataY_(y: number): number {
+  private mouseToDataY(y: number): number {
     y = clip(y - this.margin.top, 0, this.height);
     return this.yScale.invert(y);
   }
@@ -626,21 +626,21 @@ export class Plot extends polymer.Base {
   /**
    * Reset to original window size after zoom-in.
    */
-  public resetZoom() {
+  resetZoom() {
     this.xScale.domain([this.limits.xMin, this.limits.xMax]);
     this.yScale.domain([this.limits.yMin, this.limits.yMax]);
     this.xAxis.scale(this.xScale);
     this.yAxis.scale(this.yScale);
     this.zoom.x(this.xScale);
     this.zoom.y(this.yScale);
-    this.handleZoom_();
+    this.handleZoom();
   }
 
 
   /**
    * Sets the control mode to pan/zoom.
    */
-  public mouseModeSelectorPan() {
+  mouseModeSelectorPan() {
     this.mouseMode = 'pan';
   }
 
@@ -648,7 +648,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the control mode to zoom rectangle.
    */
-  public mouseModeSelectorZoomRect() {
+  mouseModeSelectorZoomRect() {
     this.mouseMode = 'zoomRect';
   }
 
@@ -656,7 +656,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to dots.
    */
-  public drawMode2DSelectorDots() {
+  drawMode2DSelectorDots() {
     this.drawMode2D = 'dots';
   }
 
@@ -664,7 +664,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to rect fill.
    */
-  public drawMode2DSelectorRectfill() {
+  drawMode2DSelectorRectfill() {
     this.drawMode2D = 'rectfill';
   }
 
@@ -672,7 +672,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to vargrid.
    */
-  public drawMode2DSelectorVargrid() {
+  drawMode2DSelectorVargrid() {
     this.drawMode2D = 'vargrid';
   }
 
@@ -680,7 +680,7 @@ export class Plot extends polymer.Base {
   /**
    * Opens the trace selector dialog window.
    */
-  public traceSelectorOpen() {
+  traceSelectorOpen() {
     this.$.traceSelector.open();
   }
 
@@ -688,7 +688,7 @@ export class Plot extends polymer.Base {
   /**
    * Selects all available traces.
    */
-  public traceSelectorSelectAll() {
+  traceSelectorSelectAll() {
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
@@ -700,7 +700,7 @@ export class Plot extends polymer.Base {
   /**
    * Selects none of the available traces.
    */
-  public traceSelectorSelectNone() {
+  traceSelectorSelectNone() {
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
@@ -713,7 +713,7 @@ export class Plot extends polymer.Base {
    * Submit the users trace selection. Will not submit if no traces are
    * selected.
    */
-  public traceSelectorSubmit() {
+  traceSelectorSubmit() {
     const selected: Array<number> = [];
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
@@ -740,13 +740,13 @@ export class Plot extends polymer.Base {
       this.displaySurface = this.displayTraces[0] + 2;
       this.$.traceSelector.close();
       this.userTraces = true;
-      this.redraw_();
+      this.redraw();
     }
   }
 
 
   @observe('xLabel')
-  private observeXLabel_(newLabel: string, oldLabel: string) {
+  private observeXLabel(newLabel: string, oldLabel: string) {
     if (this.svg) {
       this.svg.select('#x-label').text(newLabel);
     }
@@ -754,7 +754,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('yLabel')
-  private observeYLabel_(newLabel: string, oldLabel: string) {
+  private observeYLabel(newLabel: string, oldLabel: string) {
     if (this.svg) {
       this.svg.select('#y-label').text(newLabel);
     }
@@ -762,7 +762,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('mouseMode')
-  private observeMouseMode_(newMode: string, oldMode: string) {
+  private observeMouseMode(newMode: string, oldMode: string) {
     switch (newMode) {
       case 'pan':
         this.$.pan.style.color = 'black';
@@ -774,12 +774,12 @@ export class Plot extends polymer.Base {
         this.$.rect.style.color = 'black';
         break;
     }
-    this.installMouseListeners_();
+    this.installMouseListeners();
   }
 
 
   @observe('drawMode2D')
-  private observeDrawMode2D_(newMode: string, oldMode: string) {
+  private observeDrawMode2D(newMode: string, oldMode: string) {
     switch (newMode) {
       case 'dots':
         this.$.dots.style.color = 'black';
@@ -800,19 +800,19 @@ export class Plot extends polymer.Base {
         break;
     }
     if (oldMode && newMode !== oldMode) {
-      setTimeout(() => this.handleZoom_(), 0);
+      setTimeout(() => this.handleZoom(), 0);
     }
   }
 
 
   @observe('numIndeps')
-  private observeNumIndeps_(newNum: number, oldNum: number) {
-    this.updatePlotStyles_();
+  private observeNumIndeps(newNum: number, oldNum: number) {
+    this.updatePlotStyles();
   }
 
 
   @listen('plot.mousemove')
-  private listenPlotMouseMove_(event) {
+  private listenPlotMouseMove(event) {
     const rect = event.currentTarget.getBoundingClientRect();
     const xMin = this.xScale.invert(0),
           xMax = this.xScale.invert(this.width),
@@ -820,8 +820,8 @@ export class Plot extends polymer.Base {
           yMax = this.yScale.invert(0),
           dx = (xMax - xMin) / this.width,
           dy = (yMax - yMin) / this.height,
-          x = this.mouseToDataX_(event.pageX - rect.left),
-          y = this.mouseToDataY_(event.pageY - rect.top),
+          x = this.mouseToDataX(event.pageX - rect.left),
+          y = this.mouseToDataY(event.pageY - rect.top),
           xStr = prettyNumber(x, xMin, xMax, dx),
           yStr = prettyNumber(y, yMin, yMax, dy);
 
