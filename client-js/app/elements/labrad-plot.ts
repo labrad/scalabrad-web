@@ -309,6 +309,7 @@ export class Plot extends polymer.Base {
         this.chartBody.append('svg:path')
                 .datum(traceData)
                 .attr('stroke', COLOR_LIST[i % COLOR_LIST.length])
+                .attr('stroke-width', 1.5)
                 .attr('fill', 'none')
                 .attr('class', `line${i}`)
                 .attr('d', this.line);
