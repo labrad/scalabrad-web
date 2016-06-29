@@ -227,6 +227,15 @@ export class DatavaultLiveActivity implements Activity {
     labeled.$.plot.appendChild(plot);
     this.elem.addPlot(labeled);
     this.activities.push(activity);
+
+    // If there were fewer than three activities before adding the new one,
+    // resize all plots to ensure they fit the view.
+    if (this.activities.length <= 3) {
+      for (const activity of this.activities) {
+        activity.plot.redraw_();
+      }
+    }
+
     while (this.activities.length > 3) {
       var activity = this.activities.shift();
       activity.stop();
