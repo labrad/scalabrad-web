@@ -232,7 +232,7 @@ export class DatavaultLiveActivity implements Activity {
     // resize all plots to ensure they fit the view.
     if (this.activities.length <= 3) {
       for (const activity of this.activities) {
-        activity.plot.redraw_();
+        activity.plot.redraw();
       }
     }
 
@@ -264,7 +264,7 @@ export class DatasetActivity implements Activity {
   private dataAvailable = new AsyncQueue<void>();
   private token = String(Math.random());
 
-  private plot: Plot;
+  plot: Plot;
 
   constructor(private places: Places,
               private api: datavault.DataVaultApi,
