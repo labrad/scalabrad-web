@@ -4,6 +4,9 @@ import {viridisData} from '../scripts/colormaps';
 import * as datavault from "../scripts/datavault";
 
 
+const MOUSE_LEFT_BUTTON = 0;
+
+
 /**
  * Colors for traces in 1D plots.
  */
@@ -559,6 +562,12 @@ export class Plot extends polymer.Base {
    * Zoom into a selected rectangular region on the graph.
    */
   private zoomRectangle_() {
+    // Only trigger zoom rectangle on left click
+    console.log(d3.event.button)
+    if (d3.event.button !== MOUSE_LEFT_BUTTON) {
+      return;
+    }
+
     // Helper function to get mouse position in the coordinates of the svg plot
     // area. The d3.mouse function returns coordinates relative to the full html
     // element, so we must account for the margins. We also clip the coordinates
