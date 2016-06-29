@@ -6,14 +6,20 @@ import * as datavault from "../scripts/datavault";
 
 /**
  * Colors for traces in 1D plots.
+ * Chosen to contrast well even for color blind invididuals.
+ * Reference: http://mkweb.bcgsc.ca/biovis2012.
+ * GitHub Discussion: issues/145.
  */
 const COLOR_LIST = [
-  '#0000ff',
-  '#ff0000',
-  '#00cc00',
-  '#dddd00',
-  '#dd00dd',
-  '#0088dd'
+  d3.rgb(36, 255, 36), // Green.
+  d3.rgb(0, 109, 219), // Blue.
+  d3.rgb(73, 0, 146), // Purple.
+  d3.rgb(219, 109, 0), // Orange.
+  d3.rgb(255, 182, 219), // Pale Pink.
+  d3.rgb(0, 0, 0), // Black.
+  d3.rgb(182, 219, 255), // Pale Blue.
+  d3.rgb(146, 0, 0), // Maroon.
+  d3.rgb(182, 109, 255), // Violet.
 ];
 
 
