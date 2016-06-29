@@ -238,6 +238,7 @@ export class Plot extends polymer.Base {
     switch (this.numIndeps) {
       case 1: this.plotData1D(data, lastData); break;
       case 2: this.plotData2D(data, lastData); break;
+      default: break; // Nothing to do.
     }
 
     // Update the last data point we've seen.
@@ -384,52 +385,56 @@ export class Plot extends polymer.Base {
         h = 0;
     const p = this;
     switch (this.drawMode2D) {
-    case 'dots':
-      w = h = 4;
-      for (let row of data) {
-        this.chartBody
-              .append('rect')
-              .datum(row)
-              .classed('data', true)
-              .attr('x', (d) => p.xScale(d[0]))
-              .attr('y', (d) => p.yScale(d[1]) - h)
-              .attr('width', w)
-              .attr('height', h)
-              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-      }
-      break;
+      case 'dots':
+        w = h = 4;
+        for (let row of data) {
+          this.chartBody
+                .append('rect')
+                .datum(row)
+                .classed('data', true)
+                .attr('x', (d) => p.xScale(d[0]))
+                .attr('y', (d) => p.yScale(d[1]) - h)
+                .attr('width', w)
+                .attr('height', h)
+                .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
+        }
+        break;
 
-    case 'rectfill':
-      w = Math.abs(p.xScale(this.dx0) - p.xScale(0));
-      h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
-      for (let row of data) {
-        this.chartBody
-              .append('rect')
-              .datum(row)
-              .classed('data', true)
-              .attr('x', (d) => p.xScale(d[0]))
-              .attr('y', (d) => p.yScale(d[1]) - h)
-              .attr('width', w)
-              .attr('height', h)
-              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-      }
-      break;
+      case 'rectfill':
+        w = Math.abs(p.xScale(this.dx0) - p.xScale(0));
+        h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
+        for (let row of data) {
+          this.chartBody
+                .append('rect')
+                .datum(row)
+                .classed('data', true)
+                .attr('x', (d) => p.xScale(d[0]))
+                .attr('y', (d) => p.yScale(d[1]) - h)
+                .attr('width', w)
+                .attr('height', h)
+                .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
+        }
+        break;
 
-    case 'vargrid':
-      for (let row of data) {
-        this.chartBody
-              .append('rect')
-              .datum(row)
-              .classed('data', true)
-              .attr('x', (d) => p.xScale(d[0]))
-              .attr('y', (d) => p.yScale(p.yNext[d[1]]))
-              .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
-              .attr('height', (d) => {
-                return Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1]));
-              })
-              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-      }
-      break;
+      case 'vargrid':
+        for (let row of data) {
+          this.chartBody
+                .append('rect')
+                .datum(row)
+                .classed('data', true)
+                .attr('x', (d) => p.xScale(d[0]))
+                .attr('y', (d) => p.yScale(p.yNext[d[1]]))
+                .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
+                .attr('height', (d) => {
+                  return Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1]));
+                })
+                .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
+        }
+        break;
+
+      default:
+        // Nothing to do.
+        break;
     }
   }
 
@@ -450,6 +455,10 @@ export class Plot extends polymer.Base {
         this.$.plot.style.cursor = 'auto';
         this.$.plot.style.cursor = 'crosshair';
         break;
+
+      default:
+        // Nothing to do.
+        break;
     }
   }
 
@@ -468,6 +477,10 @@ export class Plot extends polymer.Base {
         this.$$('rect.background').style.fill = '#222222';
         this.is1D = false;
         this.is2D = true;
+        break;
+
+      default:
+        // Nothing to do.
         break;
     }
   }
@@ -496,6 +509,7 @@ export class Plot extends polymer.Base {
     switch (this.numIndeps) {
       case 1: this.zoomData1D(); break;
       case 2: this.zoomData2D(); break;
+      default: break; // Nothing to do.
     }
   }
 
@@ -730,6 +744,10 @@ export class Plot extends polymer.Base {
       case 2:
         selected.push(parseInt((<any>radio).selected));
         break;
+
+      default:
+        // Nothing to do.
+        break;
     }
 
     if (selected.length > 0) {
@@ -773,6 +791,10 @@ export class Plot extends polymer.Base {
         this.$.pan.style.color = '#AAAAAA';
         this.$.rect.style.color = 'black';
         break;
+
+      default:
+        // Nothing to do.
+        break;
     }
     this.installMouseListeners();
   }
@@ -797,6 +819,10 @@ export class Plot extends polymer.Base {
         this.$.dots.style.color = '#AAAAAA';
         this.$.rectfill.style.color = '#AAAAAA';
         this.$.vargrid.style.color = 'black';
+        break;
+
+      default:
+        // Nothing to do.
         break;
     }
     if (oldMode && newMode !== oldMode) {
