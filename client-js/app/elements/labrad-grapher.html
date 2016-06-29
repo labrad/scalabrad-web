@@ -197,5 +197,14 @@
         </paper-header-panel>
       </div>
     </div>
+    <paper-dialog id="errorDialog" modal>
+      <h1>Unable to connect to Data Vault</h1>
+      <div>
+        <span>{{connectionError}}</span>
+      </div>
+      <div class="buttons">
+        <paper-button dialog-dismiss>Close</paper-button>
+      </div>
+    </paper-dialog>
   </template>
 </dom-module>

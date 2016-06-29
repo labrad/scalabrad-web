@@ -85,6 +85,11 @@ export class LabradGrapher extends polymer.Base {
     return (selected) ? "iron-selected" : "";
   }
 
+  openUnableToConnectDialog(connectionError: string): void {
+    this.connectionError = connectionError;
+    this.$.errorDialog.open();
+  }
+
   @listen("keypress")
   onKeyPress(event): void {
     if (!this.selected) return;
