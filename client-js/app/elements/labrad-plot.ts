@@ -48,10 +48,10 @@ export class Plot extends polymer.Base {
   mouseMode: string;
 
   @property({type: Array})
-  deps: Array<{label: string, legend: string, unit: string}>;
+  deps: {label: string, legend: string, unit: string}[];
 
-  private data: Array<Array<number>> = []
-  private lastData: Array<number> = null;
+  private data: number[][] = []
+  private lastData: number[] = null;
 
   private numTraces: number = 0;
   private svg: any;
@@ -89,8 +89,8 @@ export class Plot extends polymer.Base {
   // Hack to enforce user defined display of traces.
   private userTraces: boolean = false;
 
-  private xs: Array<number> = [];
-  private ys: Array<number> = [];
+  private xs: number[] = [];
+  private ys: number[] = [];
   private xNext: {[x: number]: number} = {};
   private yNext: {[y: number]: number} = {};
   private dx: number = 1;
@@ -99,7 +99,7 @@ export class Plot extends polymer.Base {
   private y0: number = null;
   private dx0: number = -1;
   private dy0: number = -1;
-  private displayTraces: Array<number>;
+  private displayTraces: number[];
   private allOrNone: boolean = true;
   private is1D: boolean;
   private is2D: boolean;
@@ -120,7 +120,7 @@ export class Plot extends polymer.Base {
    * Add new data to the plot and re-zoom.
    * Fires when new data arrives via the socket.
    */
-  addData(data: Array<Array<number>>) {
+  addData(data: number[][]) {
     if (data.length === 0) return;
     const lastData = (this.data.length > 0) ?
         this.data[this.data.length - 1] : null;
@@ -225,7 +225,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private plotData(data: Array<Array<number>>, lastData?: Array<number>) {
+  private plotData(data: number[][], lastData?: number[]) {
     if (data.length === 0) return;
 
     this.numTraces = data[0].length - 1;
@@ -260,7 +260,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private plotData1D(data: Array<Array<number>>, lastData?: Array<number>) {
+  private plotData1D(data: number[][], lastData?: number[]) {
     // Update data limits.
     this.dataLimits = {
       xMin: NaN,
@@ -311,7 +311,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private plotData2D(data: Array<Array<number>>, lastData?: Array<number>) {
+  private plotData2D(data: number[][], lastData?: number[]) {
     // Update data limits.
 
     for (let row of data) {
@@ -714,7 +714,7 @@ export class Plot extends polymer.Base {
    * selected.
    */
   traceSelectorSubmit() {
-    const selected: Array<number> = [];
+    const selected: number[] = [];
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
     const radio = selector.querySelector('[name=radioGroup]');
@@ -905,7 +905,7 @@ function clip(x: number, xMin: number, xMax: number): number {
 
 
 function insertInRange(
-    xs: Array<number>, x: number, lh: number, rh: number): number {
+    xs: number[], x: number, lh: number, rh: number): number {
   const m = lh + Math.floor((rh - lh)/2);
   if (x > xs[rh]) {
     xs.splice(rh + 1, 0, x);
@@ -927,7 +927,7 @@ function insertInRange(
 }
 
 
-function insertSorted(xs: Array<number>, x: number): number {
+function insertSorted(xs: number[], x: number): number {
   const len = xs.length;
   if (len === 0) {
     xs.push(x);
