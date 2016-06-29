@@ -1,5 +1,7 @@
 <script>
 (function () {
+  const MOUSE_LEFT_BUTTON = 0;
+
   Polymer({
     is: 'app-link',
 
@@ -10,16 +12,21 @@
       'tap': 'onTap'
     },
 
+    isSpecialClick: function(e) {
+      return (e.ctrlKey || e.metaKey || e.button !== MOUSE_LEFT_BUTTON);
+    },
+
     onClick: function(e) {
-      if (e.ctrlKey || e.metaKey || e.button !== 0) {
-        return true;
-      }
+      if (this.isSpecialClick(e)) return;
+
       this.fire('app-link-click', {path: this.path});
       e.preventDefault();
       e.stopPropagation();
     },
 
     onTap: function(e) {
+      if (this.isSpecialClick(e)) return;
+
       e.preventDefault();
       e.stopPropagation();
     }
