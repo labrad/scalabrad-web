@@ -276,13 +276,13 @@ export class Plot extends polymer.Base {
             {offset: "100%", color: COLOR_MAP[255]}
           ])
           .enter().append("stop")
-          .attr("offset", function(d) { return d.offset; })
-          .attr("stop-color", function(d) { return d.color; })
+          .attr("offset", (d) => d.offset)
+          .attr("stop-color", (d) => d.color)
           .attr("stop-opacity", 1);
 
       // Appending the location href is necessary due to the use of `base href`
       // for the overall app to make Polymer paths work.
-      const gradientFill = "url('" + location.href + "#ColorBarGradient')";
+      const gradientFill = `url('${location.href}#ColorBarGradient')`;
 
       // Color Bar Rectangle
       const colorBarOffset = width + COLOR_BAR_LEFT_MARGIN;
