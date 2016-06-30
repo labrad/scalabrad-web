@@ -266,9 +266,9 @@ export class Plot extends polymer.Base {
       p.svg.append('defs').append("linearGradient")
           .attr("id", "ColorBarGradient")
           .attr("x1", "0%")
-          .attr("y1", "0%")
+          .attr("y1", "100%")
           .attr("x2", "0%")
-          .attr("y2", "100%")
+          .attr("y2", "0%")
           .selectAll("stop")
           .data([
             {offset: "0%", color: COLOR_MAP[0]},
