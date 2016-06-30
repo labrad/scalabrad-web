@@ -4,16 +4,23 @@ import {viridisData} from '../scripts/colormaps';
 import * as datavault from "../scripts/datavault";
 
 
+const MOUSE_MAIN_BUTTON = 0;
+
+
 /**
  * Colors for traces in 1D plots.
  */
 const COLOR_LIST = [
-  '#0000ff',
-  '#ff0000',
-  '#00cc00',
-  '#dddd00',
-  '#dd00dd',
-  '#0088dd'
+  "#3366cc", // Blue.
+  "#dc3912", // Red.
+  "#ff9900", // Orange.
+  "#109618", // Green.
+  "#990099", // Purple.
+  "#22aa99", // Teal.
+  "#dd4477", // Pink.
+  "#0099c6", // Aqua.
+  "#aaaa11", // Yellow.
+  "#000000", // Black.
 ];
 
 
@@ -304,6 +311,7 @@ export class Plot extends polymer.Base {
         this.chartBody.append('svg:path')
                 .datum(traceData)
                 .attr('stroke', COLOR_LIST[i % COLOR_LIST.length])
+                .attr('stroke-width', 1.5)
                 .attr('fill', 'none')
                 .attr('class', `line${i}`)
                 .attr('d', this.line);
@@ -486,9 +494,12 @@ export class Plot extends polymer.Base {
   }
 
 
-  private redraw() {
+  /**
+   * Destroys and recreates the plot.
+   */
+  redraw(): void {
     const area = this.$.plot,
-        rect = area.getBoundingClientRect();
+          rect = area.getBoundingClientRect();
     while (area.firstChild) {
       area.removeChild(area.firstChild);
     }
@@ -573,6 +584,11 @@ export class Plot extends polymer.Base {
    * Zoom into a selected rectangular region on the graph.
    */
   private zoomRectangle() {
+    // Only trigger zoom rectangle on left click
+    if (d3.event.button !== MOUSE_MAIN_BUTTON) {
+      return;
+    }
+
     // Helper function to get mouse position in the coordinates of the svg plot
     // area. The d3.mouse function returns coordinates relative to the full html
     // element, so we must account for the margins. We also clip the coordinates
