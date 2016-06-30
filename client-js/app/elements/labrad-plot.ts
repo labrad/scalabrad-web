@@ -700,16 +700,9 @@ export class Plot extends polymer.Base {
    * Reset to original window size after zoom-in.
    */
   public resetZoom() {
-    var zMin = this.dataLimits.zMin,
-        zMax = this.dataLimits.zMax;
-    if (zMin == zMax) {
-      zMin -= 1;
-      zMax += 1;
-    }
-
     this.xScale.domain([this.limits.xMin, this.limits.xMax]);
     this.yScale.domain([this.limits.yMin, this.limits.yMax]);
-    this.zScale.domain([zMin, zMax]);
+    this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
     this.xAxis.scale(this.xScale);
     this.yAxis.scale(this.yScale);
     this.zAxis.scale(this.zScale);
