@@ -1,6 +1,6 @@
 <script>
 (function () {
-  const MOUSE_LEFT_BUTTON = 0;
+  var MOUSE_MAIN_BUTTON = 0;
 
   Polymer({
     is: 'app-link',
@@ -13,7 +13,7 @@
     },
 
     isSpecialClick: function(e) {
-      return (e.ctrlKey || e.metaKey || e.button !== MOUSE_LEFT_BUTTON);
+      return (e.ctrlKey || e.metaKey || e.button !== MOUSE_MAIN_BUTTON);
     },
 
     onClick: function(e) {
