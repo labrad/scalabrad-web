@@ -203,7 +203,7 @@ export class Plot extends polymer.Base {
             .attr('transform', `translate(${p.margin.left}, ${p.margin.top})`);
 
     // Background rectangle.
-    p.svg.append('svg:rect')
+    p.svg.append('rect')
             .classed('background', true)
             .attr('stroke', 'black')
             .attr('stroke-width', 1)
@@ -242,7 +242,7 @@ export class Plot extends polymer.Base {
             .attr('clip-path', 'url(#clip)');
     p.clip = p.svg.append('svg:clipPath')
             .attr('id', 'clip')
-            .append('rect')
+            .append('svg:rect')
             .attr('x', 0)
             .attr('y', 0)
             .attr('width', width)
