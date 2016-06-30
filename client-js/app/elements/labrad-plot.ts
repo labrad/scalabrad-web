@@ -83,7 +83,7 @@ export class Plot extends polymer.Base {
   };
   private margin = {
     top: 50,
-    right: 10,
+    right: 80,
     bottom: 50,
     left: 40
   };
