@@ -118,8 +118,8 @@ export class Plot extends polymer.Base {
    * Fires when the component is attached to the DOM.
    */
   public attached() {
-    this.redraw_();
-    window.addEventListener('resize', (event) => this.redraw_());
+    this.redraw();
+    window.addEventListener('resize', (event) => this.redraw());
   }
 
 
@@ -481,7 +481,10 @@ export class Plot extends polymer.Base {
   }
 
 
-  private redraw_() {
+  /**
+   * Destroys and recreates the plot.
+   */
+  redraw(): void {
     const area = this.$.plot,
         rect = area.getBoundingClientRect();
     while (area.firstChild) {
@@ -753,7 +756,7 @@ export class Plot extends polymer.Base {
       this.displaySurface = this.displayTraces[0] + 2;
       this.$.traceSelector.close();
       this.userTraces = true;
-      this.redraw_();
+      this.redraw();
     }
   }
 
