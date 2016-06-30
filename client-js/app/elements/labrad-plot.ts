@@ -174,6 +174,7 @@ export class Plot extends polymer.Base {
 
     p.xAxis = d3.svg.axis()
             .scale(p.xScale)
+            .orient('bottom')
             .tickSize(-height);
 
     p.yAxis = d3.svg.axis()
@@ -193,7 +194,7 @@ export class Plot extends polymer.Base {
 
     // Plot area.
     p.svg = d3.select(area)
-            .append('svg')
+            .append('svg:svg')
             .attr('width', width + p.margin.left + p.margin.right)
             .attr('height', height + p. margin.top + p.margin.bottom)
 
@@ -202,7 +203,7 @@ export class Plot extends polymer.Base {
             .attr('transform', `translate(${p.margin.left}, ${p.margin.top})`);
 
     // Background rectangle.
-    p.svg.append('rect')
+    p.svg.append('svg:rect')
             .classed('background', true)
             .attr('stroke', 'black')
             .attr('stroke-width', 1)
@@ -239,7 +240,7 @@ export class Plot extends polymer.Base {
     // This keeps the data from exceeding the limits of the plot.
     p.chartBody = p.svg.append('g')
             .attr('clip-path', 'url(#clip)');
-    p.clip = p.svg.append('clipPath')
+    p.clip = p.svg.append('svg:clipPath')
             .attr('id', 'clip')
             .append('rect')
             .attr('x', 0)
