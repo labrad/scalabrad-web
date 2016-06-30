@@ -563,7 +563,6 @@ export class Plot extends polymer.Base {
    */
   private zoomRectangle_() {
     // Only trigger zoom rectangle on left click
-    console.log(d3.event.button)
     if (d3.event.button !== MOUSE_MAIN_BUTTON) {
       return;
     }
