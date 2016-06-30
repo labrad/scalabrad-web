@@ -258,7 +258,7 @@ export class Plot extends polymer.Base {
 
       // The Color Bar Gradient
       p.svg.append('defs').append("linearGradient")
-          .attr("id", "grads")
+          .attr("id", "ColorBarGradient")
           .attr("x1", "0%")
           .attr("y1", "0%")
           .attr("x2", "0%")
@@ -274,10 +274,14 @@ export class Plot extends polymer.Base {
           .attr("stop-color", function(d) { return d.color; })
           .attr("stop-opacity", 1);
 
+      // Appending the location href is necessary due to the use of `base href`
+      // for the overall app to make Polymer paths work.
+      const gradientFill = "url('" + location.href + "#ColorBarGradient')";
+
       // Color Bar Rectangle
       const colorBarOffset = width + COLOR_BAR_LEFT_MARGIN;
       p.svg.append('rect')
-          .attr('fill', "url('" + location.href + "#grads')")
+          .attr('fill', gradientFill)
           .attr('transform', `translate(${colorBarOffset}, 0)`)
           .attr('width', COLOR_BAR_WIDTH)
           .attr('height', height)
