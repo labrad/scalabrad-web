@@ -26,6 +26,7 @@ const COLOR_MAP = viridisData.map((rgb) => {
 });
 
 
+const COLOR_BAR_NUM_TICKS = 10;
 const COLOR_BAR_WIDTH = 15;
 const COLOR_BAR_LEFT_MARGIN = 15;
 const COLOR_BAR_RIGHT_MARGIN = 5;
@@ -256,29 +257,37 @@ export class Plot extends polymer.Base {
 
     // Color Bar Axis
     if (this.numIndeps == 2) {
-      p.zAxis = d3.svg.axis()
-              .scale(p.zScale)
-              .orient('right')
-              .ticks(7)
-              .tickSize(5);
+      p.zAxis = d3.svg.axis();
+      p.zAxis.scale(p.zScale)
+             .orient('right')
+             .ticks(COLOR_BAR_NUM_TICKS)
+             .tickSize(5);
+
+      // Create accurate gradient stops of the viridis colormap.
+      const gradientTicks = [];
+      for (let i = 0; i <= 255; ++i) {
+        const index = i / 255 * 100;
+        gradientTicks.push({
+          offset: `${index}%`,
+          color: COLOR_MAP[i]
+        })
+      }
 
       // The Color Bar Gradient
-      p.svg.append('defs').append("linearGradient")
-          .attr("id", "ColorBarGradient")
-          .attr("x1", "0%")
-          .attr("y1", "100%")
-          .attr("x2", "0%")
-          .attr("y2", "0%")
-          .selectAll("stop")
-          .data([
-            {offset: "0%", color: COLOR_MAP[0]},
-            {offset: "50%", color: COLOR_MAP[128]},
-            {offset: "100%", color: COLOR_MAP[255]}
-          ])
-          .enter().append("stop")
-          .attr("offset", (d) => d.offset)
-          .attr("stop-color", (d) => d.color)
-          .attr("stop-opacity", 1);
+      p.svg.append('defs')
+             .append("linearGradient")
+             .attr("id", "ColorBarGradient")
+             .attr("x1", "0%")
+             .attr("y1", "100%")
+             .attr("x2", "0%")
+             .attr("y2", "0%")
+             .selectAll("stop")
+             .data(gradientTicks)
+             .enter()
+               .append("stop")
+                 .attr("offset", (d) => d.offset)
+                 .attr("stop-color", (d) => d.color)
+                 .attr("stop-opacity", 1);
 
       // Appending the location href is necessary due to the use of `base href`
       // for the overall app to make Polymer paths work.
@@ -287,19 +296,19 @@ export class Plot extends polymer.Base {
       // Color Bar Rectangle
       const colorBarOffset = width + COLOR_BAR_LEFT_MARGIN;
       p.svg.append('rect')
-          .attr('fill', gradientFill)
-          .attr('transform', `translate(${colorBarOffset}, 0)`)
-          .attr('width', COLOR_BAR_WIDTH)
-          .attr('height', height)
-          .attr('stroke-width', COLOR_BAR_STROKE_WIDTH)
-          .attr('stroke', '#000000');
+             .attr('fill', gradientFill)
+             .attr('transform', `translate(${colorBarOffset}, 0)`)
+             .attr('width', COLOR_BAR_WIDTH)
+             .attr('height', height)
+             .attr('stroke', '#000000')
+             .attr('stroke-width', COLOR_BAR_STROKE_WIDTH);
 
       // Z-axis ticks and label.
       const zAxisOffset = width + COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN;
       p.svg.append('g')
-           .attr('class', 'z axis')
-           .attr('transform', `translate(${zAxisOffset}, 0)`)
-           .call(p.zAxis);
+             .attr('class', 'z axis')
+             .attr('transform', `translate(${zAxisOffset}, 0)`)
+             .call(p.zAxis);
     }
   }
 
