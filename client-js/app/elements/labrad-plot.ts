@@ -4,7 +4,7 @@ import {viridisData} from '../scripts/colormaps';
 import * as datavault from "../scripts/datavault";
 
 
-const MOUSE_LEFT_BUTTON = 0;
+const MOUSE_MAIN_BUTTON = 0;
 
 
 /**
@@ -564,7 +564,7 @@ export class Plot extends polymer.Base {
   private zoomRectangle_() {
     // Only trigger zoom rectangle on left click
     console.log(d3.event.button)
-    if (d3.event.button !== MOUSE_LEFT_BUTTON) {
+    if (d3.event.button !== MOUSE_MAIN_BUTTON) {
       return;
     }
 
