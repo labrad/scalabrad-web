@@ -26,6 +26,18 @@ const COLOR_MAP = viridisData.map((rgb) => {
 });
 
 
+const COLOR_BAR_WIDTH = 15;
+const COLOR_BAR_LEFT_MARGIN = 15;
+const COLOR_BAR_RIGHT_MARGIN = 5;
+const COLOR_BAR_AXIS_WIDTH = 40;
+const COLOR_BAR_STROKE_WIDTH = 0.75;
+const COLOR_BAR_OUTER_WIDTH = (
+  COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN
+);
+const COLOR_BAR_WIDGET_SIZE = (
+   COLOR_BAR_OUTER_WIDTH + COLOR_BAR_AXIS_WIDTH
+);
+
 @component('labrad-plot')
 export class Plot extends polymer.Base {
 
@@ -83,7 +95,7 @@ export class Plot extends polymer.Base {
   };
   private margin = {
     top: 50,
-    right: 80,
+    right: 10,
     bottom: 50,
     left: 40
   };
@@ -137,8 +149,9 @@ export class Plot extends polymer.Base {
       area: HTMLElement, totWidth: number, totHeight: number): void {
     const p = this;
 
-    if (p.numIndeps == 1) {
-      p.margin.right = 10;
+    // Make room for the color bar if necessary.
+    if (p.numIndeps == 2) {
+      p.margin.right += COLOR_BAR_WIDGET_SIZE;
     }
 
     const width = totWidth - p.margin.left - p.margin.right;
@@ -243,6 +256,7 @@ export class Plot extends polymer.Base {
               .ticks(7)
               .tickSize(5);
 
+      // The Color Bar Gradient
       p.svg.append('defs').append("linearGradient")
           .attr("id", "grads")
           .attr("x1", "0%")
@@ -260,19 +274,22 @@ export class Plot extends polymer.Base {
           .attr("stop-color", function(d) { return d.color; })
           .attr("stop-opacity", 1);
 
+      // Color Bar Rectangle
+      const colorBarOffset = width + COLOR_BAR_LEFT_MARGIN;
       p.svg.append('rect')
           .attr('fill', "url('" + location.href + "#grads')")
-          .attr('transform', `translate(${width + 15}, 0)`)
-          .attr('width', 15)
+          .attr('transform', `translate(${colorBarOffset}, 0)`)
+          .attr('width', COLOR_BAR_WIDTH)
           .attr('height', height)
-          .attr('stroke-width', .75)
+          .attr('stroke-width', COLOR_BAR_STROKE_WIDTH)
           .attr('stroke', '#000000');
 
-      // z-axis ticks and label
+      // Z-axis ticks and label.
+      const zAxisOffset = width + COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN;
       p.svg.append('g')
-              .attr('class', 'z axis')
-              .attr('transform', `translate(${width + 15 + 20}, 0)`)
-              .call(p.zAxis);
+           .attr('class', 'z axis')
+           .attr('transform', `translate(${zAxisOffset}, 0)`)
+           .call(p.zAxis);
     }
   }
 
