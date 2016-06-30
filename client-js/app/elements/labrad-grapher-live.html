@@ -10,7 +10,7 @@
       #plots {
         display: flex;
         flex-direction: column;
-        height: 100%;
+        flex: 1;
       }
     </style>
     <div id="plots"></div>
@@ -24,12 +24,15 @@
         width: 100%;
         height: 100%;
         display: flex;
+        flex: 1;
         flex-direction: column;
         min-height: 450px;
       }
       #plot {
         min-height: 400px;
         height: 100%;
+        display: flex;
+        flex: 1;
       }
     </style>
     <a is="app-link" path="{{url}}" href="{{url}}">{{name}}</a>
