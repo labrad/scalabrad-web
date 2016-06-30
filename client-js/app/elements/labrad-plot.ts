@@ -648,6 +648,7 @@ export class Plot extends polymer.Base {
         rect = this.svg.append('rect')
                        .classed('zoom', true)
                        .attr('stroke', 'red')
+                       .attr('fill', '#eee')
                        .attr('fill-opacity', 0.5);
 
     d3.select(window)
