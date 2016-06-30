@@ -38,6 +38,11 @@ const COLOR_BAR_WIDGET_SIZE = (
    COLOR_BAR_OUTER_WIDTH + COLOR_BAR_AXIS_WIDTH
 );
 
+const PLOT_LEFT_MARGIN = 40;
+const PLOT_RIGHT_MARGIN = 10;
+const PLOT_TOP_MARGIN = 50;
+const PLOT_BOTTOM_MARGIN = 50;
+
 @component('labrad-plot')
 export class Plot extends polymer.Base {
 
@@ -94,10 +99,10 @@ export class Plot extends polymer.Base {
     zMax: NaN
   };
   private margin = {
-    top: 50,
-    right: 10,
-    bottom: 50,
-    left: 40
+    top: PLOT_TOP_MARGIN,
+    right: PLOT_RIGHT_MARGIN,
+    bottom: PLOT_BOTTOM_MARGIN,
+    left: PLOT_LEFT_MARGIN
   };
 
   // Hack to enforce user defined display of traces.
@@ -151,7 +156,7 @@ export class Plot extends polymer.Base {
 
     // Make room for the color bar if necessary.
     if (p.numIndeps == 2) {
-      p.margin.right += COLOR_BAR_WIDGET_SIZE;
+      p.margin.right = PLOT_RIGHT_MARGIN + COLOR_BAR_WIDGET_SIZE;
     }
 
     const width = totWidth - p.margin.left - p.margin.right;
