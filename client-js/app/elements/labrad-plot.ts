@@ -83,7 +83,7 @@ export class Plot extends polymer.Base {
     top: 50,
     right: 10,
     bottom: 50,
-    left: 90
+    left: 120
   };
 
   // Hack to enforce user defined display of traces.
@@ -154,7 +154,7 @@ export class Plot extends polymer.Base {
             .orient('bottom')
             .tickSize(-height);
 
-    const yAxisFormatter = d3.format('.2g');
+    const yAxisFormatter = d3.format('.5g');
 
     p.yAxis = d3.svg.axis()
             .scale(p.yScale)
