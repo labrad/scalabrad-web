@@ -46,7 +46,7 @@ const COLOR_BAR_WIDGET_SIZE = (
    COLOR_BAR_OUTER_WIDTH + COLOR_BAR_AXIS_WIDTH
 );
 
-const PLOT_LEFT_MARGIN = 40;
+const PLOT_LEFT_MARGIN = 120;
 const PLOT_RIGHT_MARGIN = 10;
 const PLOT_TOP_MARGIN = 50;
 const PLOT_BOTTOM_MARGIN = 50;
@@ -190,11 +190,14 @@ export class Plot extends polymer.Base {
             .orient('bottom')
             .tickSize(-height);
 
+    const yAxisFormatter = d3.format('.5g');
+
     p.yAxis = d3.svg.axis()
             .scale(p.yScale)
             .orient('left')
             .ticks(5)
-            .tickSize(-width);
+            .tickSize(-width)
+            .tickFormat((d) => yAxisFormatter(d));
 
     p.line = d3.svg.line()
             .x((d) => p.xScale(d[0]))
