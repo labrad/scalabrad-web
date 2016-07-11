@@ -206,14 +206,13 @@ export class Plot extends polymer.Base {
             .on('zoom', () => this.handleZoom());
 
     // Plot area.
+    const marginLeft = p.margin.left;
+    const marginTop = p.margin.top;
     p.svg = d3.select(area)
-            .append('svg:svg')
-            .attr('width', width + p.margin.left + p.margin.right)
-            .attr('height', height + p. margin.top + p.margin.bottom)
-
-    p.svg = p.svg
-            .append('g')
-            .attr('transform', `translate(${p.margin.left}, ${p.margin.top})`);
+              .append('svg:svg')
+                .attr('class', 'flex')
+                .append('g')
+                  .attr('transform', `translate(${marginLeft}, ${marginTop})`);
 
     // Background rectangle.
     p.svg.append('rect')

@@ -1,6 +1,14 @@
 <link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
 
 <dom-module id="labrad-app">
+  <style is="custom-style">
+  paper-header-panel {
+    --paper-header-panel-standard-container: {
+      display: flex;
+      flex-direction: column;
+    };
+  }
+  </style>
   <style>
     paper-menu iron-icon {
       margin-right: 33px;
@@ -48,9 +56,7 @@
     }
 
     #content {
-      position: absolute;
-      width: 100%;
-      height: 100%;
+      flex: 1;
     }
 
     #location {
@@ -71,6 +77,11 @@
       font-family: monospace;
     }
 
+    #footer {
+      height: 25px;
+      background-color: var(--paper-indigo-500);
+      flex-shrink: 0;
+    }
   </style>
   <template>
     <paper-drawer-panel id="drawerPanel" force-narrow disable-edge-swipe>
@@ -135,6 +146,8 @@
 
         <!-- Main Content -->
         <div id="content"></div>
+
+        <div id="footer"></div>
 
       </paper-header-panel>
     </paper-drawer-panel>
