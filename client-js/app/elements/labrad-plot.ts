@@ -149,12 +149,6 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * The scaling factor to apply to a point of data in `dots` viewing mode.
-   */
-  private dotScaleSize: number = 1;
-
-
-  /**
    * A matrix for the use in transforming geometries.
    */
   private transformMatrix = new THREE.Matrix4();
@@ -804,7 +798,7 @@ export class Plot extends polymer.Base {
 
     switch (this.drawMode2D) {
     case 'dots':
-      wScreen = this.dotBaseSize * this.dotScaleSize;
+      wScreen = this.dotBaseSize;
       hScreen = wScreen;
       break;
 
