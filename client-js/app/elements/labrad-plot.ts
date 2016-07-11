@@ -318,11 +318,12 @@ export class Plot extends polymer.Base {
    * Deletes all objects from the scene and re-plots the data.
    */
   redrawScene(): void {
-    this.lastData = null;
     for (let obj of this.sceneObjects) {
       this.scene.remove(obj);
     }
     this.sceneObjects = [];
+
+    this.lastData = null;
     this.plotData(this.data);
     this.projectGraphPositions();
   }
@@ -405,7 +406,7 @@ export class Plot extends polymer.Base {
     p.svg.append('text')
             .attr('id', 'x-label')
             .style('text-anchor', 'middle')
-            .text(this.xLabel);
+            .text(p.xLabel);
 
     // Y-axis ticks and label.
     p.svg.append('g')
@@ -416,10 +417,10 @@ export class Plot extends polymer.Base {
             .attr('transform', 'rotate(-90)')
             .attr('dy', '1em')
             .style('text-anchor', 'middle')
-            .text(this.yLabel);
+            .text(p.yLabel);
 
     // Color Bar Axis
-    if (this.numIndeps == 2) {
+    if (p.numIndeps == 2) {
       p.zAxis = d3.svg.axis();
       p.zAxis.orient('right')
              .ticks(COLOR_BAR_NUM_TICKS)
@@ -469,8 +470,8 @@ export class Plot extends polymer.Base {
              .attr('class', 'z axis');
     }
 
-    this.updatePlotStyles();
-    this.updateControlEventListeners();
+    p.updatePlotStyles();
+    p.updateControlEventListeners();
   }
 
 
