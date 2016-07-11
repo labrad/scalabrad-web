@@ -26,7 +26,7 @@ var minimist = require('minimist');
 
 var knownOptions = {
   string: 'api-host',
-  default: {
+  default: { 
     'api-host': 'localhost:7667'
   }
 };
