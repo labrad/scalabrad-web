@@ -98,12 +98,14 @@ export class Plot extends polymer.Base {
   private zScale: any;
   private line: any;
   private zoom: any;
+
   private limits = {
     xMin: 0,
     xMax: 1,
     yMin: 0,
     yMax: 1
   };
+
   private dataLimits = {
     xMin: NaN,
     xMax: NaN,
@@ -112,6 +114,7 @@ export class Plot extends polymer.Base {
     zMin: NaN,
     zMax: NaN
   };
+
   private margin = {
     top: PLOT_TOP_MARGIN,
     right: PLOT_RIGHT_MARGIN,
@@ -134,9 +137,9 @@ export class Plot extends polymer.Base {
   private dy0: number = -1;
   private displayTraces: number[];
   private allOrNone: boolean = true;
-  private displaySurface: number = 2;
   private is1D: boolean;
   private is2D: boolean;
+  private displaySurface: number = 2;
 
 
   /**
@@ -166,7 +169,7 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * The number of vertices in a plane geometry.
+   * A short-hand to access the positions array in a unit plane.
    */
   private planeVertexPositions =
       this.planeUnitGeometry.attributes.position.array;
@@ -178,18 +181,26 @@ export class Plot extends polymer.Base {
   private planeVertexCount = this.planeVertexPositions.length;
 
 
+  /**
+   * The default options for the plotting camera.
+   */
   private cameraOpts = {
     /** The field of view of the camera. */
     fov: 45,
+
     /** The initial aspect ratio of the camera. */
     aspect: 1,
+
     /** The near plane of the camera. */
     near: -500,
+
     /** The far plane of the camera. */
     far: 500,
+
     /** The starting position of the camera. */
     startingPosition: new THREE.Vector3(0, 0, 1000)
   };
+
 
   /**
    * A perspective camera to view the graph.
@@ -214,14 +225,14 @@ export class Plot extends polymer.Base {
   /** A list of objects in the scene. */
   private sceneObjects = [];
 
+  /** If the scene render loop has been started. */
+  private isRendering: boolean = false;
+
   /** If a zoom in or out is taking place. */
   private isZooming = false;
 
   /** If we have ever zoomed since last resetting the zoom level. */
   private haveZoomed: boolean = false;
-
-  /** If the scene render loop has been started. */
-  private isRendering: boolean = false;
 
 
   /**
@@ -1276,20 +1287,20 @@ export class Plot extends polymer.Base {
   private listenPlotMouseMove(e) {
     const rect = e.currentTarget.getBoundingClientRect();
 
-    const xMouseScreen = e.pageX - rect.left;
-    const yMouseScreen = e.pageY - rect.top;
-    const xMouseGraph = this.xScale.invert(clip(xMouseScreen, 0, this.width));
-    const yMouseGraph = this.yScale.invert(clip(yMouseScreen, 0, this.height));
+    const xMouseScreen = e.pageX - rect.left,
+          yMouseScreen = e.pageY - rect.top,
+          xMouseGraph = this.xScale.invert(clip(xMouseScreen, 0, this.width)),
+          yMouseGraph = this.yScale.invert(clip(yMouseScreen, 0, this.height));
 
-    const xMin = this.xScale.invert(0);
-    const xMax = this.xScale.invert(this.width);
-    const yMin = this.yScale.invert(this.height);
-    const yMax = this.yScale.invert(0);
-    const dx = (xMax - xMin) / this.width;
-    const dy = (yMax - yMin) / this.height;
+    const xMin = this.xScale.invert(0),
+          xMax = this.xScale.invert(this.width),
+          yMin = this.yScale.invert(this.height),
+          yMax = this.yScale.invert(0),
+          dx = (xMax - xMin) / this.width,
+          dy = (yMax - yMin) / this.height;
 
-    const xStr = prettyNumber(xMouseGraph, xMin, xMax, dx);
-    const yStr = prettyNumber(yMouseGraph, yMin, yMax, dy);
+    const xStr = prettyNumber(xMouseGraph, xMin, xMax, dx),
+          yStr = prettyNumber(yMouseGraph, yMin, yMax, dy);
 
     this.currPos = `(${xStr}, ${yStr})`;
   }
