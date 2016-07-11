@@ -317,18 +317,14 @@ export class Plot extends polymer.Base {
   /**
    * Deletes all objects from the scene and re-plots the data.
    */
-  private redrawScene(resetZoom: boolean): void {
+  redrawScene(): void {
     this.lastData = null;
     for (let obj of this.sceneObjects) {
       this.scene.remove(obj);
     }
     this.sceneObjects = [];
     this.plotData(this.data);
-    if (resetZoom) {
-      this.resetZoom();
-    } else {
-      this.projectGraphPositions();
-    }
+    this.projectGraphPositions();
   }
 
 
@@ -381,7 +377,7 @@ export class Plot extends polymer.Base {
     p.zoom = d3.behavior.zoom()
             .x(p.xScale)
             .y(p.yScale)
-            .on('zoom', (e) => p.zoomEventHandler());
+            .on('zoom', () => p.zoomEventHandler());
 
     // Plot area.
     const marginLeft = p.margin.left;
@@ -1195,7 +1191,7 @@ export class Plot extends polymer.Base {
       this.displaySurface = this.displayTraces[0] + 2;
       this.$.traceSelector.close();
       this.userTraces = true;
-      this.redrawScene(false);
+      this.redrawScene();
     }
   }
 
@@ -1265,7 +1261,7 @@ export class Plot extends polymer.Base {
 
     // Points and square differences require a complete recreation of the data.
     if (this.isRendering) {
-      this.redrawScene(false);
+      this.redrawScene();
     }
   }
 
