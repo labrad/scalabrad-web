@@ -930,6 +930,8 @@ export class Plot extends polymer.Base {
         }
         child.geometry.attributes.position.needsUpdate = true;
 
+        // If we are drawing dots, we need to scale them so they are a constant
+        // size relative to the screen regardless of zoom level.
         if (this.drawMode2D == 'dots') {
           this.projectGraphCoordToScreenRect(0, 0, screenRect);
           const {w: wScreen} = screenRect;
