@@ -4,16 +4,23 @@ import {viridisData} from '../scripts/colormaps';
 import * as datavault from "../scripts/datavault";
 
 
+const MOUSE_MAIN_BUTTON = 0;
+
+
 /**
  * Colors for traces in 1D plots.
  */
 const COLOR_LIST = [
-  '#0000ff',
-  '#ff0000',
-  '#00cc00',
-  '#dddd00',
-  '#dd00dd',
-  '#0088dd'
+  "#3366cc", // Blue.
+  "#dc3912", // Red.
+  "#ff9900", // Orange.
+  "#109618", // Green.
+  "#990099", // Purple.
+  "#22aa99", // Teal.
+  "#dd4477", // Pink.
+  "#0099c6", // Aqua.
+  "#aaaa11", // Yellow.
+  "#000000", // Black.
 ];
 
 
@@ -25,6 +32,24 @@ const COLOR_MAP = viridisData.map((rgb) => {
   return d3.rgb(255 * r, 255 * g, 255 * b);
 });
 
+
+const COLOR_BAR_NUM_TICKS = 10;
+const COLOR_BAR_WIDTH = 15;
+const COLOR_BAR_LEFT_MARGIN = 15;
+const COLOR_BAR_RIGHT_MARGIN = 5;
+const COLOR_BAR_AXIS_WIDTH = 40;
+const COLOR_BAR_STROKE_WIDTH = 0.75;
+const COLOR_BAR_OUTER_WIDTH = (
+  COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN
+);
+const COLOR_BAR_WIDGET_SIZE = (
+   COLOR_BAR_OUTER_WIDTH + COLOR_BAR_AXIS_WIDTH
+);
+
+const PLOT_LEFT_MARGIN = 40;
+const PLOT_RIGHT_MARGIN = 10;
+const PLOT_TOP_MARGIN = 50;
+const PLOT_BOTTOM_MARGIN = 50;
 
 @component('labrad-plot')
 export class Plot extends polymer.Base {
@@ -48,10 +73,10 @@ export class Plot extends polymer.Base {
   mouseMode: string;
 
   @property({type: Array})
-  deps: Array<{label: string, legend: string, unit: string}>;
+  deps: {label: string, legend: string, unit: string}[];
 
-  private data: Array<Array<number>> = []
-  private lastData: Array<number> = null;
+  private data: number[][] = []
+  private lastData: number[] = null;
 
   private numTraces: number = 0;
   private svg: any;
@@ -61,8 +86,10 @@ export class Plot extends polymer.Base {
   private height: number;
   private xAxis: any;
   private yAxis: any;
+  private zAxis: any;
   private xScale: any;
   private yScale: any;
+  private zScale: any;
   private line: any;
   private zoom: any;
   private limits = {
@@ -80,17 +107,17 @@ export class Plot extends polymer.Base {
     zMax: NaN
   };
   private margin = {
-    top: 50,
-    right: 10,
-    bottom: 50,
-    left: 120
+    top: PLOT_TOP_MARGIN,
+    right: PLOT_RIGHT_MARGIN,
+    bottom: PLOT_BOTTOM_MARGIN,
+    left: PLOT_LEFT_MARGIN
   };
 
   // Hack to enforce user defined display of traces.
   private userTraces: boolean = false;
 
-  private xs: Array<number> = [];
-  private ys: Array<number> = [];
+  private xs: number[] = [];
+  private ys: number[] = [];
   private xNext: {[x: number]: number} = {};
   private yNext: {[y: number]: number} = {};
   private dx: number = 1;
@@ -99,7 +126,7 @@ export class Plot extends polymer.Base {
   private y0: number = null;
   private dx0: number = -1;
   private dy0: number = -1;
-  private displayTraces: Array<number>;
+  private displayTraces: number[];
   private allOrNone: boolean = true;
   private is1D: boolean;
   private is2D: boolean;
@@ -110,9 +137,9 @@ export class Plot extends polymer.Base {
    * Redraw the plot and attach resize to the window resize event.
    * Fires when the component is attached to the DOM.
    */
-  public attached() {
-    this.redraw_();
-    window.addEventListener('resize', (event) => this.redraw_());
+  attached() {
+    this.redraw();
+    window.addEventListener('resize', (event) => this.redraw());
   }
 
 
@@ -120,20 +147,25 @@ export class Plot extends polymer.Base {
    * Add new data to the plot and re-zoom.
    * Fires when new data arrives via the socket.
    */
-  public addData(data: Array<Array<number>>) {
+  addData(data: number[][]) {
     if (data.length === 0) return;
     const lastData = (this.data.length > 0) ?
         this.data[this.data.length - 1] : null;
     for (let row of data) {
       this.splice('data', this.data.length, 0, row);
     }
-    this.plotData_(data, lastData);
+    this.plotData(data, lastData);
   }
 
 
-  private createPlot_(
+  private createPlot(
       area: HTMLElement, totWidth: number, totHeight: number): void {
     const p = this;
+
+    // Make room for the color bar if necessary.
+    if (p.numIndeps == 2) {
+      p.margin.right = PLOT_RIGHT_MARGIN + COLOR_BAR_WIDGET_SIZE;
+    }
 
     const width = totWidth - p.margin.left - p.margin.right;
     const height = totHeight - p.margin.top - p.margin.bottom;
@@ -147,6 +179,10 @@ export class Plot extends polymer.Base {
 
     p.yScale = d3.scale.linear()
             .domain([p.limits.yMin, p.limits.yMax])
+            .range([height, 0]);
+
+    p.zScale = d3.scale.linear()
+            .domain([0, 1])
             .range([height, 0]);
 
     p.xAxis = d3.svg.axis()
@@ -170,15 +206,16 @@ export class Plot extends polymer.Base {
     p.zoom = d3.behavior.zoom()
             .x(p.xScale)
             .y(p.yScale)
-            .on('zoom', () => this.handleZoom_());
+            .on('zoom', () => this.handleZoom());
 
     // Plot area.
+    const marginLeft = p.margin.left;
+    const marginTop = p.margin.top;
     p.svg = d3.select(area)
-            .append('svg:svg')
-            .attr('width', width + p.margin.left + p.margin.right)
-            .attr('height', height + p. margin.top + p.margin.bottom)
-            .append('g')
-            .attr('transform', `translate(${p.margin.left}, ${p.margin.top})`);
+              .append('svg:svg')
+                .attr('class', 'flex')
+                .append('g')
+                  .attr('transform', `translate(${marginLeft}, ${marginTop})`);
 
     // Background rectangle.
     p.svg.append('rect')
@@ -225,10 +262,67 @@ export class Plot extends polymer.Base {
             .attr('y', 0)
             .attr('width', width)
             .attr('height', height);
+
+
+    // Color Bar Axis
+    if (this.numIndeps == 2) {
+      p.zAxis = d3.svg.axis();
+      p.zAxis.scale(p.zScale)
+             .orient('right')
+             .ticks(COLOR_BAR_NUM_TICKS)
+             .tickSize(5);
+
+      // Create accurate gradient stops of the viridis colormap.
+      const gradientTicks = [];
+      for (let i = 0; i <= 255; ++i) {
+        const index = i / 255 * 100;
+        gradientTicks.push({
+          offset: `${index}%`,
+          color: COLOR_MAP[i]
+        })
+      }
+
+      // The Color Bar Gradient
+      p.svg.append('defs')
+             .append("linearGradient")
+             .attr("id", "ColorBarGradient")
+             .attr("x1", "0%")
+             .attr("y1", "100%")
+             .attr("x2", "0%")
+             .attr("y2", "0%")
+             .selectAll("stop")
+             .data(gradientTicks)
+             .enter()
+               .append("stop")
+                 .attr("offset", (d) => d.offset)
+                 .attr("stop-color", (d) => d.color)
+                 .attr("stop-opacity", 1);
+
+      // Appending the location href is necessary due to the use of `base href`
+      // for the overall app to make Polymer paths work.
+      const gradientFill = `url('${location.href}#ColorBarGradient')`;
+
+      // Color Bar Rectangle
+      const colorBarOffset = width + COLOR_BAR_LEFT_MARGIN;
+      p.svg.append('rect')
+             .attr('fill', gradientFill)
+             .attr('transform', `translate(${colorBarOffset}, 0)`)
+             .attr('width', COLOR_BAR_WIDTH)
+             .attr('height', height)
+             .attr('stroke', '#000000')
+             .attr('stroke-width', COLOR_BAR_STROKE_WIDTH);
+
+      // Z-axis ticks and label.
+      const zAxisOffset = width + COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN;
+      p.svg.append('g')
+             .attr('class', 'z axis')
+             .attr('transform', `translate(${zAxisOffset}, 0)`)
+             .call(p.zAxis);
+    }
   }
 
 
-  private plotData_(data: Array<Array<number>>, lastData?: Array<number>) {
+  private plotData(data: number[][], lastData?: number[]) {
     if (data.length === 0) return;
 
     this.numTraces = data[0].length - 1;
@@ -239,8 +333,9 @@ export class Plot extends polymer.Base {
     }
 
     switch (this.numIndeps) {
-      case 1: this.plotData1D_(data, lastData); break;
-      case 2: this.plotData2D_(data, lastData); break;
+      case 1: this.plotData1D(data, lastData); break;
+      case 2: this.plotData2D(data, lastData); break;
+      default: break; // Nothing to do.
     }
 
     // Update the last data point we've seen.
@@ -263,7 +358,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private plotData1D_(data: Array<Array<number>>, lastData?: Array<number>) {
+  private plotData1D(data: number[][], lastData?: number[]) {
     // Update data limits.
     this.dataLimits = {
       xMin: NaN,
@@ -306,6 +401,7 @@ export class Plot extends polymer.Base {
         this.chartBody.append('svg:path')
                 .datum(traceData)
                 .attr('stroke', COLOR_LIST[i % COLOR_LIST.length])
+                .attr('stroke-width', 1.5)
                 .attr('fill', 'none')
                 .attr('class', `line${i}`)
                 .attr('d', this.line);
@@ -314,7 +410,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  private plotData2D_(data: Array<Array<number>>, lastData?: Array<number>) {
+  private plotData2D(data: number[][], lastData?: number[]) {
     // Update data limits.
 
     for (let row of data) {
@@ -387,57 +483,61 @@ export class Plot extends polymer.Base {
         h = 0;
     const p = this;
     switch (this.drawMode2D) {
-    case 'dots':
-      w = h = 4;
-      for (let row of data) {
-        this.chartBody
-              .append('rect')
-              .datum(row)
-              .classed('data', true)
-              .attr('x', (d) => p.xScale(d[0]))
-              .attr('y', (d) => p.yScale(d[1]) - h)
-              .attr('width', w)
-              .attr('height', h)
-              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-      }
-      break;
+      case 'dots':
+        w = h = 4;
+        for (let row of data) {
+          this.chartBody
+                .append('rect')
+                .datum(row)
+                .classed('data', true)
+                .attr('x', (d) => p.xScale(d[0]))
+                .attr('y', (d) => p.yScale(d[1]) - h)
+                .attr('width', w)
+                .attr('height', h)
+                .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
+        }
+        break;
 
-    case 'rectfill':
-      w = Math.abs(p.xScale(this.dx0) - p.xScale(0));
-      h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
-      for (let row of data) {
-        this.chartBody
-              .append('rect')
-              .datum(row)
-              .classed('data', true)
-              .attr('x', (d) => p.xScale(d[0]))
-              .attr('y', (d) => p.yScale(d[1]) - h)
-              .attr('width', w)
-              .attr('height', h)
-              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-      }
-      break;
+      case 'rectfill':
+        w = Math.abs(p.xScale(this.dx0) - p.xScale(0));
+        h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
+        for (let row of data) {
+          this.chartBody
+                .append('rect')
+                .datum(row)
+                .classed('data', true)
+                .attr('x', (d) => p.xScale(d[0]))
+                .attr('y', (d) => p.yScale(d[1]) - h)
+                .attr('width', w)
+                .attr('height', h)
+                .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
+        }
+        break;
 
-    case 'vargrid':
-      for (let row of data) {
-        this.chartBody
-              .append('rect')
-              .datum(row)
-              .classed('data', true)
-              .attr('x', (d) => p.xScale(d[0]))
-              .attr('y', (d) => p.yScale(p.yNext[d[1]]))
-              .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
-              .attr('height', (d) => {
-                return Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1]));
-              })
-              .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-      }
-      break;
+      case 'vargrid':
+        for (let row of data) {
+          this.chartBody
+                .append('rect')
+                .datum(row)
+                .classed('data', true)
+                .attr('x', (d) => p.xScale(d[0]))
+                .attr('y', (d) => p.yScale(p.yNext[d[1]]))
+                .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
+                .attr('height', (d) => {
+                  return Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1]));
+                })
+                .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
+        }
+        break;
+
+      default:
+        // Nothing to do.
+        break;
     }
   }
 
 
-  private installMouseListeners_() {
+  private installMouseListeners() {
     if (!this.svg) return;
     switch (this.mouseMode) {
       case 'pan':
@@ -449,15 +549,19 @@ export class Plot extends polymer.Base {
 
       case 'zoomRect':
         this.svg.on('.zoom', null)
-        this.svg.on('mousedown', () => this.zoomRectangle_());
+        this.svg.on('mousedown', () => this.zoomRectangle());
         this.$.plot.style.cursor = 'auto';
         this.$.plot.style.cursor = 'crosshair';
+        break;
+
+      default:
+        // Nothing to do.
         break;
     }
   }
 
 
-  private updatePlotStyles_() {
+  private updatePlotStyles() {
     if (!this.svg) return;
     switch (this.numIndeps) {
       case 1:
@@ -472,38 +576,46 @@ export class Plot extends polymer.Base {
         this.is1D = false;
         this.is2D = true;
         break;
+
+      default:
+        // Nothing to do.
+        break;
     }
   }
 
 
-  private redraw_() {
+  /**
+   * Destroys and recreates the plot.
+   */
+  redraw(): void {
     const area = this.$.plot,
-        rect = area.getBoundingClientRect();
+          rect = area.getBoundingClientRect();
     while (area.firstChild) {
       area.removeChild(area.firstChild);
     }
-    this.createPlot_(area,
+    this.createPlot(area,
                      Math.max(rect.width, 400),
                      Math.max(rect.height, 400));
-    this.updatePlotStyles_();
-    this.plotData_(this.data);
-    this.installMouseListeners_();
+    this.updatePlotStyles();
+    this.plotData(this.data);
+    this.installMouseListeners();
   }
 
 
-  private handleZoom_() {
+  private handleZoom() {
     // Zoom and pan axes.
     this.svg.select('.x.axis').call(this.xAxis);
     this.svg.select('.y.axis').call(this.yAxis);
 
     switch (this.numIndeps) {
-      case 1: this.zoomData1D_(); break;
-      case 2: this.zoomData2D_(); break;
+      case 1: this.zoomData1D(); break;
+      case 2: this.zoomData2D(); break;
+      default: break; // Nothing to do.
     }
   }
 
 
-  private zoomData1D_() {
+  private zoomData1D() {
     // Adjust data for each trace.
     for (let k = 0; k < this.numTraces; k++) {
       this.svg.selectAll(`.line${k}`)
@@ -513,13 +625,17 @@ export class Plot extends polymer.Base {
   }
 
 
-  private zoomData2D_() {
+  private zoomData2D() {
     const zMin = this.dataLimits.zMin,
           zMax = this.dataLimits.zMax,
           p = this;
 
     let w = 0,
         h = 0;
+
+    // Rescale the color bar.
+    this.svg.select('.z.axis').call(this.zAxis);
+
     // Adjust size, position, and color of each data rect.
     switch (this.drawMode2D) {
     case 'dots':
@@ -561,7 +677,12 @@ export class Plot extends polymer.Base {
   /**
    * Zoom into a selected rectangular region on the graph.
    */
-  private zoomRectangle_() {
+  private zoomRectangle() {
+    // Only trigger zoom rectangle on left click
+    if (d3.event.button !== MOUSE_MAIN_BUTTON) {
+      return;
+    }
+
     // Helper function to get mouse position in the coordinates of the svg plot
     // area. The d3.mouse function returns coordinates relative to the full html
     // element, so we must account for the margins. We also clip the coordinates
@@ -578,6 +699,7 @@ export class Plot extends polymer.Base {
         rect = this.svg.append('rect')
                        .classed('zoom', true)
                        .attr('stroke', 'red')
+                       .attr('fill', '#eee')
                        .attr('fill-opacity', 0.5);
 
     d3.select(window)
@@ -607,20 +729,20 @@ export class Plot extends polymer.Base {
                    .y(yScale.domain([yMin, yMax]));
         }
         rect.remove();
-        this.handleZoom_();
+        this.handleZoom();
       }, true);
     d3.event.preventDefault();
     d3.event.stopPropagation();
   }
 
 
-  private mouseToDataX_(x: number): number {
+  private mouseToDataX(x: number): number {
     x = clip(x - this.margin.left, 0, this.width);
     return this.xScale.invert(x);
   }
 
 
-  private mouseToDataY_(y: number): number {
+  private mouseToDataY(y: number): number {
     y = clip(y - this.margin.top, 0, this.height);
     return this.yScale.invert(y);
   }
@@ -629,21 +751,23 @@ export class Plot extends polymer.Base {
   /**
    * Reset to original window size after zoom-in.
    */
-  public resetZoom() {
+  resetZoom() {
     this.xScale.domain([this.limits.xMin, this.limits.xMax]);
     this.yScale.domain([this.limits.yMin, this.limits.yMax]);
+    this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
     this.xAxis.scale(this.xScale);
     this.yAxis.scale(this.yScale);
+    this.zAxis.scale(this.zScale);
     this.zoom.x(this.xScale);
     this.zoom.y(this.yScale);
-    this.handleZoom_();
+    this.handleZoom();
   }
 
 
   /**
    * Sets the control mode to pan/zoom.
    */
-  public mouseModeSelectorPan() {
+  mouseModeSelectorPan() {
     this.mouseMode = 'pan';
   }
 
@@ -651,7 +775,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the control mode to zoom rectangle.
    */
-  public mouseModeSelectorZoomRect() {
+  mouseModeSelectorZoomRect() {
     this.mouseMode = 'zoomRect';
   }
 
@@ -659,7 +783,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to dots.
    */
-  public drawMode2DSelectorDots() {
+  drawMode2DSelectorDots() {
     this.drawMode2D = 'dots';
   }
 
@@ -667,7 +791,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to rect fill.
    */
-  public drawMode2DSelectorRectfill() {
+  drawMode2DSelectorRectfill() {
     this.drawMode2D = 'rectfill';
   }
 
@@ -675,7 +799,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to vargrid.
    */
-  public drawMode2DSelectorVargrid() {
+  drawMode2DSelectorVargrid() {
     this.drawMode2D = 'vargrid';
   }
 
@@ -683,7 +807,7 @@ export class Plot extends polymer.Base {
   /**
    * Opens the trace selector dialog window.
    */
-  public traceSelectorOpen() {
+  traceSelectorOpen() {
     this.$.traceSelector.open();
   }
 
@@ -691,7 +815,7 @@ export class Plot extends polymer.Base {
   /**
    * Selects all available traces.
    */
-  public traceSelectorSelectAll() {
+  traceSelectorSelectAll() {
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
@@ -703,7 +827,7 @@ export class Plot extends polymer.Base {
   /**
    * Selects none of the available traces.
    */
-  public traceSelectorSelectNone() {
+  traceSelectorSelectNone() {
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
@@ -716,8 +840,8 @@ export class Plot extends polymer.Base {
    * Submit the users trace selection. Will not submit if no traces are
    * selected.
    */
-  public traceSelectorSubmit() {
-    const selected: Array<number> = [];
+  traceSelectorSubmit() {
+    const selected: number[] = [];
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
     const radio = selector.querySelector('[name=radioGroup]');
@@ -733,6 +857,10 @@ export class Plot extends polymer.Base {
       case 2:
         selected.push(parseInt((<any>radio).selected));
         break;
+
+      default:
+        // Nothing to do.
+        break;
     }
 
     if (selected.length > 0) {
@@ -743,13 +871,13 @@ export class Plot extends polymer.Base {
       this.displaySurface = this.displayTraces[0] + 2;
       this.$.traceSelector.close();
       this.userTraces = true;
-      this.redraw_();
+      this.redraw();
     }
   }
 
 
   @observe('xLabel')
-  private observeXLabel_(newLabel: string, oldLabel: string) {
+  private observeXLabel(newLabel: string, oldLabel: string) {
     if (this.svg) {
       this.svg.select('#x-label').text(newLabel);
     }
@@ -757,7 +885,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('yLabel')
-  private observeYLabel_(newLabel: string, oldLabel: string) {
+  private observeYLabel(newLabel: string, oldLabel: string) {
     if (this.svg) {
       this.svg.select('#y-label').text(newLabel);
     }
@@ -765,7 +893,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('mouseMode')
-  private observeMouseMode_(newMode: string, oldMode: string) {
+  private observeMouseMode(newMode: string, oldMode: string) {
     switch (newMode) {
       case 'pan':
         this.$.pan.style.color = 'black';
@@ -776,13 +904,17 @@ export class Plot extends polymer.Base {
         this.$.pan.style.color = '#AAAAAA';
         this.$.rect.style.color = 'black';
         break;
+
+      default:
+        // Nothing to do.
+        break;
     }
-    this.installMouseListeners_();
+    this.installMouseListeners();
   }
 
 
   @observe('drawMode2D')
-  private observeDrawMode2D_(newMode: string, oldMode: string) {
+  private observeDrawMode2D(newMode: string, oldMode: string) {
     switch (newMode) {
       case 'dots':
         this.$.dots.style.color = 'black';
@@ -801,21 +933,25 @@ export class Plot extends polymer.Base {
         this.$.rectfill.style.color = '#AAAAAA';
         this.$.vargrid.style.color = 'black';
         break;
+
+      default:
+        // Nothing to do.
+        break;
     }
     if (oldMode && newMode !== oldMode) {
-      setTimeout(() => this.handleZoom_(), 0);
+      setTimeout(() => this.handleZoom(), 0);
     }
   }
 
 
   @observe('numIndeps')
-  private observeNumIndeps_(newNum: number, oldNum: number) {
-    this.updatePlotStyles_();
+  private observeNumIndeps(newNum: number, oldNum: number) {
+    this.updatePlotStyles();
   }
 
 
   @listen('plot.mousemove')
-  private listenPlotMouseMove_(event) {
+  private listenPlotMouseMove(event) {
     const rect = event.currentTarget.getBoundingClientRect();
     const xMin = this.xScale.invert(0),
           xMax = this.xScale.invert(this.width),
@@ -823,8 +959,8 @@ export class Plot extends polymer.Base {
           yMax = this.yScale.invert(0),
           dx = (xMax - xMin) / this.width,
           dy = (yMax - yMin) / this.height,
-          x = this.mouseToDataX_(event.pageX - rect.left),
-          y = this.mouseToDataY_(event.pageY - rect.top),
+          x = this.mouseToDataX(event.pageX - rect.left),
+          y = this.mouseToDataY(event.pageY - rect.top),
           xStr = prettyNumber(x, xMin, xMax, dx),
           yStr = prettyNumber(y, yMin, yMax, dy);
 
@@ -908,7 +1044,7 @@ function clip(x: number, xMin: number, xMax: number): number {
 
 
 function insertInRange(
-    xs: Array<number>, x: number, lh: number, rh: number): number {
+    xs: number[], x: number, lh: number, rh: number): number {
   const m = lh + Math.floor((rh - lh)/2);
   if (x > xs[rh]) {
     xs.splice(rh + 1, 0, x);
@@ -930,7 +1066,7 @@ function insertInRange(
 }
 
 
-function insertSorted(xs: Array<number>, x: number): number {
+function insertSorted(xs: number[], x: number): number {
   const len = xs.length;
   if (len === 0) {
     xs.push(x);

@@ -3,8 +3,9 @@
 <dom-module id="labrad-grapher">
   <style>
     :host {
-      display: block;
+      height: 100%;
       overflow: hidden;
+      display: flex;
     }
     table {
       width: 100%;
@@ -19,9 +20,7 @@
       white-space: nowrap;
     }
     #outer {
-      position: absolute;
-      width: 100%;
-      height: 100%;
+      flex: 1;
     }
     #container {
       display: flex;
