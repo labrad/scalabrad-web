@@ -513,8 +513,6 @@ export class Plot extends polymer.Base {
     this.yAxis.scale(this.yScale)
               .tickSize(-this.width);
 
-    this.zAxis.scale(this.zScale);
-
     this.line.x((d) => this.xScale(d[0]))
              .y((d) => this.yScale(d[1]));
 
@@ -541,20 +539,24 @@ export class Plot extends polymer.Base {
               .attr('x', -(this.height / 2))
               .attr('y', -this.margin.left);
 
-    // Color Bar Rectangle.
-    const colorBarOffset = this.width + COLOR_BAR_LEFT_MARGIN;
-    this.svg.select('#color-bar')
-              .attr('height', this.height)
-              .attr('transform', `translate(${colorBarOffset}, 0)`);
+    if (this.numIndeps == 2) {
+      this.zAxis.scale(this.zScale);
 
-    // Color Bar Ticks and Label.
-    const zAxisXOffset = (this.width
-                         + COLOR_BAR_LEFT_MARGIN
-                         + COLOR_BAR_WIDTH
-                         + COLOR_BAR_RIGHT_MARGIN);
-    this.svg.select('#color-bar-ticks')
-              .attr('transform', `translate(${zAxisXOffset}, 0)`)
-              .call(this.zAxis);
+      // Color Bar Rectangle.
+      const colorBarOffset = this.width + COLOR_BAR_LEFT_MARGIN;
+      this.svg.select('#color-bar')
+                .attr('height', this.height)
+                .attr('transform', `translate(${colorBarOffset}, 0)`);
+
+      // Color Bar Ticks and Label.
+      const zAxisXOffset = (this.width
+                          + COLOR_BAR_LEFT_MARGIN
+                          + COLOR_BAR_WIDTH
+                          + COLOR_BAR_RIGHT_MARGIN);
+      this.svg.select('#color-bar-ticks')
+                .attr('transform', `translate(${zAxisXOffset}, 0)`)
+                .call(this.zAxis);
+    }
   }
 
 
@@ -1075,9 +1077,13 @@ export class Plot extends polymer.Base {
     this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
     this.xAxis.scale(this.xScale);
     this.yAxis.scale(this.yScale);
-    this.zAxis.scale(this.zScale);
     this.zoom.x(this.xScale);
     this.zoom.y(this.yScale);
+
+    if (this.numIndeps == 2) {
+      this.zAxis.scale(this.zScale);
+    }
+
     this.handleZoom();
   }
 
