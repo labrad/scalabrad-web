@@ -478,6 +478,7 @@ export class Plot extends polymer.Base {
       // Color Bar Rectangle
       const colorBarOffset = width + COLOR_BAR_LEFT_MARGIN;
       p.svg.append('rect')
+             .attr('id', 'color-bar')
              .attr('fill', gradientFill)
              .attr('transform', `translate(${colorBarOffset}, 0)`)
              .attr('width', COLOR_BAR_WIDTH)
@@ -488,6 +489,7 @@ export class Plot extends polymer.Base {
       // Z-axis ticks and label.
       const zAxisOffset = width + COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN;
       p.svg.append('g')
+             .attr('id', 'color-bar-ticks')
              .attr('class', 'z axis')
              .attr('transform', `translate(${zAxisOffset}, 0)`)
              .call(p.zAxis);
@@ -525,6 +527,7 @@ export class Plot extends polymer.Base {
 
     this.xScale.range([0, this.width]);
     this.yScale.range([this.height, 0]);
+    this.zScale.range([this.height, 0]);
 
     this.xAxis.scale(this.xScale)
            .tickSize(-this.height);
@@ -533,16 +536,14 @@ export class Plot extends polymer.Base {
         .scale(this.yScale)
         .tickSize(-this.width);
 
+    this.zAxis.scale(this.zScale);
+
     this.line
         .x((d) => this.xScale(d[0]))
         .y((d) => this.yScale(d[1]));
 
     this.zoom.x(this.xScale)
           .y(this.yScale);
-
-    d3.select('#svgplot')
-        .attr('width', plotWidth)
-        .attr('height', plotHeight)
 
     this.svg.select('#rect')
         .attr('width', this.width)
@@ -560,6 +561,18 @@ export class Plot extends polymer.Base {
     this.svg.select('#y-label')
         .attr('x', -(this.height / 2))
         .attr('y', -this.margin.left);
+
+    // Color Bar Rectangle
+    const colorBarOffset = this.width + COLOR_BAR_LEFT_MARGIN;
+    this.svg.select('#color-bar')
+        .attr('height', this.height)
+        .attr('transform', `translate(${colorBarOffset}, 0)`);
+
+    // Z-axis ticks and label.
+    const zAxisOffset = this.width + COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN;
+    this.svg.select('#color-bar-ticks')
+        .attr('transform', `translate(${zAxisOffset}, 0)`)
+        .call(this.zAxis);
   }
 
 
