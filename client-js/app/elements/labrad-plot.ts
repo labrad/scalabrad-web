@@ -338,46 +338,29 @@ export class Plot extends polymer.Base {
    */
   private initializeSVGPlot(): void {
     const p = this;
-    const plot = p.$.plot;
-    const plotBounds = plot.getBoundingClientRect();
-    const totWidth = Math.max(plotBounds.width, 400);
-    const totHeight = Math.max(plotBounds.height, 400);
 
     // Make room for the color bar if necessary.
     if (p.numIndeps == 2) {
       p.margin.right = PLOT_RIGHT_MARGIN + COLOR_BAR_WIDGET_SIZE;
     }
 
-    const width = totWidth - p.margin.left - p.margin.right;
-    const height = totHeight - p.margin.top - p.margin.bottom;
-
-    p.width = width;
-    p.height = height;
-
     p.xScale = d3.scale.linear()
-            .domain([p.limits.xMin, p.limits.xMax])
-            .range([0, width]);
+            .domain([p.limits.xMin, p.limits.xMax]);
 
     p.yScale = d3.scale.linear()
-            .domain([p.limits.yMin, p.limits.yMax])
-            .range([height, 0]);
+            .domain([p.limits.yMin, p.limits.yMax]);
 
     p.zScale = d3.scale.linear()
-            .domain([0, 1])
-            .range([height, 0]);
+            .domain([0, 1]);
 
     p.xAxis = d3.svg.axis()
-            .scale(p.xScale)
-            .orient('bottom')
-            .tickSize(-height);
+            .orient('bottom');
 
     const yAxisFormatter = d3.format('.5g');
-
     p.yAxis = d3.svg.axis()
-            .scale(p.yScale)
             .orient('left')
             .ticks(5)
-            .tickSize(-width)
+            .tickSize(-p.width)
             .tickFormat((d) => yAxisFormatter(d));
 
     p.line = d3.svg.line()
@@ -392,7 +375,7 @@ export class Plot extends polymer.Base {
     // Plot area.
     const marginLeft = p.margin.left;
     const marginTop = p.margin.top;
-    p.svg = d3.select(plot)
+    p.svg = d3.select(p.$.plot)
               .append('svg:svg')
                 .attr('id', 'svgplot')
                 .attr('class', 'flex')
@@ -406,33 +389,24 @@ export class Plot extends polymer.Base {
             .attr('id', 'rect')
             .attr('stroke', 'black')
             .attr('stroke-width', 1)
-            .attr('width', width)
-            .attr('height', height)
             .style('fill', '#222222');
 
     // X-axis ticks and label.
     p.svg.append('g')
             .attr('id', 'x-axis')
-            .attr('class', 'x axis')
-            .attr('transform', `translate(0, ${height})`)
-            .call(p.xAxis);
+            .attr('class', 'x axis');
     p.svg.append('text')
             .attr('id', 'x-label')
-            .attr('transform',
-                  `translate(${width / 2}, ${height + p.margin.bottom - 10})`)
             .style('text-anchor', 'middle')
             .text(this.xLabel);
 
     // Y-axis ticks and label.
     p.svg.append('g')
             .attr('id', 'y-axis')
-            .attr('class', 'y axis')
-            .call(p.yAxis);
+            .attr('class', 'y axis');
     p.svg.append('text')
             .attr('id', 'y-label')
             .attr('transform', 'rotate(-90)')
-            .attr('y', 0 - p.margin.left)
-            .attr('x', 0 - (height / 2))
             .attr('dy', '1em')
             .style('text-anchor', 'middle')
             .text(this.yLabel);
@@ -440,8 +414,7 @@ export class Plot extends polymer.Base {
     // Color Bar Axis
     if (this.numIndeps == 2) {
       p.zAxis = d3.svg.axis();
-      p.zAxis.scale(p.zScale)
-             .orient('right')
+      p.zAxis.orient('right')
              .ticks(COLOR_BAR_NUM_TICKS)
              .tickSize(5);
 
@@ -476,23 +449,17 @@ export class Plot extends polymer.Base {
       const gradientFill = `url('${location.href}#ColorBarGradient')`;
 
       // Color Bar Rectangle
-      const colorBarOffset = width + COLOR_BAR_LEFT_MARGIN;
       p.svg.append('rect')
              .attr('id', 'color-bar')
              .attr('fill', gradientFill)
-             .attr('transform', `translate(${colorBarOffset}, 0)`)
              .attr('width', COLOR_BAR_WIDTH)
-             .attr('height', height)
              .attr('stroke', '#000000')
              .attr('stroke-width', COLOR_BAR_STROKE_WIDTH);
 
       // Z-axis ticks and label.
-      const zAxisOffset = width + COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN;
       p.svg.append('g')
              .attr('id', 'color-bar-ticks')
-             .attr('class', 'z axis')
-             .attr('transform', `translate(${zAxisOffset}, 0)`)
-             .call(p.zAxis);
+             .attr('class', 'z axis');
     }
 
     this.updatePlotStyles();
@@ -530,49 +497,53 @@ export class Plot extends polymer.Base {
     this.zScale.range([this.height, 0]);
 
     this.xAxis.scale(this.xScale)
-           .tickSize(-this.height);
+              .tickSize(-this.height);
 
-    this.yAxis
-        .scale(this.yScale)
-        .tickSize(-this.width);
+    this.yAxis.scale(this.yScale)
+              .tickSize(-this.width);
 
     this.zAxis.scale(this.zScale);
 
-    this.line
-        .x((d) => this.xScale(d[0]))
-        .y((d) => this.yScale(d[1]));
+    this.line.x((d) => this.xScale(d[0]))
+             .y((d) => this.yScale(d[1]));
 
     this.zoom.x(this.xScale)
-          .y(this.yScale);
+             .y(this.yScale);
 
     this.svg.select('#rect')
-        .attr('width', this.width)
-        .attr('height', this.height);
+              .attr('width', this.width)
+              .attr('height', this.height);
 
     this.svg.select('#x-axis')
-        .attr('transform', `translate(0, ${this.height})`)
-        .call(this.xAxis);
+              .attr('transform', `translate(0, ${this.height})`)
+              .call(this.xAxis);
 
+    const xLabXOffset = this.width / 2;
+    const xLabYOffset = this.height + this.margin.bottom - 10;
     this.svg.select('#x-label')
-        .attr('transform', `translate(${this.width / 2}, ${this.height + this.margin.bottom - 10})`);
+              .attr('transform', `translate(${xLabXOffset}, ${xLabYOffset})`);
 
-    this.svg.select("#y-axis").call(this.yAxis);
+    this.svg.select("#y-axis")
+              .call(this.yAxis);
 
     this.svg.select('#y-label')
-        .attr('x', -(this.height / 2))
-        .attr('y', -this.margin.left);
+              .attr('x', -(this.height / 2))
+              .attr('y', -this.margin.left);
 
-    // Color Bar Rectangle
+    // Color Bar Rectangle.
     const colorBarOffset = this.width + COLOR_BAR_LEFT_MARGIN;
     this.svg.select('#color-bar')
-        .attr('height', this.height)
-        .attr('transform', `translate(${colorBarOffset}, 0)`);
+              .attr('height', this.height)
+              .attr('transform', `translate(${colorBarOffset}, 0)`);
 
-    // Z-axis ticks and label.
-    const zAxisOffset = this.width + COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN;
+    // Color Bar Ticks and Label.
+    const zAxisXOffset = (this.width
+                         + COLOR_BAR_LEFT_MARGIN
+                         + COLOR_BAR_WIDTH
+                         + COLOR_BAR_RIGHT_MARGIN);
     this.svg.select('#color-bar-ticks')
-        .attr('transform', `translate(${zAxisOffset}, 0)`)
-        .call(this.zAxis);
+              .attr('transform', `translate(${zAxisXOffset}, 0)`)
+              .call(this.zAxis);
   }
 
 
