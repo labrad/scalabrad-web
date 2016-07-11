@@ -33,6 +33,24 @@ const COLOR_MAP = viridisData.map((rgb) => {
 });
 
 
+const COLOR_BAR_NUM_TICKS = 10;
+const COLOR_BAR_WIDTH = 15;
+const COLOR_BAR_LEFT_MARGIN = 15;
+const COLOR_BAR_RIGHT_MARGIN = 5;
+const COLOR_BAR_AXIS_WIDTH = 40;
+const COLOR_BAR_STROKE_WIDTH = 0.75;
+const COLOR_BAR_OUTER_WIDTH = (
+  COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN
+);
+const COLOR_BAR_WIDGET_SIZE = (
+   COLOR_BAR_OUTER_WIDTH + COLOR_BAR_AXIS_WIDTH
+);
+
+const PLOT_LEFT_MARGIN = 40;
+const PLOT_RIGHT_MARGIN = 10;
+const PLOT_TOP_MARGIN = 50;
+const PLOT_BOTTOM_MARGIN = 50;
+
 @component('labrad-plot')
 export class Plot extends polymer.Base {
 
@@ -68,8 +86,10 @@ export class Plot extends polymer.Base {
   private height: number;
   private xAxis: any;
   private yAxis: any;
+  private zAxis: any;
   private xScale: any;
   private yScale: any;
+  private zScale: any;
   private line: any;
   private zoom: any;
   private limits = {
@@ -87,10 +107,10 @@ export class Plot extends polymer.Base {
     zMax: NaN
   };
   private margin = {
-    top: 50,
-    right: 10,
-    bottom: 50,
-    left: 40
+    top: PLOT_TOP_MARGIN,
+    right: PLOT_RIGHT_MARGIN,
+    bottom: PLOT_BOTTOM_MARGIN,
+    left: PLOT_LEFT_MARGIN
   };
 
   // Hack to enforce user defined display of traces.
@@ -142,6 +162,11 @@ export class Plot extends polymer.Base {
       area: HTMLElement, totWidth: number, totHeight: number): void {
     const p = this;
 
+    // Make room for the color bar if necessary.
+    if (p.numIndeps == 2) {
+      p.margin.right = PLOT_RIGHT_MARGIN + COLOR_BAR_WIDGET_SIZE;
+    }
+
     const width = totWidth - p.margin.left - p.margin.right;
     const height = totHeight - p.margin.top - p.margin.bottom;
 
@@ -154,6 +179,10 @@ export class Plot extends polymer.Base {
 
     p.yScale = d3.scale.linear()
             .domain([p.limits.yMin, p.limits.yMax])
+            .range([height, 0]);
+
+    p.zScale = d3.scale.linear()
+            .domain([0, 1])
             .range([height, 0]);
 
     p.xAxis = d3.svg.axis()
@@ -181,6 +210,8 @@ export class Plot extends polymer.Base {
             .append('svg:svg')
             .attr('width', width + p.margin.left + p.margin.right)
             .attr('height', height + p. margin.top + p.margin.bottom)
+
+    p.svg = p.svg
             .append('g')
             .attr('transform', `translate(${p.margin.left}, ${p.margin.top})`);
 
@@ -229,6 +260,63 @@ export class Plot extends polymer.Base {
             .attr('y', 0)
             .attr('width', width)
             .attr('height', height);
+
+
+    // Color Bar Axis
+    if (this.numIndeps == 2) {
+      p.zAxis = d3.svg.axis();
+      p.zAxis.scale(p.zScale)
+             .orient('right')
+             .ticks(COLOR_BAR_NUM_TICKS)
+             .tickSize(5);
+
+      // Create accurate gradient stops of the viridis colormap.
+      const gradientTicks = [];
+      for (let i = 0; i <= 255; ++i) {
+        const index = i / 255 * 100;
+        gradientTicks.push({
+          offset: `${index}%`,
+          color: COLOR_MAP[i]
+        })
+      }
+
+      // The Color Bar Gradient
+      p.svg.append('defs')
+             .append("linearGradient")
+             .attr("id", "ColorBarGradient")
+             .attr("x1", "0%")
+             .attr("y1", "100%")
+             .attr("x2", "0%")
+             .attr("y2", "0%")
+             .selectAll("stop")
+             .data(gradientTicks)
+             .enter()
+               .append("stop")
+                 .attr("offset", (d) => d.offset)
+                 .attr("stop-color", (d) => d.color)
+                 .attr("stop-opacity", 1);
+
+      // Appending the location href is necessary due to the use of `base href`
+      // for the overall app to make Polymer paths work.
+      const gradientFill = `url('${location.href}#ColorBarGradient')`;
+
+      // Color Bar Rectangle
+      const colorBarOffset = width + COLOR_BAR_LEFT_MARGIN;
+      p.svg.append('rect')
+             .attr('fill', gradientFill)
+             .attr('transform', `translate(${colorBarOffset}, 0)`)
+             .attr('width', COLOR_BAR_WIDTH)
+             .attr('height', height)
+             .attr('stroke', '#000000')
+             .attr('stroke-width', COLOR_BAR_STROKE_WIDTH);
+
+      // Z-axis ticks and label.
+      const zAxisOffset = width + COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN;
+      p.svg.append('g')
+             .attr('class', 'z axis')
+             .attr('transform', `translate(${zAxisOffset}, 0)`)
+             .call(p.zAxis);
+    }
   }
 
 
@@ -542,6 +630,10 @@ export class Plot extends polymer.Base {
 
     let w = 0,
         h = 0;
+
+    // Rescale the color bar.
+    this.svg.select('.z.axis').call(this.zAxis);
+
     // Adjust size, position, and color of each data rect.
     switch (this.drawMode2D) {
     case 'dots':
@@ -605,6 +697,7 @@ export class Plot extends polymer.Base {
         rect = this.svg.append('rect')
                        .classed('zoom', true)
                        .attr('stroke', 'red')
+                       .attr('fill', '#eee')
                        .attr('fill-opacity', 0.5);
 
     d3.select(window)
@@ -659,8 +752,10 @@ export class Plot extends polymer.Base {
   resetZoom() {
     this.xScale.domain([this.limits.xMin, this.limits.xMax]);
     this.yScale.domain([this.limits.yMin, this.limits.yMax]);
+    this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
     this.xAxis.scale(this.xScale);
     this.yAxis.scale(this.yScale);
+    this.zAxis.scale(this.zScale);
     this.zoom.x(this.xScale);
     this.zoom.y(this.yScale);
     this.handleZoom();
