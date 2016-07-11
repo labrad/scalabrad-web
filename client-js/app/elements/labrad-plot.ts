@@ -673,9 +673,7 @@ export class Plot extends polymer.Base {
     geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 2));
     geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-    let material;
-    let mesh;
-
+    let material, mesh;
     if (this.drawMode2D == 'dots') {
       material = new THREE.PointsMaterial({size: 1, vertexColors: THREE.VertexColors});
       mesh = new THREE.Points(geometry, material);
@@ -792,18 +790,7 @@ export class Plot extends polymer.Base {
     this.limits.yMin = isNaN(this.dataLimits.yMin) ? 0 : this.dataLimits.yMin;
     this.limits.yMax = isNaN(this.dataLimits.yMax + this.dy) ?
         0 : this.dataLimits.yMax + this.dy;
-
-    let zMin = this.dataLimits.zMin,
-        zMax = this.dataLimits.zMax;
-    if (zMin === zMax) {
-      zMin -= 1;
-      zMax += 1;
-    }
-
-    this.xScale.domain([this.limits.xMin, this.limits.xMax]);
-    this.yScale.domain([this.limits.yMin, this.limits.yMax]);
   }
-
 
 
   /**
