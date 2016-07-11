@@ -172,7 +172,7 @@ export class Plot extends polymer.Base {
   /**
    * The number of vertices in a plane geometry.
    */
-  private planeVertexCount = this.planeVertexPositions.length;
+  private planeVertexCount = this.planeVertexPositions.length / 3;
 
 
   /**
@@ -640,11 +640,11 @@ export class Plot extends polymer.Base {
     const zMin = this.dataLimits.zMin;
     const zMax = this.dataLimits.zMax;
     const numVertices = (this.drawMode2D == 'dots') ?
-        3 : this.planeVertexCount;
+        1 : this.planeVertexCount;
 
-    const positions = new Float32Array(data.length * numVertices);
+    const positions = new Float32Array(data.length * numVertices * 3);
     const dataPoints = new Float64Array(data.length * 2);
-    const colors = new Float32Array(data.length * numVertices);
+    const colors = new Float32Array(data.length * numVertices * 3);
 
     for (let i = 0, len = data.length; i < len; ++i) {
       const row = data[i];
@@ -653,8 +653,9 @@ export class Plot extends polymer.Base {
       dataPoints[i * 2] = row[0];
       dataPoints[i * 2 + 1] = row[1];
 
-      const index = i * numVertices;
-      for (let j = 0; j < numVertices; j += 3) {
+      const numColorVals = numVertices * 3;
+      const index = i * numColorVals;
+      for (let j = 0; j < numColorVals; j += 3) {
         colors[index + j] = color.r / 255;
         colors[index + j + 1] = color.g / 255;
         colors[index + j + 2] = color.b / 255;
@@ -835,14 +836,29 @@ export class Plot extends polymer.Base {
 
 
   /**
+   * Projects all graph data according to the latest zoom level.
    *
+   * Due to the separation of each plot into a WebGL and SVG component, the
+   * zoom/pan of the d3 axes needs to lead to the updating of the WebGL
+   * display.
+   *
+   * Each object in the scene is iterated, its original graph data position is
+   * extracted and then reprojected to the correct position in WebGL (world)
+   * space.
+   *
+   * There are three primary coordinate systems:
+   * 1) Graph Space. The position of the data to be plotted in the graph.
+   * 2) Screen Space. The position relative to the plot on screen.
+   * 3) World Space. The position of the item in the 3D WebGL projected world.
    */
   private projectGraphPositions() {
+    // When plotting lines or single points, we only need one vertex to
+    // represent the data.
     const numVertices = (this.numIndeps == 1 || this.drawMode2D == 'dots') ?
-        3 : this.planeVertexCount;
+        1 : this.planeVertexCount;
 
     // A reusable buffer for manipulating the coordinates of each point.
-    const positionBuffer = new Float32Array(numVertices);
+    const positionBuffer = new Float32Array(numVertices * 3);
 
     // Reuse the same vector and object for all coordinate conversions to avoid
     // generating a large amount of garbage causing GC stalls.
@@ -863,7 +879,7 @@ export class Plot extends polymer.Base {
         let data = child.geometry.attributes.data.array;
 
         for (let i = 0, len = data.length / 2; i < len; ++i) {
-          const positionOffset = i * numVertices;
+          const positionOffset = i * numVertices * 3;
 
           // Convert the graph (x, y) coordinate to screen coordinates.
           this.projectGraphCoordToScreenRect(data[i * 2], data[i*2+1], screenRect);
@@ -928,7 +944,7 @@ export class Plot extends polymer.Base {
 
 
   /**
-   *
+   * Updates axes and reprojects all data to reflect the new zoom level.
    */
   private handleZoom() {
     this.svg.select('.x.axis').call(this.xAxis);
@@ -1364,6 +1380,7 @@ function clip(x: number, xMin: number, xMax: number): number {
   return Math.max(xMin, Math.min(xMax, x));
 }
 
+
 function insertInRange(
     xs: number[], x: number, lh: number, rh: number): number {
   const m = lh + Math.floor((rh - lh)/2);
@@ -1385,6 +1402,7 @@ function insertInRange(
     return insertInRange(xs, x, m + 1, rh);
   }
 }
+
 
 function insertSorted(xs: number[], x: number): number {
   const len = xs.length;
