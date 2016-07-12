@@ -10,7 +10,20 @@ const THREE = three.default;
 
 
 /**
- * Mouse Constants
+ * Plot Constants.
+ */
+const PLOT_MIN_WIDTH = 400;
+const PLOT_MIN_HEIGHT = 400;
+const PLOT_LEFT_MARGIN = 120;
+const PLOT_RIGHT_MARGIN = 10;
+const PLOT_TOP_MARGIN = 50;
+const PLOT_BOTTOM_MARGIN = 50;
+const PLOT_LINE_WIDTH = 1.5;
+const PLOT_POINT_SIZE = 10;
+
+
+/**
+ * Mouse Constants.
  */
 const MOUSE_MAIN_BUTTON = 0;
 
@@ -41,6 +54,9 @@ const COLOR_MAP = viridisData.map((rgb) => {
 });
 
 
+/**
+ * Color Bar Constants
+ */
 const COLOR_BAR_NUM_TICKS = 10;
 const COLOR_BAR_WIDTH = 15;
 const COLOR_BAR_LEFT_MARGIN = 15;
@@ -54,10 +70,6 @@ const COLOR_BAR_WIDGET_SIZE = (
    COLOR_BAR_OUTER_WIDTH + COLOR_BAR_AXIS_WIDTH
 );
 
-const PLOT_LEFT_MARGIN = 120;
-const PLOT_RIGHT_MARGIN = 10;
-const PLOT_TOP_MARGIN = 50;
-const PLOT_BOTTOM_MARGIN = 50;
 
 @component('labrad-plot')
 export class Plot extends polymer.Base {
@@ -143,12 +155,6 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * The base size of a point of data when in `dots` viewing mode.
-   */
-  private dotBaseSize: number = 4;
-
-
-  /**
    * A matrix for the use in transforming geometries.
    */
   private transformMatrix = new THREE.Matrix4();
@@ -201,8 +207,9 @@ export class Plot extends polymer.Base {
    *
    * The camera is currently only used for the sake of being able to observe
    * the scene. Zooming/Panning is handled by `d3` rather than physically
-   * moving the camera around the 3D space provided by `THREE.js`. As such,
-   * camera properties such as position and zoom never change.
+   * moving the camera around the 3D space provided by `THREE.js`. Aspect ratio
+   * modified if the plot is resized, otherwise camera properties (such as
+   * position and zoom level) do not change.
    */
   private camera = new THREE.PerspectiveCamera(
     this.cameraOpts.fov,
@@ -210,13 +217,10 @@ export class Plot extends polymer.Base {
     this.cameraOpts.near,
     this.cameraOpts.far);
 
-  /** The scene to render graphs to. */
   private scene = new THREE.Scene();
-
-  /** A WebGL renderer for the scene. */
   private renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
 
-  /** A list of objects in the scene. */
+  /** The objects currently in the scene. */
   private sceneObjects = [];
 
   /** If the scene render loop has been started. */
@@ -228,13 +232,18 @@ export class Plot extends polymer.Base {
   /** If we have ever zoomed since last resetting the zoom level. */
   private haveZoomed: boolean = false;
 
+  /** If the render loop should stop. */
+  private finishRender: boolean = false;
+
 
   /**
    * Add new data to the plot and re-zoom.
    * Fires when new data arrives via the socket.
    */
   addData(data: number[][]) {
-    if (data.length === 0) return;
+    if (data.length === 0) {
+      return;
+    }
     const lastData = (this.data.length > 0) ?
         this.data[this.data.length - 1] : null;
     for (let row of data) {
@@ -269,7 +278,7 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Creates and renders the SVG and WebGL portions of the graph.
+   * Initializes the plot and begins the scene rendering loop.
    */
   private render(): void {
     if (this.isRendering) {
@@ -277,20 +286,15 @@ export class Plot extends polymer.Base {
     }
 
     this.isRendering = true;
-
-    // Initialize SVG portions of plot.
     this.initializeSVGPlot();
-
-    // Initialize WebGL portions of plot.
     this.initializeWebGLPlot();
-
-    // Resize the plot to be the correct dimensions.
     this.resizePlot();
   }
 
 
   /**
-   * Resizes the SVG and WebGL portions of the plots.
+   * Resizes the SVG and WebGL portions of the plots and reprojects the data
+   * according to the new aspect ratio.
    */
   private resizePlot() {
     this.resizeSVGPlot();
@@ -300,10 +304,19 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Begins the scene rendering loop.
+   * Renders the WebGL scene on each animation frame until the `finishRender`
+   * flag is set.
    */
   private renderScene(): void {
     this.renderer.render(this.scene, this.camera);
+
+    // If signaled to stop rendering, end the cycle.
+    if (this.finishRender) {
+      this.isRendering = false;
+      this.finishRender = false;
+      return;
+    }
+
     requestAnimationFrame(() => this.renderScene());
   }
 
@@ -472,7 +485,7 @@ export class Plot extends polymer.Base {
   /**
    * Resizes the WebGL renderer and camera.
    */
-  private resizeWebGLPlot() {
+  private resizeWebGLPlot(): void {
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.width, this.height);
@@ -487,8 +500,8 @@ export class Plot extends polymer.Base {
   private resizeSVGPlot(): void {
     const plot = this.$.plot;
     const plotBounds = plot.getBoundingClientRect();
-    const plotWidth = Math.max(plotBounds.width, 400);
-    const plotHeight = Math.max(plotBounds.height, 400);
+    const plotWidth = Math.max(plotBounds.width, PLOT_MIN_WIDTH);
+    const plotHeight = Math.max(plotBounds.height, PLOT_MIN_HEIGHT);
 
     // The inner dimensions of the plot, sans margins
     this.width = plotWidth - this.margin.left - this.margin.right;
@@ -518,10 +531,11 @@ export class Plot extends polymer.Base {
               .attr('transform', `translate(0, ${this.height})`)
               .call(this.xAxis);
 
-    const xLabXOffset = this.width / 2;
-    const xLabYOffset = this.height + this.margin.bottom - 10;
+    const xLabelXOffset = this.width / 2;
+    const xLabelYOffset = this.height + this.margin.bottom - 10;
     this.svg.select('#x-label')
-              .attr('transform', `translate(${xLabXOffset}, ${xLabYOffset})`);
+              .attr('transform',
+                    `translate(${xLabelXOffset}, ${xLabelYOffset})`);
 
     this.svg.select("#y-axis")
               .call(this.yAxis);
@@ -555,8 +569,10 @@ export class Plot extends polymer.Base {
    * Filter the traces and then generate the data appropriate for the given
    * plot type.
    */
-  private plotData(data: number[][]) {
-    if (data.length === 0) return;
+  private plotData(data: number[][]): void {
+    if (data.length === 0) {
+      return;
+    }
 
     this.numTraces = data[0].length - 1;
     if (!this.userTraces) {
@@ -590,7 +606,7 @@ export class Plot extends polymer.Base {
   /**
    * Generate the geometries and materials for a 1D plot.
    */
-  private plotData1D(data: number[][]) {
+  private plotData1D(data: number[][]): void {
     this.dataLimits1D(data);
 
     const ob = new THREE.Object3D();
@@ -620,12 +636,12 @@ export class Plot extends polymer.Base {
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 2));
 
-        let material = new THREE.LineBasicMaterial({
+        const material = new THREE.LineBasicMaterial({
           color: COLOR_LIST[i % COLOR_LIST.length],
-          linewidth: 1.5
+          linewidth: PLOT_LINE_WIDTH
         });
-        let mesh = new THREE.Line(geometry, material);
-        ob.add(mesh);
+        const line = new THREE.Line(geometry, material);
+        ob.add(line);
       }
     }
 
@@ -637,7 +653,7 @@ export class Plot extends polymer.Base {
   /**
    * Generate the geometries and materials for a 2D plot.
    */
-  private plotData2D(data: number[][]) {
+  private plotData2D(data: number[][]): void {
     this.dataLimits2D(data);
 
     const zMin = this.dataLimits.zMin;
@@ -672,7 +688,7 @@ export class Plot extends polymer.Base {
 
     let material, mesh;
     if (this.drawMode2D == 'dots') {
-      material = new THREE.PointsMaterial({size: 1, vertexColors: THREE.VertexColors});
+      material = new THREE.PointsMaterial({vertexColors: THREE.VertexColors});
       mesh = new THREE.Points(geometry, material);
     } else {
       material = new THREE.MeshLambertMaterial({vertexColors: THREE.VertexColors});
@@ -690,7 +706,7 @@ export class Plot extends polymer.Base {
   /**
    * Set the bounds for a 1D plot.
    */
-  private dataLimits1D(data: number[][]) {
+  private dataLimits1D(data: number[][]): void {
     // Update data limits.
     this.dataLimits = {
       xMin: NaN,
@@ -723,8 +739,7 @@ export class Plot extends polymer.Base {
   /**
    * Set the bounds for a 2D plot.
    */
-  private dataLimits2D(data: number[][]) {
-    console.info("dataLimits2D", data.length);
+  private dataLimits2D(data: number[][]): void {
     for (let row of data) {
       let x = row[0];
       let y = row[1];
@@ -794,15 +809,18 @@ export class Plot extends polymer.Base {
    * Projects a coordinate in graph coordinates (relative to the axes of the
    * data) to screen coordinates (relative to the canvas). Additionally
    * determines the width and height of the coordinate based on its type.
+   *
+   * Mutates `outputObject` returning the projected `x` and `y` coordinate as
+   * well as `w` and `h` for the projected width and height.
    */
   private projectGraphCoordToScreenRect(
       x: number, y: number,
-      outputObject: {x: number, y: number, w: number, h: number}) {
+      outputObject: {x: number, y: number, w: number, h: number}): void {
     let wScreen, hScreen;
 
     switch (this.drawMode2D) {
     case 'dots':
-      wScreen = this.dotBaseSize;
+      wScreen = PLOT_POINT_SIZE;
       hScreen = wScreen;
       break;
 
@@ -831,6 +849,9 @@ export class Plot extends polymer.Base {
   /**
    * Projects a coordinate in screen coordinates (relative to the canvas) to
    * world coordinates (relative to the 3D projection of the scene).
+   *
+   * Mutates `outputVector` to return the projected `x`, `y` and `z`
+   * coordinate.
    */
   private projectScreenCoordToWorldCoord(x: number, y: number, outputVector: THREE.Vector3) {
     outputVector.set((x / this.width) * 2 - 1, -(y / this.height) * 2 + 1, 0.5);
@@ -866,39 +887,33 @@ export class Plot extends polymer.Base {
     // Reuse the same vector and object for all coordinate conversions to avoid
     // generating a large amount of garbage causing GC stalls.
     const vector = new THREE.Vector3();
-    const screenRect = { x: 0, y: 0, w: 0, h: 0 };
+    const screenRect = {x: 0, y: 0, w: 0, h: 0};
 
     // Project the (0, 0) screen position to world coordinates so that widths
     // and heights in world space can be calculated from the delta.
     this.projectScreenCoordToWorldCoord(0, 0, vector);
-    const {
-      x: xWorldZero,
-      y: yWorldZero
-    } = vector;
+    const xWorldZero = vector.x,
+          yWorldZero = vector.y;
 
     for (let obj of this.sceneObjects) {
       for (let child of obj.children) {
-        let array = child.geometry.attributes.position.array;
-        let data = child.geometry.attributes.data.array;
+        const array = child.geometry.attributes.position.array;
+        const data = child.geometry.attributes.data.array;
 
         for (let i = 0, len = data.length / 2; i < len; ++i) {
           const positionOffset = i * numVertices * 3;
 
           // Convert the graph (x, y) coordinate to screen coordinates.
           this.projectGraphCoordToScreenRect(data[i * 2], data[i*2+1], screenRect);
-          const {
-            x: xScreen,
-            y: yScreen,
-            w: wScreen,
-            h: hScreen
-          } = screenRect;
+          const xScreen = screenRect.x,
+                yScreen = screenRect.y,
+                wScreen = screenRect.w,
+                hScreen = screenRect.h;
 
           // Convert screen coordinates into world (3D) coordinates.
           this.projectScreenCoordToWorldCoord(xScreen, yScreen, vector);
-          const {
-            x: xWorld,
-            y: yWorld
-          } = vector;
+          const xWorld = vector.x,
+                yWorld = vector.y;
 
           if (this.numIndeps == 1 || this.drawMode2D == 'dots') {
             // When dealing with dots, simply copy the world coordinates
@@ -909,10 +924,9 @@ export class Plot extends polymer.Base {
             // Project the width and height in screen space to world space,
             // then calculate the size as a delta from world zero.
             this.projectScreenCoordToWorldCoord(wScreen, -hScreen, vector);
-            const {
-              x: wWorldEnd,
-              y: hWorldEnd
-            } = vector;
+
+            const xWorldEnd= vector.x,
+                  yWorldEnd = vector.y;
             const wWorld = wWorldEnd - xWorldZero;
             const hWorld = hWorldEnd - yWorldZero;
 
@@ -937,9 +951,9 @@ export class Plot extends polymer.Base {
         // size relative to the screen regardless of zoom level.
         if (this.drawMode2D == 'dots') {
           this.projectGraphCoordToScreenRect(0, 0, screenRect);
-          const {w: wScreen} = screenRect;
+          const wScreen = screenRect.w;
           this.projectScreenCoordToWorldCoord(wScreen, 0, vector);
-          const {x: wWorldEnd} = vector;
+          const wWorldEnd = vector.x;
           const wWorld = wWorldEnd - xWorldZero;
           child.material.size = wWorld;
         }
@@ -1034,7 +1048,7 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Updates the control event listeners depeding on mode.
+   * Updates the control event listeners depending on mode.
    */
   private updateControlEventListeners() {
     if (!this.isRendering) {
@@ -1061,7 +1075,10 @@ export class Plot extends polymer.Base {
    * Update plot style depending on number of variables plotted.
    */
   private updatePlotStyles() {
-    if (!this.svg) return;
+    if (!this.svg) {
+      return;
+    }
+
     switch (this.numIndeps) {
       case 1:
         this.$$('rect.background').style.fill = '#ffffff';
@@ -1289,7 +1306,7 @@ export class Plot extends polymer.Base {
 
 
   @listen('canvas.mousemove')
-  private listenPlotMouseMove(e) {
+  private onCanvasMouseMove(e) {
     const rect = e.currentTarget.getBoundingClientRect();
 
     const xMouseScreen = e.pageX - rect.left,
