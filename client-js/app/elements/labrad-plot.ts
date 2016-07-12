@@ -235,6 +235,9 @@ export class Plot extends polymer.Base {
   /** If the render loop should stop. */
   private finishRender: boolean = false;
 
+  /** Store the canvas' bounding rectangle for performance. */
+  private canvasBoundingRect = null;
+
 
   /**
    * Add new data to the plot and re-zoom.
@@ -280,7 +283,33 @@ export class Plot extends polymer.Base {
     this.isRendering = true;
     this.initializeSVGPlot();
     this.initializeWebGLPlot();
+    this.renderPlot();
     this.resizePlot();
+  }
+
+
+  /**
+   * Renders the plot on each animation frame until the `finishRender`
+   * flag is set.
+   */
+  private renderPlot(): void {
+    // If signaled to stop rendering, end the cycle.
+    if (this.finishRender) {
+      this.isRendering = false;
+      this.finishRender = false;
+      return;
+    }
+
+    if (this.isZooming) {
+      this.svg.select('.x.axis').call(this.xAxis);
+      this.svg.select('.y.axis').call(this.yAxis);
+      this.projectGraphPositions();
+      this.haveZoomed = true;
+      this.isZooming = false;
+    }
+
+    this.renderer.render(this.scene, this.camera);
+    requestAnimationFrame(() => this.renderPlot());
   }
 
 
@@ -292,24 +321,6 @@ export class Plot extends polymer.Base {
     this.resizeSVGPlot();
     this.resizeWebGLPlot();
     this.projectGraphPositions();
-  }
-
-
-  /**
-   * Renders the WebGL scene on each animation frame until the `finishRender`
-   * flag is set.
-   */
-  private renderScene(): void {
-    this.renderer.render(this.scene, this.camera);
-
-    // If signaled to stop rendering, end the cycle.
-    if (this.finishRender) {
-      this.isRendering = false;
-      this.finishRender = false;
-      return;
-    }
-
-    requestAnimationFrame(() => this.renderScene());
   }
 
 
@@ -336,7 +347,6 @@ export class Plot extends polymer.Base {
     this.scene.add(new THREE.AmbientLight(0xffffff));
     this.camera.position.copy(this.cameraOpts.startingPosition);
     this.$.canvas.appendChild(this.renderer.domElement);
-    this.renderScene();
   }
 
 
@@ -377,7 +387,7 @@ export class Plot extends polymer.Base {
     p.zoom = d3.behavior.zoom()
             .x(p.xScale)
             .y(p.yScale)
-            .on('zoom', () => p.zoomEventHandler());
+            .on('zoom', () => p.handleZoom());
 
     // Plot area.
     const marginLeft = p.margin.left;
@@ -483,6 +493,7 @@ export class Plot extends polymer.Base {
     this.renderer.setSize(this.width, this.height);
     this.$.canvas.style.top = `${this.margin.top}px`;
     this.$.canvas.style.left = `${this.margin.left}px`;
+    this.canvasBoundingRect = this.$.canvas.getBoundingClientRect();
   }
 
 
@@ -812,6 +823,7 @@ export class Plot extends polymer.Base {
 
     switch (this.drawMode2D) {
       case 'dots':
+        // Points have a fixed width relative to the screen regardless of zoom.
         wScreen = PLOT_POINT_SIZE;
         hScreen = wScreen;
         break;
@@ -967,25 +979,10 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Updates axes and reprojects all data to reflect the new zoom level.
+   * Initiates zooming to be handled by the render loop.
    */
   private handleZoom() {
-    this.svg.select('.x.axis').call(this.xAxis);
-    this.svg.select('.y.axis').call(this.yAxis);
-    this.projectGraphPositions();
-    this.isZooming = false;
-  }
-
-
-  /**
-   * Queues zoom handling on the next animation frame.
-   */
-  private zoomEventHandler(): void {
-    if (!this.isZooming) {
-      requestAnimationFrame(() => this.handleZoom());
-      this.isZooming = true;
-      this.haveZoomed = true;
-    }
+    this.isZooming = true;
   }
 
 
@@ -1327,7 +1324,7 @@ export class Plot extends polymer.Base {
 
   @listen('canvas.mousemove')
   private onCanvasMouseMove(e) {
-    const rect = e.currentTarget.getBoundingClientRect();
+    const rect = this.canvasBoundingRect;
 
     const xMouseScreen = e.pageX - rect.left,
           yMouseScreen = e.pageY - rect.top,
