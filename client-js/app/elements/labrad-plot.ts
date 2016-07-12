@@ -243,7 +243,7 @@ export class Plot extends polymer.Base {
    * Add new data to the plot and re-zoom.
    * Fires when new data arrives via the socket.
    */
-  addData(data: number[][]) {
+  addData(data: number[][]): void {
     if (data.length === 0) {
       return;
     }
@@ -266,7 +266,7 @@ export class Plot extends polymer.Base {
    * Redraw the plot and attach resize to the window resize event.
    * Fires when the component is attached to the DOM.
    */
-  attached() {
+  attached(): void {
     this.render();
     window.addEventListener('resize', (e) => this.resizePlot());
   }
@@ -317,7 +317,7 @@ export class Plot extends polymer.Base {
    * Resizes the SVG and WebGL portions of the plots and reprojects the data
    * according to the new aspect ratio.
    */
-  private resizePlot() {
+  private resizePlot(): void {
     this.resizeSVGPlot();
     this.resizeWebGLPlot();
     this.projectGraphPositions();
@@ -808,7 +808,6 @@ export class Plot extends polymer.Base {
   }
 
 
-
   /**
    * Projects all graph data according to the latest zoom level.
    *
@@ -825,7 +824,7 @@ export class Plot extends polymer.Base {
    * 2) Screen Space. The position relative to the plot on screen.
    * 3) World Space. The position of the item in the 3D WebGL projected world.
    */
-  private projectGraphPositions() {
+  private projectGraphPositions(): void {
     // When plotting lines or single points, we only need one vertex to
     // represent the data.
     const numVertices = (this.numIndeps == 1 || this.drawMode2D == 'dots') ?
@@ -1011,7 +1010,7 @@ export class Plot extends polymer.Base {
   /**
    * Zoom into a selected rectangular region on the graph.
    */
-  private zoomRectangle() {
+  private drawZoomRectangle(): void {
     // Only trigger zoom rectangle on left click
     if (d3.event.button !== MOUSE_MAIN_BUTTON) {
       return;
@@ -1073,7 +1072,7 @@ export class Plot extends polymer.Base {
   /**
    * Updates the control event listeners depending on mode.
    */
-  private updateControlEventListeners() {
+  private updateControlEventListeners(): void {
     if (!this.isRendering) {
       return;
     }
@@ -1087,7 +1086,7 @@ export class Plot extends polymer.Base {
 
       case 'zoomRect':
         canvas.on('.zoom', null)
-        canvas.on('mousedown', () => this.zoomRectangle());
+        canvas.on('mousedown', () => this.drawZoomRectangle());
         this.$.canvas.style.cursor = 'crosshair';
         break;
 
@@ -1101,7 +1100,7 @@ export class Plot extends polymer.Base {
   /**
    * Update plot style depending on number of variables plotted.
    */
-  private updatePlotStyles() {
+  private updatePlotStyles(): void {
     if (!this.svg) {
       return;
     }
