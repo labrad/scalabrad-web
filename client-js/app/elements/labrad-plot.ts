@@ -172,7 +172,7 @@ export class Plot extends polymer.Base {
    * A short-hand to access the positions array in a unit plane.
    */
   private planeVertexPositions =
-      this.planeUnitGeometry.attributes.position.array;
+      this.planeUnitGeometry.getAttribute('position').array;
 
 
   /**
@@ -846,8 +846,8 @@ export class Plot extends polymer.Base {
 
     for (let obj of this.sceneObjects) {
       for (let child of obj.children) {
-        const positions = child.geometry.attributes.position.array;
-        const data = child.geometry.attributes.data.array;
+        const positions = child.geometry.getAttribute('position').array;
+        const data = child.geometry.getAttribute('data').array;
 
         for (let i = 0, len = data.length / 2; i < len; ++i) {
           const positionOffset = i * numVertices * 3;
@@ -898,7 +898,7 @@ export class Plot extends polymer.Base {
             positions.set(positionBuffer, positionOffset);
           }
         }
-        child.geometry.attributes.position.needsUpdate = true;
+        child.geometry.getAttribute('position').needsUpdate = true;
 
         // If we are drawing dots, we need to scale them so they are a constant
         // size relative to the screen regardless of zoom level.
