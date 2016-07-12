@@ -1129,7 +1129,7 @@ export class Plot extends polymer.Base {
   /**
    * Resets the current zoom level to fit the data.
    */
-  resetZoomControl() {
+  resetZoomControl(): void {
     this.resetZoom();
   }
 
@@ -1137,7 +1137,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the control mode to pan/zoom.
    */
-  mouseModeSelectorPan() {
+  mouseModeSelectorPan(): void {
     this.mouseMode = 'pan';
   }
 
@@ -1145,7 +1145,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the control mode to zoom rectangle.
    */
-  mouseModeSelectorZoomRect() {
+  mouseModeSelectorZoomRect(): void {
     this.mouseMode = 'zoomRect';
   }
 
@@ -1153,7 +1153,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to dots.
    */
-  drawMode2DSelectorDots() {
+  drawMode2DSelectorDots(): void {
     this.drawMode2D = 'dots';
   }
 
@@ -1161,7 +1161,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to rect fill.
    */
-  drawMode2DSelectorRectfill() {
+  drawMode2DSelectorRectfill(): void {
     this.drawMode2D = 'rectfill';
   }
 
@@ -1169,7 +1169,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to vargrid.
    */
-  drawMode2DSelectorVargrid() {
+  drawMode2DSelectorVargrid(): void {
     this.drawMode2D = 'vargrid';
   }
 
@@ -1177,7 +1177,7 @@ export class Plot extends polymer.Base {
   /**
    * Opens the trace selector dialog window.
    */
-  traceSelectorOpen() {
+  traceSelectorOpen(): void {
     this.$.traceSelector.open();
   }
 
@@ -1185,7 +1185,7 @@ export class Plot extends polymer.Base {
   /**
    * Selects all available traces.
    */
-  traceSelectorSelectAll() {
+  traceSelectorSelectAll(): void {
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
@@ -1197,7 +1197,7 @@ export class Plot extends polymer.Base {
   /**
    * Selects none of the available traces.
    */
-  traceSelectorSelectNone() {
+  traceSelectorSelectNone(): void {
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
@@ -1210,7 +1210,7 @@ export class Plot extends polymer.Base {
    * Submit the users trace selection. Will not submit if no traces are
    * selected.
    */
-  traceSelectorSubmit() {
+  traceSelectorSubmit(): void {
     const selected: number[] = [];
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
@@ -1247,7 +1247,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('xLabel')
-  private observeXLabel(newLabel: string, oldLabel: string) {
+  private observeXLabel(newLabel: string, oldLabel: string): void {
     if (this.svg) {
       this.svg.select('#x-label').text(newLabel);
     }
@@ -1255,7 +1255,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('yLabel')
-  private observeYLabel(newLabel: string, oldLabel: string) {
+  private observeYLabel(newLabel: string, oldLabel: string): void {
     if (this.svg) {
       this.svg.select('#y-label').text(newLabel);
     }
@@ -1263,7 +1263,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('mouseMode')
-  private observeMouseMode(newMode: string, oldMode: string) {
+  private observeMouseMode(newMode: string, oldMode: string): void {
     switch (newMode) {
       case 'pan':
         this.$.pan.style.color = 'black';
@@ -1284,7 +1284,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('drawMode2D')
-  private observeDrawMode2D(newMode: string) {
+  private observeDrawMode2D(newMode: string): void {
     switch (newMode) {
       case 'dots':
         this.$.dots.style.color = 'black';
@@ -1317,13 +1317,13 @@ export class Plot extends polymer.Base {
 
 
   @observe('numIndeps')
-  private observeNumIndeps(newNum: number, oldNum: number) {
+  private observeNumIndeps(newNum: number, oldNum: number): void {
     this.updatePlotStyles();
   }
 
 
   @listen('canvas.mousemove')
-  private onCanvasMouseMove(e) {
+  private onCanvasMouseMove(e): void {
     const rect = this.canvasBoundingRect;
 
     const xMouseScreen = e.pageX - rect.left,
