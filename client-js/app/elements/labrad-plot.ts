@@ -757,9 +757,13 @@ export class Plot extends polymer.Base {
     this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
     this.xAxis.scale(this.xScale);
     this.yAxis.scale(this.yScale);
-    this.zAxis.scale(this.zScale);
     this.zoom.x(this.xScale);
     this.zoom.y(this.yScale);
+
+    if (this.numIndeps == 2) {
+      this.zAxis.scale(this.zScale);
+    }
+
     this.handleZoom();
   }
 
