@@ -552,7 +552,8 @@ export class Plot extends polymer.Base {
 
 
   /**
-   *
+   * Filter the traces and then generate the data appropriate for the given
+   * plot type.
    */
   private plotData(data: number[][]) {
     if (data.length === 0) return;
@@ -587,7 +588,7 @@ export class Plot extends polymer.Base {
 
 
   /**
-   *
+   * Generate the geometries and materials for a 1D plot.
    */
   private plotData1D(data: number[][]) {
     this.dataLimits1D(data);
@@ -619,9 +620,11 @@ export class Plot extends polymer.Base {
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 2));
 
-        let material = new THREE.LineBasicMaterial({color: COLOR_LIST[i % COLOR_LIST.length]});
+        let material = new THREE.LineBasicMaterial({
+          color: COLOR_LIST[i % COLOR_LIST.length],
+          linewidth: 1.5
+        });
         let mesh = new THREE.Line(geometry, material);
-        // TODO [awhiteside]: Increase line width to retain parity with SVG
         ob.add(mesh);
       }
     }
@@ -632,7 +635,7 @@ export class Plot extends polymer.Base {
 
 
   /**
-   *
+   * Generate the geometries and materials for a 2D plot.
    */
   private plotData2D(data: number[][]) {
     this.dataLimits2D(data);
@@ -685,7 +688,7 @@ export class Plot extends polymer.Base {
 
 
   /**
-   *
+   * Set the bounds for a 1D plot.
    */
   private dataLimits1D(data: number[][]) {
     // Update data limits.
@@ -718,7 +721,7 @@ export class Plot extends polymer.Base {
 
 
   /**
-   *
+   * Set the bounds for a 2D plot.
    */
   private dataLimits2D(data: number[][]) {
     console.info("dataLimits2D", data.length);
