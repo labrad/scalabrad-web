@@ -283,8 +283,8 @@ export class Plot extends polymer.Base {
     this.isRendering = true;
     this.initializeSVGPlot();
     this.initializeWebGLPlot();
-    this.renderPlot();
     this.resizePlot();
+    this.renderPlot();
   }
 
 
@@ -808,68 +808,6 @@ export class Plot extends polymer.Base {
   }
 
 
-  /**
-   * Projects a coordinate in graph coordinates (relative to the axes of the
-   * data) to screen coordinates (relative to the canvas). Additionally
-   * determines the width and height of the coordinate based on its type.
-   *
-   * Mutates `outputObject` returning the projected `x` and `y` coordinate as
-   * well as `w` and `h` for the projected width and height.
-   */
-  private projectGraphCoordToScreenRect(
-      x: number, y: number,
-      outputObject: {x: number, y: number, w: number, h: number}): void {
-    let wScreen, hScreen;
-
-    switch (this.drawMode2D) {
-      case 'dots':
-        // Points have a fixed width relative to the screen regardless of zoom.
-        wScreen = PLOT_POINT_SIZE;
-        hScreen = wScreen;
-        break;
-
-      case 'rectfill':
-        wScreen = Math.abs(this.xScale(this.dx0) - this.xScale(0));
-        hScreen = Math.abs(this.yScale(this.dy0) - this.yScale(0));
-        break;
-
-      case 'vargrid':
-        wScreen = this.xScale(this.xNext[x]) - this.xScale(x),
-        hScreen = Math.abs(this.yScale(this.yNext[y]) - this.yScale(y));
-        y = this.yNext[y];
-        break;
-
-      default:
-        // Nothing to do.
-        break;
-    }
-
-    const xScreen = this.xScale(x) + (wScreen / 2);
-    const yScreen = this.yScale(y) + (hScreen / 2);
-
-    outputObject.x = xScreen;
-    outputObject.y = yScreen;
-    outputObject.w = wScreen;
-    outputObject.h = hScreen;
-  }
-
-
-  /**
-   * Projects a coordinate in screen coordinates (relative to the canvas) to
-   * world coordinates (relative to the 3D projection of the scene).
-   *
-   * Mutates `outputVector` to return the projected `x`, `y` and `z`
-   * coordinate.
-   */
-  private projectScreenCoordToWorldCoord(x: number,
-                                         y: number,
-                                         outputVector: THREE.Vector3) {
-    outputVector.set((x / this.width) * 2 - 1,
-                     -(y / this.height) * 2 + 1,
-                     0.5);
-    outputVector.unproject(this.camera);
-  }
-
 
   /**
    * Projects all graph data according to the latest zoom level.
@@ -975,6 +913,69 @@ export class Plot extends polymer.Base {
         }
       }
     }
+  }
+
+
+  /**
+   * Projects a coordinate in graph coordinates (relative to the axes of the
+   * data) to screen coordinates (relative to the canvas). Additionally
+   * determines the width and height of the coordinate based on its type.
+   *
+   * Mutates `outputObject` returning the projected `x` and `y` coordinate as
+   * well as `w` and `h` for the projected width and height.
+   */
+  private projectGraphCoordToScreenRect(
+      x: number, y: number,
+      outputObject: {x: number, y: number, w: number, h: number}): void {
+    let wScreen, hScreen;
+
+    switch (this.drawMode2D) {
+      case 'dots':
+        // Points have a fixed width relative to the screen regardless of zoom.
+        wScreen = PLOT_POINT_SIZE;
+        hScreen = wScreen;
+        break;
+
+      case 'rectfill':
+        wScreen = Math.abs(this.xScale(this.dx0) - this.xScale(0));
+        hScreen = Math.abs(this.yScale(this.dy0) - this.yScale(0));
+        break;
+
+      case 'vargrid':
+        wScreen = this.xScale(this.xNext[x]) - this.xScale(x),
+        hScreen = Math.abs(this.yScale(this.yNext[y]) - this.yScale(y));
+        y = this.yNext[y];
+        break;
+
+      default:
+        // Nothing to do.
+        break;
+    }
+
+    const xScreen = this.xScale(x) + (wScreen / 2);
+    const yScreen = this.yScale(y) + (hScreen / 2);
+
+    outputObject.x = xScreen;
+    outputObject.y = yScreen;
+    outputObject.w = wScreen;
+    outputObject.h = hScreen;
+  }
+
+
+  /**
+   * Projects a coordinate in screen coordinates (relative to the canvas) to
+   * world coordinates (relative to the 3D projection of the scene).
+   *
+   * Mutates `outputVector` to return the projected `x`, `y` and `z`
+   * coordinate.
+   */
+  private projectScreenCoordToWorldCoord(x: number,
+                                         y: number,
+                                         outputVector: THREE.Vector3) {
+    outputVector.set((x / this.width) * 2 - 1,
+                     -(y / this.height) * 2 + 1,
+                     0.5);
+    outputVector.unproject(this.camera);
   }
 
 
