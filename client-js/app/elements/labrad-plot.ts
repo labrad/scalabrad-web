@@ -270,14 +270,6 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Resets the current zoom level to fit the data.
-   */
-  resetZoomControl() {
-    this.resetZoom();
-  }
-
-
-  /**
    * Initializes the plot and begins the scene rendering loop.
    */
   private render(): void {
@@ -986,6 +978,27 @@ export class Plot extends polymer.Base {
 
 
   /**
+   * Reset to original window size after zoom-in.
+   */
+  private resetZoom() {
+    this.haveZoomed = false;
+    this.xScale.domain([this.limits.xMin, this.limits.xMax]);
+    this.yScale.domain([this.limits.yMin, this.limits.yMax]);
+    this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
+    this.xAxis.scale(this.xScale);
+    this.yAxis.scale(this.yScale);
+    this.zoom.x(this.xScale);
+    this.zoom.y(this.yScale);
+
+    if (this.numIndeps == 2) {
+      this.zAxis.scale(this.zScale);
+    }
+
+    this.handleZoom();
+  }
+
+
+  /**
    * Zoom into a selected rectangular region on the graph.
    */
   private zoomRectangle() {
@@ -1097,23 +1110,10 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Reset to original window size after zoom-in.
+   * Resets the current zoom level to fit the data.
    */
-  resetZoom() {
-    this.haveZoomed = false;
-    this.xScale.domain([this.limits.xMin, this.limits.xMax]);
-    this.yScale.domain([this.limits.yMin, this.limits.yMax]);
-    this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
-    this.xAxis.scale(this.xScale);
-    this.yAxis.scale(this.yScale);
-    this.zoom.x(this.xScale);
-    this.zoom.y(this.yScale);
-
-    if (this.numIndeps == 2) {
-      this.zAxis.scale(this.zScale);
-    }
-
-    this.handleZoom();
+  resetZoomControl() {
+    this.resetZoom();
   }
 
 
