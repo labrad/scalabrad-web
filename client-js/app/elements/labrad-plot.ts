@@ -616,7 +616,13 @@ export class Plot extends polymer.Base {
 
     for (let i of this.displayTraces) {
       const length = (this.lastData) ? data.length + 1 : data.length;
+
+      // The positions array is initialized in the geometry here, but positions
+      // are set withing projectGraphPositions. See plotData2D for more info.
       const positions = new Float32Array(length * 3);
+
+      // Raw data is stored inside the geometry for more efficient
+      // reprojection.
       const dataPoints = new Float64Array(length * 2);
 
       let offset = 0;
@@ -664,8 +670,21 @@ export class Plot extends polymer.Base {
     const numVertices = (this.drawMode2D == 'dots') ?
         1 : this.planeVertexCount;
 
+    // Each vertex of a data point uses three Float32 to place it in 3D space.
+    // These positions are set by projectGraphPositions as they change
+    // depending on zoom/pan.
     const positions = new Float32Array(data.length * numVertices * 3);
+
+    // Each data point consists of two Float64 representing its x and y
+    // coordinate in the 2D space. The data are stored in the geometry so they
+    // can be easily reprojected when the zoom/pan changes. These are fixed for
+    // the duration of the plot as they exist in Graph Space.
     const dataPoints = new Float64Array(data.length * 2);
+
+    // Each vertex in a data point needs a color associated with it, every
+    // vertex in a single data point is the same color.
+    // The color is represented by three Float32 representing the red, blue and
+    // green as a value between 0 and 1. These are fixed.
     const colors = new Float32Array(data.length * numVertices * 3);
 
     for (let i = 0, len = data.length; i < len; ++i) {
@@ -675,6 +694,8 @@ export class Plot extends polymer.Base {
       dataPoints[i * 2] = row[0];
       dataPoints[i * 2 + 1] = row[1];
 
+      // Insert the color of the vertex into the colors array once for each
+      // vertex in the data point.
       const numColorVals = numVertices * 3;
       const index = i * numColorVals;
       for (let j = 0; j < numColorVals; j += 3) {
