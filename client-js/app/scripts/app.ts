@@ -13,6 +13,7 @@ import * as promises from "./promises";
 import * as rpc from "./rpc";
 import {obligate} from "./obligation";
 
+import {AppLink} from "../elements/app-link";
 import {LabradApp} from "../elements/labrad-app";
 import {LabradGrapher} from "../elements/labrad-grapher";
 import {LabradGrapherLive, LabeledPlot} from "../elements/labrad-grapher-live";
@@ -80,6 +81,7 @@ function getPath(ctx): Array<string> {
 window.addEventListener('WebComponentsReady', () => {
 
   // register our custom elements with polymer
+  AppLink.register();
   LabradApp.register();
   LabradGrapher.register();
   LabradGrapherLive.register();
