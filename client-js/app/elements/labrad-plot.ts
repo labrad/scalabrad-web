@@ -811,21 +811,25 @@ export class Plot extends polymer.Base {
     let wScreen, hScreen;
 
     switch (this.drawMode2D) {
-    case 'dots':
-      wScreen = PLOT_POINT_SIZE;
-      hScreen = wScreen;
-      break;
+      case 'dots':
+        wScreen = PLOT_POINT_SIZE;
+        hScreen = wScreen;
+        break;
 
-    case 'rectfill':
-      wScreen = Math.abs(this.xScale(this.dx0) - this.xScale(0));
-      hScreen = Math.abs(this.yScale(this.dy0) - this.yScale(0));
-      break;
+      case 'rectfill':
+        wScreen = Math.abs(this.xScale(this.dx0) - this.xScale(0));
+        hScreen = Math.abs(this.yScale(this.dy0) - this.yScale(0));
+        break;
 
-    case 'vargrid':
-      wScreen = this.xScale(this.xNext[x]) - this.xScale(x),
-      hScreen = Math.abs(this.yScale(this.yNext[y]) - this.yScale(y));
-      y = this.yNext[y];
-      break;
+      case 'vargrid':
+        wScreen = this.xScale(this.xNext[x]) - this.xScale(x),
+        hScreen = Math.abs(this.yScale(this.yNext[y]) - this.yScale(y));
+        y = this.yNext[y];
+        break;
+
+      default:
+        // Nothing to do.
+        break;
     }
 
     const xScreen = this.xScale(x) + (wScreen / 2);
@@ -845,8 +849,12 @@ export class Plot extends polymer.Base {
    * Mutates `outputVector` to return the projected `x`, `y` and `z`
    * coordinate.
    */
-  private projectScreenCoordToWorldCoord(x: number, y: number, outputVector: THREE.Vector3) {
-    outputVector.set((x / this.width) * 2 - 1, -(y / this.height) * 2 + 1, 0.5);
+  private projectScreenCoordToWorldCoord(x: number,
+                                         y: number,
+                                         outputVector: THREE.Vector3) {
+    outputVector.set((x / this.width) * 2 - 1,
+                     -(y / this.height) * 2 + 1,
+                     0.5);
     outputVector.unproject(this.camera);
   }
 
@@ -889,14 +897,17 @@ export class Plot extends polymer.Base {
 
     for (let obj of this.sceneObjects) {
       for (let child of obj.children) {
-        const array = child.geometry.attributes.position.array;
+        const positions = child.geometry.attributes.position.array;
         const data = child.geometry.attributes.data.array;
 
         for (let i = 0, len = data.length / 2; i < len; ++i) {
           const positionOffset = i * numVertices * 3;
+          const dataOffset = i * 2;
 
           // Convert the graph (x, y) coordinate to screen coordinates.
-          this.projectGraphCoordToScreenRect(data[i * 2], data[i*2+1], screenRect);
+          this.projectGraphCoordToScreenRect(data[dataOffset],
+                                             data[dataOffset + 1],
+                                             screenRect);
           const xScreen = screenRect.x,
                 yScreen = screenRect.y,
                 wScreen = screenRect.w,
@@ -910,17 +921,18 @@ export class Plot extends polymer.Base {
           if (this.numIndeps == 1 || this.drawMode2D == 'dots') {
             // When dealing with dots, simply copy the world coordinates
             // into the position array at the correct offset.
-            array[positionOffset] = xWorld;
-            array[positionOffset + 1] = yWorld;
+            positions[positionOffset] = xWorld;
+            positions[positionOffset + 1] = yWorld;
           } else {
             // Project the width and height in screen space to world space,
             // then calculate the size as a delta from world zero.
             this.projectScreenCoordToWorldCoord(wScreen, -hScreen, vector);
 
-            const xWorldEnd= vector.x,
-                  yWorldEnd = vector.y;
-            const wWorld = wWorldEnd - xWorldZero;
-            const hWorld = hWorldEnd - yWorldZero;
+            const wWorldEnd= vector.x,
+                  hWorldEnd = vector.y;
+
+            const wWorld = wWorldEnd - xWorldZero,
+                  hWorld = hWorldEnd - yWorldZero;
 
             // Copy the plane vertex positions into the buffer for manipulation
             positionBuffer.set(this.planeVertexPositions);
@@ -934,7 +946,7 @@ export class Plot extends polymer.Base {
             this.transformMatrix.applyToVector3Array(positionBuffer);
 
             // Copy the buffer into the buffer geometry at the correct offset
-            array.set(positionBuffer, positionOffset);
+            positions.set(positionBuffer, positionOffset);
           }
         }
         child.geometry.attributes.position.needsUpdate = true;
@@ -1080,6 +1092,10 @@ export class Plot extends polymer.Base {
         canvas.on('mousedown', () => this.zoomRectangle());
         this.$.canvas.style.cursor = 'crosshair';
         break;
+
+      default:
+        // Do nothing.
+        break;
     }
   }
 
@@ -1104,6 +1120,10 @@ export class Plot extends polymer.Base {
         this.$$('rect.background').style.fill = '#222222';
         this.is1D = false;
         this.is2D = true;
+        break;
+
+      default:
+        // Do nothing.
         break;
     }
   }
