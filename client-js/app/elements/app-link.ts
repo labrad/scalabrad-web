@@ -22,7 +22,7 @@ export class AppLink extends polymer.Base {
 
   @listen('tap')
   onTap(e) {
-    if (this.isSpecialClick(e)) { return; }
+    if (this.isSpecialClick(e)) return;
 
     e.preventDefault();
     e.stopPropagation();
