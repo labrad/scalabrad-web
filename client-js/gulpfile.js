@@ -135,7 +135,7 @@ gulp.task('bundle', ['compile-ts'], function(callback) {
 /*
  * Create bundle of test code.
  */
-gulp.task('bundle-test', ['compile-test','compile-ts'], function(callback) {
+gulp.task('bundle-test', ['compile-test', 'compile-ts'], function(callback) {
   buildBundle('spec/main', '.tmp/testing/spec-bundle.js', callback);
 });
 
