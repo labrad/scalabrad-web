@@ -7,6 +7,7 @@ var $ = require('gulp-load-plugins')();
 var sourcemaps = require('gulp-sourcemaps');
 var tslint = require('gulp-tslint');
 var tsc = require('gulp-typescript');
+var typescript = require('typescript');
 var del = require('del');
 var runSequence = require('run-sequence');
 var browserSync = require('browser-sync');
@@ -32,6 +33,16 @@ var knownOptions = {
 };
 
 var options = minimist(process.argv.slice(2), knownOptions);
+
+var typescriptOptions = {
+  typescript: typescript,
+  target: 'ES6',
+  module: 'ES6',
+  declarationFiles: false,
+  noExternalResolve: true,
+  experimentalDecorators: true,
+  emitDecoratorMetadata: true
+};
 
 var AUTOPREFIXER_BROWSERS = [
   'ie >= 10',
@@ -68,16 +79,7 @@ gulp.task('tslint', function () {
 gulp.task('compile-ts', function () {
   var tsResult = gulp.src(['app/**/*.ts', 'typings/**/*.ts'])
     .pipe(sourcemaps.init())
-    .pipe(tsc({
-      typescript: require('typescript'),
-      target: 'ES6',
-      module: 'ES6',
-      declarationFiles: false,
-      noExternalResolve: true,
-      experimentalDecorators: true,
-      emitDecoratorMetadata: true,
-      experimentalAsyncFunctions: true
-    }));
+    .pipe(tsc(typescriptOptions));
 
   return merge([
     tsResult.dts.pipe(gulp.dest('.tmp/app')),
@@ -88,15 +90,7 @@ gulp.task('compile-ts', function () {
 gulp.task('compile-test', function () {
   var tsResult = gulp.src(['app/**/*.ts','test/**/*.ts', 'typings/**/*.ts'])
     .pipe(sourcemaps.init())
-    .pipe(tsc({
-      typescript: require('typescript'),
-      target: 'ES6',
-      module: 'ES6',
-      declarationFiles: false,
-      noExternalResolve: true,
-      experimentalDecorators: true,
-      emitDecoratorMetadata: true
-    }));
+    .pipe(tsc(typescriptOptions));
 
   return merge([
     tsResult.dts.pipe(gulp.dest('.tmp/')),
