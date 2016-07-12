@@ -5,9 +5,10 @@
   "repository": "labrad/scalabrad-web",
   "license": "MIT",
   "scripts": {
+    "bower": "bower",
     "gulp": "gulp",
     "jspm": "jspm",
-    "bower": "bower"
+    "test": "gulp test"
   },
   "dependencies": {},
   "devDependencies": {

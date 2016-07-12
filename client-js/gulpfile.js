@@ -328,9 +328,10 @@ gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'elements', 'images
   gulp.watch(['app/images/**/*'], reload);
 });
 
-gulp.task('jasmine-cmd',['bundle-test'], function() {
-  return gulp.src('.tmp/testing/spec-bundle.js')
- .pipe(jasmine());
+gulp.task('test', ['bundle-test'], function() {
+  return gulp
+    .src('.tmp/testing/spec-bundle.js')
+    .pipe(jasmine());
 });
 
 gulp.task('watch', function () {
@@ -340,7 +341,7 @@ gulp.task('watch', function () {
 });
 
 gulp.task('test-watch', function () {
-  gulp.watch(['app/{scripts,elements}/**/*.ts'], ['jasmine-cmd']);
+  gulp.watch(['app/{scripts,elements}/**/*.ts'], ['test']);
 });
 
 // Build and serve the output from the dist build
@@ -362,10 +363,6 @@ gulp.task('default', ['clean'], function (cb) {
     'vulcanize', 'precache',
     cb);
 });
-
-// Load tasks for web-component-tester
-// Adds tasks for `gulp test:local` and `gulp test:remote`
-try { require('web-component-tester').gulp.init(gulp); } catch (err) {}
 
 // Load custom tasks from the `tasks` directory
 try { require('require-dir')('tasks'); } catch (err) {}
