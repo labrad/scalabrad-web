@@ -21,6 +21,7 @@ var exec = require('child_process').exec;
 var jasmineBrowser = require('gulp-jasmine-browser');
 var jasmine = require('gulp-jasmine');
 var gitDescribe = require('git-describe');
+var util = require('util');
 
 var minimist = require('minimist');
 
@@ -110,30 +111,32 @@ gulp.task('jasmine-browser', ['bundle-test'], function() {
     .pipe(jasmineBrowser.server({port: 8888}));
 });
 
-/*
- * create a single executable js file using systemjs-builder
- * configurations are found in /config.js 
+/**
+ * Build a self-executing javascript bundle using jspm.
+ * Bundle configuration is found in config.js.
  */
-gulp.task('bundle', ['compile-ts'], function(cb) {
-  var cmd = 'node_modules/.bin/jspm bundle-sfx app/scripts/app .tmp/scripts/bundle.js --skip-source-maps';
+function buildBundle(mainModule, outputFile, callback) {
+  var template = 'npm run jspm bundle-sfx %s %s --skip-source-maps';
+  var cmd = util.format(template, mainModule, outputFile);
   exec(cmd, function (err, stdout, stderr) {
     console.log(stdout);
     console.log(stderr);
-    cb(err);
+    callback(err);
   });
+}
+
+/*
+ * Create bundle of main app code.
+ */
+gulp.task('bundle', ['compile-ts'], function(callback) {
+  buildBundle('app/scripts/app', '.tmp/scripts/bundle.js', callback);
 });
 
 /*
- * create a single executable js file using systemjs-builder
- * configurations are found in /config.js 
+ * Create bundle of test code.
  */
-gulp.task('bundle-test', ['compile-test','compile-ts'], function(cb) {
-  var cmd = 'node_modules/.bin/jspm bundle-sfx spec/main .tmp/testing/spec-bundle.js --skip-source-maps';
-  exec(cmd, function (err, stdout, stderr) {
-    console.log(stdout);
-    console.log(stderr);
-    cb(err);
-  });
+gulp.task('bundle-test', ['compile-test','compile-ts'], function(callback) {
+  buildBundle('spec/main', '.tmp/testing/spec-bundle.js', callback);
 });
 
 
