@@ -19,7 +19,7 @@ const PLOT_RIGHT_MARGIN = 10;
 const PLOT_TOP_MARGIN = 50;
 const PLOT_BOTTOM_MARGIN = 50;
 const PLOT_LINE_WIDTH = 1.5;
-const PLOT_POINT_SIZE = 10;
+const PLOT_POINT_SIZE = 30;
 
 
 /**
@@ -337,7 +337,6 @@ export class Plot extends polymer.Base {
     this.lastData = null;
 
     this.plotData(this.data);
-    this.updateScales();
 
     this.graphUpdateRequired = true;
   }
@@ -902,7 +901,7 @@ export class Plot extends polymer.Base {
             // then calculate the size as a delta from world zero.
             this.projectScreenCoordToWorldCoord(wScreen, -hScreen, vector);
 
-            const wWorldEnd= vector.x,
+            const wWorldEnd = vector.x,
                   hWorldEnd = vector.y;
 
             const wWorld = wWorldEnd - xWorldZero,
@@ -933,6 +932,7 @@ export class Plot extends polymer.Base {
           this.projectScreenCoordToWorldCoord(wScreen, 0, vector);
           const wWorldEnd = vector.x;
           const wWorld = wWorldEnd - xWorldZero;
+          console.log(wScreen, wWorld, wWorldEnd, xWorldZero);
           child.material.size = wWorld;
         }
       }
@@ -945,40 +945,53 @@ export class Plot extends polymer.Base {
    * data) to screen coordinates (relative to the canvas). Additionally
    * determines the width and height of the coordinate based on its type.
    *
-   * Mutates `outputObject` returning the projected `x` and `y` coordinate as
+   * Mutates `outputObject` by setting the projected `x` and `y` coordinate as
    * well as `w` and `h` for the projected width and height.
    */
   private projectGraphCoordToScreenRect(
       x: number, y: number,
       outputObject: {x: number, y: number, w: number, h: number}): void {
-    let wScreen, hScreen;
+    let xScreen, yScreen, wScreen, hScreen;
 
-    switch (this.drawMode2D) {
-      case 'dots':
-        // Points have a fixed width relative to the screen regardless of zoom.
-        wScreen = PLOT_POINT_SIZE;
-        hScreen = wScreen;
-        break;
+    if (this.numIndeps == 2) {
+      switch (this.drawMode2D) {
+        case 'dots':
+          // Points have a fixed width relative to the screen regardless of zoom.
+          wScreen = 2 * PLOT_POINT_SIZE;
+          hScreen = wScreen;
+          break;
 
-      case 'rectfill':
-        wScreen = Math.abs(this.xScale(this.dx0) - this.xScale(0));
-        hScreen = Math.abs(this.yScale(this.dy0) - this.yScale(0));
-        y += this.dy0;
-        break;
+        case 'rectfill':
+          wScreen = Math.abs(this.xScale(this.dx0) - this.xScale(0));
+          hScreen = Math.abs(this.yScale(this.dy0) - this.yScale(0));
+          y += this.dy0;
+          break;
 
-      case 'vargrid':
-        wScreen = this.xScale(this.xNext[x]) - this.xScale(x),
-        hScreen = Math.abs(this.yScale(this.yNext[y]) - this.yScale(y));
-        y = this.yNext[y];
-        break;
+        case 'vargrid':
+          wScreen = this.xScale(this.xNext[x]) - this.xScale(x),
+          hScreen = Math.abs(this.yScale(this.yNext[y]) - this.yScale(y));
+          y = this.yNext[y];
+          break;
 
-      default:
-        // Nothing to do.
-        break;
+        default:
+          // Nothing to do.
+          break;
+      }
+
+      xScreen = this.xScale(x) + (wScreen / 2);
+      yScreen = this.yScale(y) + (hScreen / 2);
+
+      if (this.drawMode2D == 'dots') {
+        yScreen -= hScreen / 4;
+        yScreen -= hScreen / 2;
+        xScreen -= hScreen / 4;
+      }
+    } else {
+      wScreen = 0;
+      hScreen = 0;
+      xScreen = this.xScale(x);
+      yScreen = this.yScale(y);
     }
-
-    let xScreen = this.xScale(x) + (wScreen / 2);
-    let yScreen = this.yScale(y) + (hScreen / 2);
 
     outputObject.x = xScreen;
     outputObject.y = yScreen;
@@ -1004,13 +1017,8 @@ export class Plot extends polymer.Base {
   }
 
 
-  /**
-   * Initiates zooming to be handled by the render loop.
-   */
-  private handleZoom() {
+  private updateZoom() {
     this.graphUpdateRequired = true;
-    this.haveZoomed = true;
-
     this.svg.select('.x.axis').call(this.xAxis);
     this.svg.select('.y.axis').call(this.yAxis);
   }
@@ -1033,14 +1041,25 @@ export class Plot extends polymer.Base {
 
 
   /**
+   * Initiates zooming to be handled by the render loop.
+   */
+  private handleZoom() {
+    this.haveZoomed = true;
+    this.updateZoom();
+  }
+
+
+  /**
    * Reset to original window size after zoom-in.
    */
   private resetZoom() {
-    this.graphUpdateRequired = true;
     this.haveZoomed = false;
+
+    this.updateScales();
 
     this.zoom.x(this.xScale);
     this.zoom.y(this.yScale);
+    this.updateZoom();
   }
 
 
