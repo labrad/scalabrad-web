@@ -226,8 +226,8 @@ export class Plot extends polymer.Base {
   /** If the scene render loop has been started. */
   private isRendering: boolean = false;
 
-  /** If a zoom in or out is taking place. */
-  private isZooming = false;
+  /** If the graph data or camera has changed, requiring reprojection. */
+  private graphUpdateRequired = false;
 
   /** If we have ever zoomed since last resetting the zoom level. */
   private haveZoomed: boolean = false;
@@ -252,13 +252,17 @@ export class Plot extends polymer.Base {
     for (let row of data) {
       this.splice('data', this.data.length, 0, row);
     }
-    this.plotData(data);
 
+    this.plotData(data);
+    this.updateScales();
+
+    // If there is no custom zoom level, then we want to automatically adjust
+    // to keep all the data in frame.
     if (!this.haveZoomed) {
       this.resetZoom();
-    } else {
-      this.projectGraphPositions();
     }
+
+    this.graphUpdateRequired = true;
   }
 
 
@@ -300,12 +304,9 @@ export class Plot extends polymer.Base {
       return;
     }
 
-    if (this.isZooming) {
-      this.svg.select('.x.axis').call(this.xAxis);
-      this.svg.select('.y.axis').call(this.yAxis);
+    if (this.graphUpdateRequired) {
       this.projectGraphPositions();
-      this.haveZoomed = true;
-      this.isZooming = false;
+      this.graphUpdateRequired = false;
     }
 
     this.renderer.render(this.scene, this.camera);
@@ -334,8 +335,11 @@ export class Plot extends polymer.Base {
     this.sceneObjects = [];
 
     this.lastData = null;
+
     this.plotData(this.data);
-    this.projectGraphPositions();
+    this.updateScales();
+
+    this.graphUpdateRequired = true;
   }
 
 
@@ -627,7 +631,7 @@ export class Plot extends polymer.Base {
 
       let offset = 0;
 
-      // Add the last point of data if it exists to avoid gaps.
+      // Add the last point of data if maxima exists to avoid gaps.
       if (this.lastData) {
         dataPoints[offset] = this.lastData[0];
         dataPoints[offset + 1] = this.lastData[i+1];
@@ -972,8 +976,8 @@ export class Plot extends polymer.Base {
         break;
     }
 
-    const xScreen = this.xScale(x) + (wScreen / 2);
-    const yScreen = this.yScale(y) + (hScreen / 2);
+    let xScreen = this.xScale(x) + (wScreen / 2);
+    let yScreen = this.yScale(y) + (hScreen / 2);
 
     outputObject.x = xScreen;
     outputObject.y = yScreen;
@@ -1003,7 +1007,27 @@ export class Plot extends polymer.Base {
    * Initiates zooming to be handled by the render loop.
    */
   private handleZoom() {
-    this.isZooming = true;
+    this.graphUpdateRequired = true;
+    this.haveZoomed = true;
+
+    this.svg.select('.x.axis').call(this.xAxis);
+    this.svg.select('.y.axis').call(this.yAxis);
+  }
+
+
+  /**
+   * Updates the axis scales to reflect the latest data limits.
+   */
+  private updateScales() {
+    this.xScale.domain([this.limits.xMin, this.limits.xMax]);
+    this.yScale.domain([this.limits.yMin, this.limits.yMax]);
+    this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
+    this.xAxis.scale(this.xScale);
+    this.yAxis.scale(this.yScale);
+
+    if (this.numIndeps == 2) {
+      this.zAxis.scale(this.zScale);
+    }
   }
 
 
@@ -1011,20 +1035,11 @@ export class Plot extends polymer.Base {
    * Reset to original window size after zoom-in.
    */
   private resetZoom() {
+    this.graphUpdateRequired = true;
     this.haveZoomed = false;
-    this.xScale.domain([this.limits.xMin, this.limits.xMax]);
-    this.yScale.domain([this.limits.yMin, this.limits.yMax]);
-    this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
-    this.xAxis.scale(this.xScale);
-    this.yAxis.scale(this.yScale);
+
     this.zoom.x(this.xScale);
     this.zoom.y(this.yScale);
-
-    if (this.numIndeps == 2) {
-      this.zAxis.scale(this.zScale);
-    }
-
-    this.handleZoom();
   }
 
 
