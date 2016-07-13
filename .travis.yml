@@ -1,0 +1,17 @@
+language: scala
+sudo: false
+scala:
+  - "2.11.7"
+jdk:
+  - oraclejdk8
+env:
+  - NODE_VERSION=4.4.7
+cache:
+  directories:
+    - $HOME/node-v$NODE_VERSION-linux-x64
+    - $HOME/.ivy2
+before_script:
+  - npm install -g jspm
+  - jspm config registries.github.auth $JSPM_GITHUB_AUTH_TOKEN
+script:
+  - scripts/travis_build
