@@ -963,6 +963,7 @@ export class Plot extends polymer.Base {
       case 'rectfill':
         wScreen = Math.abs(this.xScale(this.dx0) - this.xScale(0));
         hScreen = Math.abs(this.yScale(this.dy0) - this.yScale(0));
+        y += this.dy0;
         break;
 
       case 'vargrid':
