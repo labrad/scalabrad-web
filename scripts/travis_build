@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# Exit on any error.
+set -e
+
+NODE_NAME=node-v$NODE_VERSION-linux-x64
+NODE_ARCHIVE=$NODE_NAME.tar.xz
+
+# Download node if not already cached.
+if [ ! -d "$HOME/$NODE_NAME/bin" ]; then
+  (
+    cd $HOME
+    wget -q https://nodejs.org/dist/v$NODE_VERSION/$NODE_ARCHIVE
+    tar -xf $NODE_ARCHIVE
+  );
+else
+  echo "Using cached ${NODE_NAME}.";
+fi
+
+# Add node to path.
+PATH=$HOME/$NODE_NAME/bin:$PATH
+
+# Test and build client.
+(
+  cd client-js
+
+  npm install
+  npm run jspm install
+  npm run bower install
+
+  npm test
+  npm run gulp
+)
+
+# Test and build server.
+sbt -Dsbt.log.format=false server/clean server/test server/packArchive
