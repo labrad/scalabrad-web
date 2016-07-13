@@ -19,7 +19,7 @@ const PLOT_RIGHT_MARGIN = 10;
 const PLOT_TOP_MARGIN = 50;
 const PLOT_BOTTOM_MARGIN = 50;
 const PLOT_LINE_WIDTH = 1.5;
-const PLOT_POINT_SIZE = 30;
+const PLOT_POINT_SIZE = 6;
 
 
 /**
@@ -715,7 +715,11 @@ export class Plot extends polymer.Base {
 
     let material, mesh;
     if (this.drawMode2D == 'dots') {
-      material = new THREE.PointsMaterial({vertexColors: THREE.VertexColors});
+      material = new THREE.PointsMaterial({
+        sizeAttenuation: false,
+        size: PLOT_POINT_SIZE,
+        vertexColors: THREE.VertexColors
+      });
       mesh = new THREE.Points(geometry, material);
     } else {
       material = new THREE.MeshLambertMaterial({vertexColors: THREE.VertexColors});
@@ -923,18 +927,6 @@ export class Plot extends polymer.Base {
           }
         }
         child.geometry.getAttribute('position').needsUpdate = true;
-
-        // If we are drawing dots, we need to scale them so they are a constant
-        // size relative to the screen regardless of zoom level.
-        if (this.drawMode2D == 'dots') {
-          this.projectGraphCoordToScreenRect(0, 0, screenRect);
-          const wScreen = screenRect.w;
-          this.projectScreenCoordToWorldCoord(wScreen, 0, vector);
-          const wWorldEnd = vector.x;
-          const wWorld = wWorldEnd - xWorldZero;
-          console.log(wScreen, wWorld, wWorldEnd, xWorldZero);
-          child.material.size = wWorld;
-        }
       }
     }
   }
@@ -957,7 +949,7 @@ export class Plot extends polymer.Base {
       switch (this.drawMode2D) {
         case 'dots':
           // Points have a fixed width relative to the screen regardless of zoom.
-          wScreen = 2 * PLOT_POINT_SIZE;
+          wScreen = PLOT_POINT_SIZE;
           hScreen = wScreen;
           break;
 
@@ -982,9 +974,7 @@ export class Plot extends polymer.Base {
       yScreen = this.yScale(y) + (hScreen / 2);
 
       if (this.drawMode2D == 'dots') {
-        yScreen -= hScreen / 4;
-        yScreen -= hScreen / 2;
-        xScreen -= hScreen / 4;
+        yScreen = this.yScale(y) - (hScreen / 2);
       }
     } else {
       wScreen = 0;
