@@ -262,6 +262,10 @@ export class Plot extends polymer.Base {
       this.resetZoom();
     }
 
+    // New data may have changed the zAxis scale, so we need to update the
+    // display independent of the other axes.
+    this.updateColorBarScale();
+
     this.graphUpdateRequired = true;
   }
 
@@ -626,27 +630,27 @@ export class Plot extends polymer.Base {
 
       // Raw data is stored inside the geometry for more efficient
       // reprojection.
-      const dataPoints = new Float64Array(length * 2);
+      const dataPoints = new Float64Array(length * 3);
 
       let offset = 0;
 
       // Add the last point of data if maxima exists to avoid gaps.
       if (this.lastData) {
         dataPoints[offset] = this.lastData[0];
-        dataPoints[offset + 1] = this.lastData[i+1];
-        offset += 2;
+        dataPoints[offset + 1] = this.lastData[i + 1];
+        offset += 3;
       }
 
       for (let row of data) {
         dataPoints[offset] = row[0];
         dataPoints[offset + 1] = row[i + 1];
-        offset += 2;
+        offset += 3;
       }
 
       if (dataPoints.length > 1) {
         const geometry = new THREE.BufferGeometry();
         geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 2));
+        geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 3));
 
         const material = new THREE.LineBasicMaterial({
           color: COLOR_LIST[i % COLOR_LIST.length],
@@ -668,8 +672,6 @@ export class Plot extends polymer.Base {
   private plotData2D(data: number[][]): void {
     this.dataLimits2D(data);
 
-    const zMin = this.dataLimits.zMin;
-    const zMax = this.dataLimits.zMax;
     const numVertices = (this.drawMode2D == 'dots') ?
         1 : this.planeVertexCount;
 
@@ -682,7 +684,7 @@ export class Plot extends polymer.Base {
     // coordinate in the 2D space. The data are stored in the geometry so they
     // can be easily reprojected when the zoom/pan changes. These are fixed for
     // the duration of the plot as they exist in Graph Space.
-    const dataPoints = new Float64Array(data.length * 2);
+    const dataPoints = new Float64Array(data.length * 3);
 
     // Each vertex in a data point needs a color associated with it, every
     // vertex in a single data point is the same color.
@@ -692,25 +694,14 @@ export class Plot extends polymer.Base {
 
     for (let i = 0, len = data.length; i < len; ++i) {
       const row = data[i];
-      const color = getColor(row[this.displaySurface], zMin, zMax);
-
-      dataPoints[i * 2] = row[0];
-      dataPoints[i * 2 + 1] = row[1];
-
-      // Insert the color of the vertex into the colors array once for each
-      // vertex in the data point.
-      const numColorVals = numVertices * 3;
-      const index = i * numColorVals;
-      for (let j = 0; j < numColorVals; j += 3) {
-        colors[index + j] = color.r / 255;
-        colors[index + j + 1] = color.g / 255;
-        colors[index + j + 2] = color.b / 255;
-      }
+      dataPoints[i * 3] = row[0];
+      dataPoints[i * 3 + 1] = row[1];
+      dataPoints[i * 3 + 2] = row[this.displaySurface];
     }
 
     const geometry = new THREE.BufferGeometry();
     geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 2));
+    geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 3));
     geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     let material, mesh;
@@ -872,14 +863,18 @@ export class Plot extends polymer.Base {
     const xWorldZero = vector.x,
           yWorldZero = vector.y;
 
+    const zMin = this.dataLimits.zMin;
+    const zMax = this.dataLimits.zMax;
+
     for (let obj of this.sceneObjects) {
       for (let child of obj.children) {
         const positions = child.geometry.getAttribute('position').array;
+        const colors = (this.numIndeps == 2) ? child.geometry.getAttribute('color').array : [];
         const data = child.geometry.getAttribute('data').array;
 
-        for (let i = 0, len = data.length / 2; i < len; ++i) {
+        for (let i = 0, len = data.length / 3; i < len; ++i) {
           const positionOffset = i * numVertices * 3;
-          const dataOffset = i * 2;
+          const dataOffset = i * 3;
 
           // Convert the graph (x, y) coordinate to screen coordinates.
           this.projectGraphCoordToScreenRect(data[dataOffset],
@@ -900,6 +895,7 @@ export class Plot extends polymer.Base {
             // into the position array at the correct offset.
             positions[positionOffset] = xWorld;
             positions[positionOffset + 1] = yWorld;
+            positions[positionOffset + 2] = 0;
           } else {
             // Project the width and height in screen space to world space,
             // then calculate the size as a delta from world zero.
@@ -925,9 +921,29 @@ export class Plot extends polymer.Base {
             // Copy the buffer into the buffer geometry at the correct offset
             positions.set(positionBuffer, positionOffset);
           }
+
+          if (this.numIndeps == 2) {
+            // Update the colors of each point to reflect the latest scaling of
+            // the zAxis.
+            const color = getColor(data[dataOffset + 2], zMin, zMax);
+
+            // Insert the color of the vertex into the colors array once for each
+            // vertex in the data point.
+            const numColorVals = numVertices * 3;
+            const index = i * numColorVals;
+            for (let j = 0; j < numColorVals; j += 3) {
+              colors[index + j] = color.r / 255;
+              colors[index + j + 1] = color.g / 255;
+              colors[index + j + 2] = color.b / 255;
+            }
+          }
         }
         child.geometry.getAttribute('position').needsUpdate = true;
         child.geometry.computeBoundingSphere();
+
+        if (this.numIndeps == 2) {
+          child.geometry.getAttribute('color').needsUpdate = true;
+        }
       }
     }
   }
@@ -1015,19 +1031,25 @@ export class Plot extends polymer.Base {
   }
 
 
+  private updateColorBarScale() {
+    if (this.numIndeps == 2) {
+      this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
+      this.zAxis.scale(this.zScale);
+      this.svg.select('.z.axis').call(this.zAxis);
+    }
+  }
+
+
   /**
    * Updates the axis scales to reflect the latest data limits.
    */
   private updateScales() {
     this.xScale.domain([this.limits.xMin, this.limits.xMax]);
     this.yScale.domain([this.limits.yMin, this.limits.yMax]);
-    this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
     this.xAxis.scale(this.xScale);
     this.yAxis.scale(this.yScale);
 
-    if (this.numIndeps == 2) {
-      this.zAxis.scale(this.zScale);
-    }
+    this.updateColorBarScale();
   }
 
 
