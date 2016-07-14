@@ -345,7 +345,7 @@ export class Plot extends polymer.Base {
   private resizePlot(): void {
     this.resizeSVGPlot();
     this.resizeWebGLPlot();
-    this.projectGraphPositions();
+    this.graphUpdateRequired = true;
   }
 
 
