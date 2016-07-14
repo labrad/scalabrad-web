@@ -7,6 +7,7 @@ var $ = require('gulp-load-plugins')();
 var sourcemaps = require('gulp-sourcemaps');
 var tslint = require('gulp-tslint');
 var tsc = require('gulp-typescript');
+var typescript = require('typescript');
 var del = require('del');
 var runSequence = require('run-sequence');
 var browserSync = require('browser-sync');
@@ -21,6 +22,7 @@ var exec = require('child_process').exec;
 var jasmineBrowser = require('gulp-jasmine-browser');
 var jasmine = require('gulp-jasmine');
 var gitDescribe = require('git-describe');
+var util = require('util');
 
 var minimist = require('minimist');
 
@@ -32,6 +34,16 @@ var knownOptions = {
 };
 
 var options = minimist(process.argv.slice(2), knownOptions);
+
+var typescriptOptions = {
+  typescript: typescript,
+  target: 'ES6',
+  module: 'ES6',
+  declarationFiles: false,
+  noExternalResolve: true,
+  experimentalDecorators: true,
+  emitDecoratorMetadata: true
+};
 
 var AUTOPREFIXER_BROWSERS = [
   'ie >= 10',
@@ -68,16 +80,7 @@ gulp.task('tslint', function () {
 gulp.task('compile-ts', function () {
   var tsResult = gulp.src(['app/**/*.ts', 'typings/**/*.ts'])
     .pipe(sourcemaps.init())
-    .pipe(tsc({
-      typescript: require('typescript'),
-      target: 'ES6',
-      module: 'ES6',
-      declarationFiles: false,
-      noExternalResolve: true,
-      experimentalDecorators: true,
-      emitDecoratorMetadata: true,
-      experimentalAsyncFunctions: true
-    }));
+    .pipe(tsc(typescriptOptions));
 
   return merge([
     tsResult.dts.pipe(gulp.dest('.tmp/app')),
@@ -88,15 +91,7 @@ gulp.task('compile-ts', function () {
 gulp.task('compile-test', function () {
   var tsResult = gulp.src(['app/**/*.ts','test/**/*.ts', 'typings/**/*.ts'])
     .pipe(sourcemaps.init())
-    .pipe(tsc({
-      typescript: require('typescript'),
-      target: 'ES6',
-      module: 'ES6',
-      declarationFiles: false,
-      noExternalResolve: true,
-      experimentalDecorators: true,
-      emitDecoratorMetadata: true
-    }));
+    .pipe(tsc(typescriptOptions));
 
   return merge([
     tsResult.dts.pipe(gulp.dest('.tmp/')),
@@ -110,30 +105,32 @@ gulp.task('jasmine-browser', ['bundle-test'], function() {
     .pipe(jasmineBrowser.server({port: 8888}));
 });
 
-/*
- * create a single executable js file using systemjs-builder
- * configurations are found in /config.js 
+/**
+ * Build a self-executing javascript bundle using jspm.
+ * Bundle configuration is found in config.js.
  */
-gulp.task('bundle', ['compile-ts'], function(cb) {
-  var cmd = 'node_modules/.bin/jspm bundle-sfx app/scripts/app .tmp/scripts/bundle.js --skip-source-maps';
+function buildBundle(mainModule, outputFile, callback) {
+  var template = 'npm run jspm bundle-sfx %s %s --skip-source-maps';
+  var cmd = util.format(template, mainModule, outputFile);
   exec(cmd, function (err, stdout, stderr) {
     console.log(stdout);
     console.log(stderr);
-    cb(err);
+    callback(err);
   });
+}
+
+/*
+ * Create bundle of main app code.
+ */
+gulp.task('bundle', ['compile-ts'], function(callback) {
+  buildBundle('app/scripts/app', '.tmp/scripts/bundle.js', callback);
 });
 
 /*
- * create a single executable js file using systemjs-builder
- * configurations are found in /config.js 
+ * Create bundle of test code.
  */
-gulp.task('bundle-test', ['compile-test','compile-ts'], function(cb) {
-  var cmd = 'node_modules/.bin/jspm bundle-sfx spec/main .tmp/testing/spec-bundle.js --skip-source-maps';
-  exec(cmd, function (err, stdout, stderr) {
-    console.log(stdout);
-    console.log(stderr);
-    cb(err);
-  });
+gulp.task('bundle-test', ['compile-test', 'compile-ts'], function(callback) {
+  buildBundle('spec/main', '.tmp/testing/spec-bundle.js', callback);
 });
 
 
@@ -331,9 +328,10 @@ gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'elements', 'images
   gulp.watch(['app/images/**/*'], reload);
 });
 
-gulp.task('jasmine-cmd',['bundle-test'], function() {
-  return gulp.src('.tmp/testing/spec-bundle.js')
- .pipe(jasmine());
+gulp.task('test', ['bundle-test'], function() {
+  return gulp
+    .src('.tmp/testing/spec-bundle.js')
+    .pipe(jasmine());
 });
 
 gulp.task('watch', function () {
@@ -343,7 +341,7 @@ gulp.task('watch', function () {
 });
 
 gulp.task('test-watch', function () {
-  gulp.watch(['app/{scripts,elements}/**/*.ts'], ['jasmine-cmd']);
+  gulp.watch(['app/{scripts,elements}/**/*.ts'], ['test']);
 });
 
 // Build and serve the output from the dist build
@@ -365,10 +363,6 @@ gulp.task('default', ['clean'], function (cb) {
     'vulcanize', 'precache',
     cb);
 });
-
-// Load tasks for web-component-tester
-// Adds tasks for `gulp test:local` and `gulp test:remote`
-try { require('web-component-tester').gulp.init(gulp); } catch (err) {}
 
 // Load custom tasks from the `tasks` directory
 try { require('require-dir')('tasks'); } catch (err) {}
