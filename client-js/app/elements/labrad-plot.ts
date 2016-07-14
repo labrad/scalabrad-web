@@ -1066,31 +1066,33 @@ export class Plot extends polymer.Base {
     // area. The d3.mouse function returns coordinates relative to the full html
     // element, so we must account for the margins. We also clip the coordinates
     // to the available plot area.
-    const mousePos = () => {
+    const mousePos = (offset) => {
       const [x, y] = d3.mouse(this);
       return [
-        clip(x - this.margin.left, 0, this.width),
-        clip(y - this.margin.top, 0, this.height)
+        clip(x - this.margin.left, 0, this.width + offset),
+        clip(y - this.margin.top, 0, this.height + offset)
       ];
     }
 
-    const [originX, originY] = mousePos(),
-        rect = this.svg.append('rect')
-                       .classed('zoom', true)
-                       .attr('stroke', 'red')
-                       .attr('fill', '#eee')
-                       .attr('fill-opacity', 0.5);
+    const [originX, originY] = mousePos(0);
+
+    const rect = this.$.zoomRectangle;
 
     d3.select(window)
       .on('mousemove', () => {
-        const [x, y] = mousePos();
-        rect.attr('x', Math.min(originX, x))
-            .attr('y', Math.min(originY, y))
-            .attr('width', Math.abs(x - originX))
-            .attr('height', Math.abs(y - originY));
+        const [x, y] = mousePos(-4);
+        const posX = Math.min(originX, x) + this.margin.left;
+        const posY = Math.min(originY, y) + this.margin.top;
+        const width = Math.abs(x - originX);
+        const height = Math.abs(y - originY);
+        rect.style.left = `${posX}px`;
+        rect.style.top = `${posY}px`;
+        rect.style.width = `${width}px`;
+        rect.style.height = `${height}px`;
+        rect.style.display = 'block';
       })
       .on('mouseup', () => {
-        const [x, y] = mousePos();
+        const [x, y] = mousePos(0);
         d3.select(window)
           .on('mousemove', null)
           .on('mouseup', null);
@@ -1107,7 +1109,7 @@ export class Plot extends polymer.Base {
           this.zoom.x(xScale.domain([xMin, xMax]))
                    .y(yScale.domain([yMin, yMax]));
         }
-        rect.remove();
+        rect.style.display = 'none';
         this.handleZoom();
       }, true);
     d3.event.preventDefault();
@@ -1368,7 +1370,7 @@ export class Plot extends polymer.Base {
   }
 
 
-  @listen('canvas.mousemove')
+  @listen('mousemove')
   private onCanvasMouseMove(e): void {
     const rect = this.canvasBoundingRect;
 
