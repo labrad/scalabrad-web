@@ -254,11 +254,11 @@ export class Plot extends polymer.Base {
     }
 
     this.plotData(data);
-    this.updateScales();
 
     // If there is no custom zoom level, then we want to automatically adjust
     // to keep all the data in frame.
     if (!this.haveZoomed) {
+      this.updateScales();
       this.resetZoom();
     }
 
@@ -927,6 +927,7 @@ export class Plot extends polymer.Base {
           }
         }
         child.geometry.getAttribute('position').needsUpdate = true;
+        child.geometry.computeBoundingSphere();
       }
     }
   }
