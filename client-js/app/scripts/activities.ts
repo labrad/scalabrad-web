@@ -350,6 +350,7 @@ export class DatasetActivity implements Activity {
   }
 
   async stop(): Promise<void> {
+    this.plot.finishRender = true;
     this.lifetime.close();
     await this.api.dataStreamClose({token: this.token});
   }

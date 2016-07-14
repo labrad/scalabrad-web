@@ -229,15 +229,19 @@ export class Plot extends polymer.Base {
   /** If the graph data or camera has changed, requiring reprojection. */
   private graphUpdateRequired = false;
 
+  private resetZoomRequired = false;
+  private updateZoomRequired = false;
+  private updateScalesRequired = false;
+  private updateColorBarScaleRequired = false;
+
   /** If we have ever zoomed since last resetting the zoom level. */
   private haveZoomed: boolean = false;
 
   /** If the render loop should stop. */
-  private finishRender: boolean = false;
+  finishRender: boolean = false;
 
   /** Store the canvas' bounding rectangle for performance. */
   private canvasBoundingRect = null;
-
 
   /**
    * Add new data to the plot and re-zoom.
@@ -250,7 +254,7 @@ export class Plot extends polymer.Base {
     const lastData = (this.data.length > 0) ?
         this.data[this.data.length - 1] : null;
     for (let row of data) {
-      this.splice('data', this.data.length, 0, row);
+      this.data.splice(this.data.length, 0, row);
     }
 
     this.plotData(data);
@@ -258,14 +262,13 @@ export class Plot extends polymer.Base {
     // If there is no custom zoom level, then we want to automatically adjust
     // to keep all the data in frame.
     if (!this.haveZoomed) {
-      this.updateScales();
-      this.resetZoom();
+      this.resetZoomRequired = true;
+      this.updateScalesRequired = true;
     }
 
     // New data may have changed the zAxis scale, so we need to update the
     // display independent of the other axes.
-    this.updateColorBarScale();
-
+    this.updateColorBarScaleRequired = true;
     this.graphUpdateRequired = true;
   }
 
@@ -275,6 +278,7 @@ export class Plot extends polymer.Base {
    * Fires when the component is attached to the DOM.
    */
   attached(): void {
+    this.plotID = Math.random();
     this.render();
     window.addEventListener('resize', (e) => this.resizePlot());
   }
@@ -282,6 +286,7 @@ export class Plot extends polymer.Base {
 
   /**
    * Initializes the plot and begins the scene rendering loop.
+   *
    */
   private render(): void {
     if (this.isRendering) {
@@ -308,12 +313,27 @@ export class Plot extends polymer.Base {
       return;
     }
 
-    if (this.graphUpdateRequired) {
-      this.projectGraphPositions();
-      this.graphUpdateRequired = false;
+    if (this.updateZoomRequired) {
+      this.updateZoom();
     }
 
-    this.renderer.render(this.scene, this.camera);
+    if (this.updateScalesRequired) {
+      this.updateScales();
+    }
+
+    if (this.updateColorBarScaleRequired) {
+      this.updateColorBarScale();
+    }
+
+    if (this.resetZoomRequired) {
+      this.resetZoom();
+    }
+
+    if (this.graphUpdateRequired) {
+      this.projectGraphPositions();
+      this.renderer.render(this.scene, this.camera);
+    }
+
     requestAnimationFrame(() => this.renderPlot());
   }
 
@@ -619,7 +639,13 @@ export class Plot extends polymer.Base {
   private plotData1D(data: number[][]): void {
     this.dataLimits1D(data);
 
-    const ob = new THREE.Object3D();
+    if (this.sceneObjects.length == 0) {
+      const ob = new THREE.Object3D();
+      this.sceneObjects.push(ob);
+      this.scene.add(ob);
+    }
+
+    const ob = this.sceneObjects[0];
 
     for (let i of this.displayTraces) {
       const length = (this.lastData) ? data.length + 1 : data.length;
@@ -631,7 +657,6 @@ export class Plot extends polymer.Base {
       // Raw data is stored inside the geometry for more efficient
       // reprojection.
       const dataPoints = new Float64Array(length * 3);
-
       let offset = 0;
 
       // Add the last point of data if maxima exists to avoid gaps.
@@ -660,9 +685,6 @@ export class Plot extends polymer.Base {
         ob.add(line);
       }
     }
-
-    this.sceneObjects.push(ob);
-    this.scene.add(ob);
   }
 
 
@@ -717,11 +739,14 @@ export class Plot extends polymer.Base {
       mesh = new THREE.Mesh(geometry, material);
     }
 
-    const ob = new THREE.Object3D();
-    ob.add(mesh);
+    if (this.sceneObjects.length == 0) {
+      const ob = new THREE.Object3D();
+      this.sceneObjects.push(ob);
+      this.scene.add(ob);
+    }
 
-    this.sceneObjects.push(ob);
-    this.scene.add(ob);
+    const ob = this.sceneObjects[0];
+    ob.add(mesh);
   }
 
 
@@ -844,6 +869,8 @@ export class Plot extends polymer.Base {
    * 3) World Space. The position of the item in the 3D WebGL projected world.
    */
   private projectGraphPositions(): void {
+    this.graphUpdateRequired = false;
+
     // When plotting lines or single points, we only need one vertex to
     // represent the data.
     const numVertices = (this.numIndeps == 1 || this.drawMode2D == 'dots') ?
@@ -1025,6 +1052,7 @@ export class Plot extends polymer.Base {
 
 
   private updateZoom() {
+    this.updateZoomRequired = false;
     this.graphUpdateRequired = true;
     this.svg.select('.x.axis').call(this.xAxis);
     this.svg.select('.y.axis').call(this.yAxis);
@@ -1032,6 +1060,8 @@ export class Plot extends polymer.Base {
 
 
   private updateColorBarScale() {
+    this.updateColorBarScaleRequired = false;
+
     if (this.numIndeps == 2) {
       this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
       this.zAxis.scale(this.zScale);
@@ -1044,6 +1074,8 @@ export class Plot extends polymer.Base {
    * Updates the axis scales to reflect the latest data limits.
    */
   private updateScales() {
+    this.updateScalesRequired = false;
+
     this.xScale.domain([this.limits.xMin, this.limits.xMax]);
     this.yScale.domain([this.limits.yMin, this.limits.yMax]);
     this.xAxis.scale(this.xScale);
@@ -1058,7 +1090,7 @@ export class Plot extends polymer.Base {
    */
   private handleZoom() {
     this.haveZoomed = true;
-    this.updateZoom();
+    this.updateZoomRequired = true;
   }
 
 
@@ -1067,12 +1099,13 @@ export class Plot extends polymer.Base {
    */
   private resetZoom() {
     this.haveZoomed = false;
+    this.resetZoomRequired = false;
 
     this.updateScales();
 
     this.zoom.x(this.xScale);
     this.zoom.y(this.yScale);
-    this.updateZoom();
+    this.updateZoomRequired = true;
   }
 
 
