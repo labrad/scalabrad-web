@@ -43,7 +43,8 @@ var typescriptOptions = {
   declarationFiles: false,
   noExternalResolve: true,
   experimentalDecorators: true,
-  emitDecoratorMetadata: true
+  emitDecoratorMetadata: true,
+  noEmitOnError: true
 };
 
 var AUTOPREFIXER_BROWSERS = [
