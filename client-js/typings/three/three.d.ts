@@ -6606,5 +6606,8 @@ declare namespace THREE {
 }
 
 declare module 'three' {
-    export = THREE;
+    // Use es6-style default export
+    //export THREE;
+    export var THREE;
+    export { THREE as default };
 }

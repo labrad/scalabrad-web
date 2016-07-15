@@ -3291,5 +3291,8 @@ declare module d3 {
 interface TouchList { }
 
 declare module 'd3' {
-    export = d3;
+    // Use es6-style default export
+    //export d3;
+    export var d3;
+    export { d3 as default };
 }
