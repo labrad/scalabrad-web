@@ -3,6 +3,7 @@
 // Include Gulp & Tools We'll Use
 var gulp = require('gulp');
 var gutil = require('gulp-util');
+var htmlmin = require('gulp-htmlmin');
 var $ = require('gulp-load-plugins')();
 var sourcemaps = require('gulp-sourcemaps');
 var tslint = require('gulp-tslint');
@@ -238,10 +239,8 @@ gulp.task('html', function () {
     .pipe(assets.restore())
     .pipe($.useref())
     // Minify Any HTML
-    .pipe($.if('*.html', $.minifyHtml({
-      quotes: true,
-      empty: true,
-      spare: true
+    .pipe($.if('*.html', htmlmin({
+      collapseWhitespace: true
     })))
     // Output Files
     .pipe(gulp.dest('dist'))
