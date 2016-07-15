@@ -1,12 +1,7 @@
 import 'd3';
-import * as three from 'three';
+import {THREE} from 'three';
 import {viridisData} from '../scripts/colormaps';
 import * as datavault from "../scripts/datavault";
-
-/**
- * Import the THREE namespace from the module.
- */
-const THREE = three.default;
 
 
 /**
