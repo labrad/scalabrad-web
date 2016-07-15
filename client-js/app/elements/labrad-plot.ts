@@ -278,7 +278,6 @@ export class Plot extends polymer.Base {
    * Fires when the component is attached to the DOM.
    */
   attached(): void {
-    this.plotID = Math.random();
     this.render();
     window.addEventListener('resize', (e) => this.resizePlot());
   }
