@@ -1,5 +1,5 @@
 import 'd3';
-import {THREE} from 'three';
+import THREE from 'three';
 import {viridisData} from '../scripts/colormaps';
 import * as datavault from "../scripts/datavault";
 

@@ -710,9 +710,9 @@ declare namespace THREE {
         getIndex(): BufferAttribute;
         setIndex( index: BufferAttribute ): void;
 
-        addAttribute(name: string, attribute: BufferAttribute|InterleavedBufferAttribute): BufferGeometry;
+        addAttribute(name: string, attribute: BufferAttribute): BufferGeometry;
 
-        getAttribute(name: string): BufferAttribute|InterleavedBufferAttribute;
+        getAttribute(name: string): BufferAttribute;
         removeAttribute(name: string): BufferGeometry;
 
         addGroup(start: number, count: number, materialIndex?: number): void;
@@ -3446,7 +3446,7 @@ declare namespace THREE {
          */
         multiplyScalar(s: number): Matrix4;
         multiplyVector3Array(array: number[]): number[]; // deprecated, use applyToVector3Array()
-        applyToVector3Array(array: number[], offset?: number, length?: number): number[];
+        applyToVector3Array(array: number[] | Float32Array | Float64Array, offset?: number, length?: number): number[] | Float32Array | Float64Array;
         applyToBuffer( buffer: BufferAttribute, offset?: number, length?: number): BufferAttribute;
         /**
          * Computes determinant of this matrix.
