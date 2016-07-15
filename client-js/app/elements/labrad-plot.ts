@@ -1,9 +1,25 @@
 import 'd3';
-
+import THREE from 'three';
 import {viridisData} from '../scripts/colormaps';
 import * as datavault from "../scripts/datavault";
 
 
+/**
+ * Plot Constants.
+ */
+const PLOT_MIN_WIDTH = 400;
+const PLOT_MIN_HEIGHT = 400;
+const PLOT_LEFT_MARGIN = 120;
+const PLOT_RIGHT_MARGIN = 10;
+const PLOT_TOP_MARGIN = 50;
+const PLOT_BOTTOM_MARGIN = 50;
+const PLOT_LINE_WIDTH = 1.5;
+const PLOT_POINT_SIZE = 6;
+
+
+/**
+ * Mouse Constants.
+ */
 const MOUSE_MAIN_BUTTON = 0;
 
 
@@ -33,6 +49,9 @@ const COLOR_MAP = viridisData.map((rgb) => {
 });
 
 
+/**
+ * Color Bar Constants
+ */
 const COLOR_BAR_NUM_TICKS = 10;
 const COLOR_BAR_WIDTH = 15;
 const COLOR_BAR_LEFT_MARGIN = 15;
@@ -46,10 +65,6 @@ const COLOR_BAR_WIDGET_SIZE = (
    COLOR_BAR_OUTER_WIDTH + COLOR_BAR_AXIS_WIDTH
 );
 
-const PLOT_LEFT_MARGIN = 120;
-const PLOT_RIGHT_MARGIN = 10;
-const PLOT_TOP_MARGIN = 50;
-const PLOT_BOTTOM_MARGIN = 50;
 
 @component('labrad-plot')
 export class Plot extends polymer.Base {
@@ -80,8 +95,6 @@ export class Plot extends polymer.Base {
 
   private numTraces: number = 0;
   private svg: any;
-  private chartBody: any;
-  private clip: any;
   private width: number;
   private height: number;
   private xAxis: any;
@@ -92,12 +105,14 @@ export class Plot extends polymer.Base {
   private zScale: any;
   private line: any;
   private zoom: any;
+
   private limits = {
     xMin: 0,
     xMax: 1,
     yMin: 0,
     yMax: 1
   };
+
   private dataLimits = {
     xMin: NaN,
     xMax: NaN,
@@ -106,6 +121,7 @@ export class Plot extends polymer.Base {
     zMin: NaN,
     zMax: NaN
   };
+
   private margin = {
     top: PLOT_TOP_MARGIN,
     right: PLOT_RIGHT_MARGIN,
@@ -134,32 +150,231 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Redraw the plot and attach resize to the window resize event.
-   * Fires when the component is attached to the DOM.
+   * A matrix for the use in transforming geometries.
    */
-  attached() {
-    this.redraw();
-    window.addEventListener('resize', (event) => this.redraw());
-  }
+  private transformMatrix = new THREE.Matrix4();
 
+
+  /**
+   * A non-indexed plane unit geometry one world unit in size.
+   * Used to render rectangular data points.
+   */
+  private planeUnitGeometry =
+      new THREE.PlaneBufferGeometry(1, 1).toNonIndexed();
+
+
+  /**
+   * A short-hand to access the positions array in a unit plane.
+   */
+  private planeVertexPositions =
+      this.planeUnitGeometry.getAttribute('position').array;
+
+
+  /**
+   * The number of vertices in a plane geometry.
+   */
+  private planeVertexCount = this.planeVertexPositions.length / 3;
+
+
+  /**
+   * The default options for the plotting camera.
+   */
+  private cameraOpts = {
+    /** The field of view of the camera. */
+    fov: 45,
+
+    /** The initial aspect ratio of the camera. */
+    aspect: 1,
+
+    /** The near plane of the camera. */
+    near: -500,
+
+    /** The far plane of the camera. */
+    far: 500,
+
+    /** The starting position of the camera. */
+    startingPosition: new THREE.Vector3(0, 0, 1000)
+  };
+
+
+  /**
+   * A perspective camera to view the graph.
+   *
+   * The camera is currently only used for the sake of being able to observe
+   * the scene. Zooming/Panning is handled by `d3` rather than physically
+   * moving the camera around the 3D space provided by `THREE.js`. Aspect ratio
+   * modified if the plot is resized, otherwise camera properties (such as
+   * position and zoom level) do not change.
+   */
+  private camera = new THREE.PerspectiveCamera(
+    this.cameraOpts.fov,
+    this.cameraOpts.aspect,
+    this.cameraOpts.near,
+    this.cameraOpts.far);
+
+  private scene = new THREE.Scene();
+  private renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+
+  /** The objects currently in the scene. */
+  private sceneObjects = [];
+
+  /** If the scene render loop has been started. */
+  private isRendering: boolean = false;
+
+  /** If the graph data or camera has changed, requiring reprojection. */
+  private graphUpdateRequired = false;
+
+  private resetZoomRequired = false;
+  private updateZoomRequired = false;
+  private updateScalesRequired = false;
+  private updateColorBarScaleRequired = false;
+
+  /** If we have ever zoomed since last resetting the zoom level. */
+  private haveZoomed: boolean = false;
+
+  /** If the render loop should stop. */
+  finishRender: boolean = false;
+
+  /** Store the canvas' bounding rectangle for performance. */
+  private canvasBoundingRect = null;
 
   /**
    * Add new data to the plot and re-zoom.
    * Fires when new data arrives via the socket.
    */
-  addData(data: number[][]) {
-    if (data.length === 0) return;
+  addData(data: number[][]): void {
+    if (data.length === 0) {
+      return;
+    }
     const lastData = (this.data.length > 0) ?
         this.data[this.data.length - 1] : null;
     for (let row of data) {
-      this.splice('data', this.data.length, 0, row);
+      this.data.splice(this.data.length, 0, row);
     }
-    this.plotData(data, lastData);
+
+    this.plotData(data);
+
+    // If there is no custom zoom level, then we want to automatically adjust
+    // to keep all the data in frame.
+    if (!this.haveZoomed) {
+      this.resetZoomRequired = true;
+      this.updateScalesRequired = true;
+    }
+
+    // New data may have changed the zAxis scale, so we need to update the
+    // display independent of the other axes.
+    this.updateColorBarScaleRequired = true;
+    this.graphUpdateRequired = true;
   }
 
 
-  private createPlot(
-      area: HTMLElement, totWidth: number, totHeight: number): void {
+  /**
+   * Redraw the plot and attach resize to the window resize event.
+   * Fires when the component is attached to the DOM.
+   */
+  attached(): void {
+    this.render();
+    window.addEventListener('resize', (e) => this.resizePlot());
+  }
+
+
+  /**
+   * Initializes the plot and begins the scene rendering loop.
+   *
+   */
+  private render(): void {
+    if (this.isRendering) {
+      return;
+    }
+
+    this.isRendering = true;
+    this.initializeSVGPlot();
+    this.initializeWebGLPlot();
+    this.resizePlot();
+    this.renderPlot();
+  }
+
+
+  /**
+   * Renders the plot on each animation frame until the `finishRender`
+   * flag is set.
+   */
+  private renderPlot(): void {
+    // If signaled to stop rendering, end the cycle.
+    if (this.finishRender) {
+      this.isRendering = false;
+      this.finishRender = false;
+      return;
+    }
+
+    if (this.updateZoomRequired) {
+      this.updateZoom();
+    }
+
+    if (this.updateScalesRequired) {
+      this.updateScales();
+    }
+
+    if (this.updateColorBarScaleRequired) {
+      this.updateColorBarScale();
+    }
+
+    if (this.resetZoomRequired) {
+      this.resetZoom();
+    }
+
+    if (this.graphUpdateRequired) {
+      this.projectGraphPositions();
+      this.renderer.render(this.scene, this.camera);
+    }
+
+    requestAnimationFrame(() => this.renderPlot());
+  }
+
+
+  /**
+   * Resizes the SVG and WebGL portions of the plots and reprojects the data
+   * according to the new aspect ratio.
+   */
+  private resizePlot(): void {
+    this.resizeSVGPlot();
+    this.resizeWebGLPlot();
+    this.graphUpdateRequired = true;
+  }
+
+
+  /**
+   * Deletes all objects from the scene and re-plots the data.
+   */
+  redrawScene(): void {
+    for (let obj of this.sceneObjects) {
+      this.scene.remove(obj);
+    }
+    this.sceneObjects = [];
+
+    this.lastData = null;
+
+    this.plotData(this.data);
+
+    this.graphUpdateRequired = true;
+  }
+
+
+  /**
+   * Initializes the WebGL portion of the plot.
+   */
+  private initializeWebGLPlot(): void {
+    this.scene.add(this.camera);
+    this.scene.add(new THREE.AmbientLight(0xffffff));
+    this.camera.position.copy(this.cameraOpts.startingPosition);
+    this.$.canvas.appendChild(this.renderer.domElement);
+  }
+
+
+  /**
+   * Initializes the SVG portion of the plot.
+   */
+  private initializeSVGPlot(): void {
     const p = this;
 
     // Make room for the color bar if necessary.
@@ -167,36 +382,23 @@ export class Plot extends polymer.Base {
       p.margin.right = PLOT_RIGHT_MARGIN + COLOR_BAR_WIDGET_SIZE;
     }
 
-    const width = totWidth - p.margin.left - p.margin.right;
-    const height = totHeight - p.margin.top - p.margin.bottom;
-
-    p.width = width;
-    p.height = height;
-
     p.xScale = d3.scale.linear()
-            .domain([p.limits.xMin, p.limits.xMax])
-            .range([0, width]);
+            .domain([p.limits.xMin, p.limits.xMax]);
 
     p.yScale = d3.scale.linear()
-            .domain([p.limits.yMin, p.limits.yMax])
-            .range([height, 0]);
+            .domain([p.limits.yMin, p.limits.yMax]);
 
     p.zScale = d3.scale.linear()
-            .domain([0, 1])
-            .range([height, 0]);
+            .domain([0, 1]);
 
     p.xAxis = d3.svg.axis()
-            .scale(p.xScale)
-            .orient('bottom')
-            .tickSize(-height);
+            .orient('bottom');
 
     const yAxisFormatter = d3.format('.5g');
-
     p.yAxis = d3.svg.axis()
-            .scale(p.yScale)
             .orient('left')
             .ticks(5)
-            .tickSize(-width)
+            .tickSize(-p.width)
             .tickFormat((d) => yAxisFormatter(d));
 
     p.line = d3.svg.line()
@@ -206,69 +408,51 @@ export class Plot extends polymer.Base {
     p.zoom = d3.behavior.zoom()
             .x(p.xScale)
             .y(p.yScale)
-            .on('zoom', () => this.handleZoom());
+            .on('zoom', () => p.handleZoom());
 
     // Plot area.
     const marginLeft = p.margin.left;
     const marginTop = p.margin.top;
-    p.svg = d3.select(area)
+    p.svg = d3.select(p.$.plot)
               .append('svg:svg')
+                .attr('id', 'svgplot')
                 .attr('class', 'flex')
                 .append('g')
+                  .attr('id', 'svgplotgroup')
                   .attr('transform', `translate(${marginLeft}, ${marginTop})`);
 
     // Background rectangle.
     p.svg.append('rect')
             .classed('background', true)
+            .attr('id', 'rect')
             .attr('stroke', 'black')
             .attr('stroke-width', 1)
-            .attr('width', width)
-            .attr('height', height)
             .style('fill', '#222222');
 
     // X-axis ticks and label.
     p.svg.append('g')
-            .attr('class', 'x axis')
-            .attr('transform', `translate(0, ${height})`)
-            .call(p.xAxis);
+            .attr('id', 'x-axis')
+            .attr('class', 'x axis');
     p.svg.append('text')
             .attr('id', 'x-label')
-            .attr('transform',
-                  `translate(${width / 2}, ${height + p.margin.bottom - 10})`)
             .style('text-anchor', 'middle')
-            .text(this.xLabel);
+            .text(p.xLabel);
 
     // Y-axis ticks and label.
     p.svg.append('g')
-            .attr('class', 'y axis')
-            .call(p.yAxis);
+            .attr('id', 'y-axis')
+            .attr('class', 'y axis');
     p.svg.append('text')
             .attr('id', 'y-label')
             .attr('transform', 'rotate(-90)')
-            .attr('y', 0 - p.margin.left)
-            .attr('x', 0 - (height / 2))
             .attr('dy', '1em')
             .style('text-anchor', 'middle')
-            .text(this.yLabel);
-
-    // Draw the graph object (from http://jsfiddle.net/KSAbK/)
-    // This keeps the data from exceeding the limits of the plot.
-    p.chartBody = p.svg.append('g')
-            .attr('clip-path', 'url(#clip)');
-    p.clip = p.svg.append('svg:clipPath')
-            .attr('id', 'clip')
-            .append('svg:rect')
-            .attr('x', 0)
-            .attr('y', 0)
-            .attr('width', width)
-            .attr('height', height);
-
+            .text(p.yLabel);
 
     // Color Bar Axis
-    if (this.numIndeps == 2) {
+    if (p.numIndeps == 2) {
       p.zAxis = d3.svg.axis();
-      p.zAxis.scale(p.zScale)
-             .orient('right')
+      p.zAxis.orient('right')
              .ticks(COLOR_BAR_NUM_TICKS)
              .tickSize(5);
 
@@ -303,27 +487,116 @@ export class Plot extends polymer.Base {
       const gradientFill = `url('${location.href}#ColorBarGradient')`;
 
       // Color Bar Rectangle
-      const colorBarOffset = width + COLOR_BAR_LEFT_MARGIN;
       p.svg.append('rect')
+             .attr('id', 'color-bar')
              .attr('fill', gradientFill)
-             .attr('transform', `translate(${colorBarOffset}, 0)`)
              .attr('width', COLOR_BAR_WIDTH)
-             .attr('height', height)
              .attr('stroke', '#000000')
              .attr('stroke-width', COLOR_BAR_STROKE_WIDTH);
 
       // Z-axis ticks and label.
-      const zAxisOffset = width + COLOR_BAR_LEFT_MARGIN + COLOR_BAR_WIDTH + COLOR_BAR_RIGHT_MARGIN;
       p.svg.append('g')
-             .attr('class', 'z axis')
-             .attr('transform', `translate(${zAxisOffset}, 0)`)
-             .call(p.zAxis);
+             .attr('id', 'color-bar-ticks')
+             .attr('class', 'z axis');
+    }
+
+    p.updatePlotStyles();
+    p.updateControlEventListeners();
+  }
+
+
+  /**
+   * Resizes the WebGL renderer and camera.
+   */
+  private resizeWebGLPlot(): void {
+    this.camera.aspect = this.width / this.height;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(this.width, this.height);
+    this.$.canvas.style.top = `${this.margin.top}px`;
+    this.$.canvas.style.left = `${this.margin.left}px`;
+    this.canvasBoundingRect = this.$.canvas.getBoundingClientRect();
+  }
+
+
+  /**
+   * Resize the SVG portion of the plot.
+   */
+  private resizeSVGPlot(): void {
+    const plot = this.$.plot;
+    const plotBounds = plot.getBoundingClientRect();
+    const plotWidth = Math.max(plotBounds.width, PLOT_MIN_WIDTH);
+    const plotHeight = Math.max(plotBounds.height, PLOT_MIN_HEIGHT);
+
+    // The inner dimensions of the plot, sans margins
+    this.width = plotWidth - this.margin.left - this.margin.right;
+    this.height = plotHeight - this.margin.top - this.margin.bottom;
+
+    this.xScale.range([0, this.width]);
+    this.yScale.range([this.height, 0]);
+    this.zScale.range([this.height, 0]);
+
+    this.xAxis.scale(this.xScale)
+              .tickSize(-this.height);
+
+    this.yAxis.scale(this.yScale)
+              .tickSize(-this.width);
+
+    this.line.x((d) => this.xScale(d[0]))
+             .y((d) => this.yScale(d[1]));
+
+    this.zoom.x(this.xScale)
+             .y(this.yScale);
+
+    this.svg.select('#rect')
+              .attr('width', this.width)
+              .attr('height', this.height);
+
+    this.svg.select('#x-axis')
+              .attr('transform', `translate(0, ${this.height})`)
+              .call(this.xAxis);
+
+    const xLabelXOffset = this.width / 2;
+    const xLabelYOffset = this.height + this.margin.bottom - 10;
+    this.svg.select('#x-label')
+              .attr('transform',
+                    `translate(${xLabelXOffset}, ${xLabelYOffset})`);
+
+    this.svg.select("#y-axis")
+              .call(this.yAxis);
+
+    this.svg.select('#y-label')
+              .attr('x', -(this.height / 2))
+              .attr('y', -this.margin.left);
+
+    if (this.numIndeps == 2) {
+      this.zAxis.scale(this.zScale);
+
+      // Color Bar Rectangle.
+      const colorBarOffset = this.width + COLOR_BAR_LEFT_MARGIN;
+      this.svg.select('#color-bar')
+                .attr('height', this.height)
+                .attr('transform', `translate(${colorBarOffset}, 0)`);
+
+      // Color Bar Ticks and Label.
+      const zAxisXOffset = (this.width
+                          + COLOR_BAR_LEFT_MARGIN
+                          + COLOR_BAR_WIDTH
+                          + COLOR_BAR_RIGHT_MARGIN);
+      this.svg.select('#color-bar-ticks')
+                .attr('transform', `translate(${zAxisXOffset}, 0)`)
+                .call(this.zAxis);
     }
   }
 
 
-  private plotData(data: number[][], lastData?: number[]) {
-    if (data.length === 0) return;
+  /**
+   * Filter the traces and then generate the data appropriate for the given
+   * plot type.
+   */
+  private plotData(data: number[][]): void {
+    if (data.length === 0) {
+      return;
+    }
 
     this.numTraces = data[0].length - 1;
     if (!this.userTraces) {
@@ -333,8 +606,8 @@ export class Plot extends polymer.Base {
     }
 
     switch (this.numIndeps) {
-      case 1: this.plotData1D(data, lastData); break;
-      case 2: this.plotData2D(data, lastData); break;
+      case 1: this.plotData1D(data); break;
+      case 2: this.plotData2D(data); break;
       default: break; // Nothing to do.
     }
 
@@ -351,14 +624,130 @@ export class Plot extends polymer.Base {
       this.limits.yMin -= 1;
       this.limits.yMax += 1;
     }
-
-    // Zoom to fit the data.
-    // TODO: Only if the zoom has not changed.
-    this.resetZoom();
   }
 
 
-  private plotData1D(data: number[][], lastData?: number[]) {
+  /**
+   * Generate the geometries and materials for a 1D plot.
+   */
+  private plotData1D(data: number[][]): void {
+    this.dataLimits1D(data);
+
+    if (this.sceneObjects.length == 0) {
+      const ob = new THREE.Object3D();
+      this.sceneObjects.push(ob);
+      this.scene.add(ob);
+    }
+
+    const ob = this.sceneObjects[0];
+
+    for (let i of this.displayTraces) {
+      const length = (this.lastData) ? data.length + 1 : data.length;
+
+      // The positions array is initialized in the geometry here, but positions
+      // are set withing projectGraphPositions. See plotData2D for more info.
+      const positions = new Float32Array(length * 3);
+
+      // Raw data is stored inside the geometry for more efficient
+      // reprojection.
+      const dataPoints = new Float64Array(length * 3);
+      let offset = 0;
+
+      // Add the last point of data if maxima exists to avoid gaps.
+      if (this.lastData) {
+        dataPoints[offset] = this.lastData[0];
+        dataPoints[offset + 1] = this.lastData[i + 1];
+        offset += 3;
+      }
+
+      for (let row of data) {
+        dataPoints[offset] = row[0];
+        dataPoints[offset + 1] = row[i + 1];
+        offset += 3;
+      }
+
+      if (dataPoints.length > 1) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 3));
+
+        const material = new THREE.LineBasicMaterial({
+          color: COLOR_LIST[i % COLOR_LIST.length],
+          linewidth: PLOT_LINE_WIDTH
+        });
+        const line = new THREE.Line(geometry, material);
+        ob.add(line);
+      }
+    }
+  }
+
+
+  /**
+   * Generate the geometries and materials for a 2D plot.
+   */
+  private plotData2D(data: number[][]): void {
+    this.dataLimits2D(data);
+
+    const numVertices = (this.drawMode2D == 'dots') ?
+        1 : this.planeVertexCount;
+
+    // Each vertex of a data point uses three Float32 to place it in 3D space.
+    // These positions are set by projectGraphPositions as they change
+    // depending on zoom/pan.
+    const positions = new Float32Array(data.length * numVertices * 3);
+
+    // Each data point consists of two Float64 representing its x and y
+    // coordinate in the 2D space. The data are stored in the geometry so they
+    // can be easily reprojected when the zoom/pan changes. These are fixed for
+    // the duration of the plot as they exist in Graph Space.
+    const dataPoints = new Float64Array(data.length * 3);
+
+    // Each vertex in a data point needs a color associated with it, every
+    // vertex in a single data point is the same color.
+    // The color is represented by three Float32 representing the red, blue and
+    // green as a value between 0 and 1. These are fixed.
+    const colors = new Float32Array(data.length * numVertices * 3);
+
+    for (let i = 0, len = data.length; i < len; ++i) {
+      const row = data[i];
+      dataPoints[i * 3] = row[0];
+      dataPoints[i * 3 + 1] = row[1];
+      dataPoints[i * 3 + 2] = row[this.displaySurface];
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 3));
+    geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    let material, mesh;
+    if (this.drawMode2D == 'dots') {
+      material = new THREE.PointsMaterial({
+        sizeAttenuation: false,
+        size: PLOT_POINT_SIZE,
+        vertexColors: THREE.VertexColors
+      });
+      mesh = new THREE.Points(geometry, material);
+    } else {
+      material = new THREE.MeshLambertMaterial({vertexColors: THREE.VertexColors});
+      mesh = new THREE.Mesh(geometry, material);
+    }
+
+    if (this.sceneObjects.length == 0) {
+      const ob = new THREE.Object3D();
+      this.sceneObjects.push(ob);
+      this.scene.add(ob);
+    }
+
+    const ob = this.sceneObjects[0];
+    ob.add(mesh);
+  }
+
+
+  /**
+   * Set the bounds for a 1D plot.
+   */
+  private dataLimits1D(data: number[][]): void {
     // Update data limits.
     for (let row of data) {
       let x = row[0];
@@ -376,43 +765,35 @@ export class Plot extends polymer.Base {
     this.limits.xMax = isNaN(this.dataLimits.xMax) ? 0 : this.dataLimits.xMax;
     this.limits.yMin = isNaN(this.dataLimits.yMin) ? 0 : this.dataLimits.yMin;
     this.limits.yMax = isNaN(this.dataLimits.yMax) ? 0 : this.dataLimits.yMax;
-
-    for (let i of this.displayTraces) {
-      // Extract data for trace i, starting with the last datapoint to avoid gaps.
-      const traceData = [];
-      if (lastData) {
-        traceData.push([lastData[0], lastData[i+1]]);
-      }
-      for (let row of data) {
-        traceData.push([row[0], row[i+1]]);
-      }
-
-      // Add this trace to the plot.
-      if (traceData.length > 1) {
-        this.chartBody.append('svg:path')
-                .datum(traceData)
-                .attr('stroke', COLOR_LIST[i % COLOR_LIST.length])
-                .attr('stroke-width', 1.5)
-                .attr('fill', 'none')
-                .attr('class', `line${i}`)
-                .attr('d', this.line);
-      }
-    }
   }
 
 
-  private plotData2D(data: number[][], lastData?: number[]) {
-    // Update data limits.
-
+  /**
+   * Set the bounds for a 2D plot.
+   */
+  private dataLimits2D(data: number[][]): void {
     for (let row of data) {
       let x = row[0];
+      let y = row[1];
+
+      this.dataLimits.xMin = safeMin(this.dataLimits.xMin, x);
+      this.dataLimits.xMax = safeMax(this.dataLimits.xMax, x);
+
+      this.dataLimits.yMin = safeMin(this.dataLimits.yMin, y);
+      this.dataLimits.yMax = safeMax(this.dataLimits.yMax, y);
+
       if (this.x0 === null) {
         this.x0 = x;
       } else if (this.dx0 < 0 && x !== this.x0) {
         this.dx0 = Math.abs(x - this.x0);
       }
-      this.dataLimits.xMin = safeMin(this.dataLimits.xMin, x);
-      this.dataLimits.xMax = safeMax(this.dataLimits.xMax, x);
+
+      if (this.y0 === null) {
+        this.y0 = y;
+      } else if (this.dy0 < 0 && y !== this.y0) {
+        this.dy0 = Math.abs(y - this.y0);
+      }
+
       if (!this.xNext.hasOwnProperty(x)) {
         let xi = insertSorted(this.xs, x);
         let len = this.xs.length;
@@ -427,14 +808,6 @@ export class Plot extends polymer.Base {
         }
       }
 
-      let y = row[1];
-      if (this.y0 === null) {
-        this.y0 = y;
-      } else if (this.dy0 < 0 && y !== this.y0) {
-        this.dy0 = Math.abs(y - this.y0);
-      }
-      this.dataLimits.yMin = safeMin(this.dataLimits.yMin, y);
-      this.dataLimits.yMax = safeMax(this.dataLimits.yMax, y);
       if (!this.yNext.hasOwnProperty(y)) {
         let yi = insertSorted(this.ys, y);
         let len = this.ys.length;
@@ -449,9 +822,9 @@ export class Plot extends polymer.Base {
         }
       }
 
-        let z = row[this.displaySurface];
-        this.dataLimits.zMin = safeMin(this.dataLimits.zMin, z);
-        this.dataLimits.zMax = safeMax(this.dataLimits.zMax, z);
+      let z = row[this.displaySurface];
+      this.dataLimits.zMin = safeMin(this.dataLimits.zMin, z);
+      this.dataLimits.zMax = safeMax(this.dataLimits.zMax, z);
     }
 
     // Update view limits.
@@ -461,214 +834,270 @@ export class Plot extends polymer.Base {
     this.limits.yMin = isNaN(this.dataLimits.yMin) ? 0 : this.dataLimits.yMin;
     this.limits.yMax = isNaN(this.dataLimits.yMax + this.dy) ?
         0 : this.dataLimits.yMax + this.dy;
-
-    let zMin = this.dataLimits.zMin,
-        zMax = this.dataLimits.zMax;
-    if (zMin === zMax) {
-      zMin -= 1;
-      zMax += 1;
-    }
-
-    // Add a dot to the plot.
-    let w = 0,
-        h = 0;
-    const p = this;
-    switch (this.drawMode2D) {
-      case 'dots':
-        w = h = 4;
-        for (let row of data) {
-          this.chartBody
-                .append('rect')
-                .datum(row)
-                .classed('data', true)
-                .attr('x', (d) => p.xScale(d[0]))
-                .attr('y', (d) => p.yScale(d[1]) - h)
-                .attr('width', w)
-                .attr('height', h)
-                .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-        }
-        break;
-
-      case 'rectfill':
-        w = Math.abs(p.xScale(this.dx0) - p.xScale(0));
-        h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
-        for (let row of data) {
-          this.chartBody
-                .append('rect')
-                .datum(row)
-                .classed('data', true)
-                .attr('x', (d) => p.xScale(d[0]))
-                .attr('y', (d) => p.yScale(d[1]) - h)
-                .attr('width', w)
-                .attr('height', h)
-                .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-        }
-        break;
-
-      case 'vargrid':
-        for (let row of data) {
-          this.chartBody
-                .append('rect')
-                .datum(row)
-                .classed('data', true)
-                .attr('x', (d) => p.xScale(d[0]))
-                .attr('y', (d) => p.yScale(p.yNext[d[1]]))
-                .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
-                .attr('height', (d) => {
-                  return Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1]));
-                })
-                .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-        }
-        break;
-
-      default:
-        // Nothing to do.
-        break;
-    }
   }
 
 
-  private installMouseListeners() {
-    if (!this.svg) return;
-    switch (this.mouseMode) {
-      case 'pan':
-        this.svg.on('mousedown', null);
-        this.svg.call(this.zoom);
-        this.$.plot.style.cursor = 'auto';
-        this.$.plot.style.cursor = 'all-scroll';
-        break;
+  /**
+   * Projects all graph data according to the latest zoom level.
+   *
+   * Due to the separation of each plot into a WebGL and SVG component, the
+   * zoom/pan of the d3 axes needs to lead to the updating of the WebGL
+   * display.
+   *
+   * Each object in the scene is iterated, its original graph data position is
+   * extracted and then reprojected to the correct position in WebGL (world)
+   * space.
+   *
+   * There are three primary coordinate systems:
+   * 1) Graph Space. The position of the data to be plotted in the graph.
+   * 2) Screen Space. The position relative to the plot on screen.
+   * 3) World Space. The position of the item in the 3D WebGL projected world.
+   */
+  private projectGraphPositions(): void {
+    this.graphUpdateRequired = false;
 
-      case 'zoomRect':
-        this.svg.on('.zoom', null)
-        this.svg.on('mousedown', () => this.zoomRectangle());
-        this.$.plot.style.cursor = 'auto';
-        this.$.plot.style.cursor = 'crosshair';
-        break;
+    // When plotting lines or single points, we only need one vertex to
+    // represent the data.
+    const numVertices = (this.numIndeps == 1 || this.drawMode2D == 'dots') ?
+        1 : this.planeVertexCount;
 
-      default:
-        // Nothing to do.
-        break;
-    }
-  }
+    // A reusable buffer for manipulating the coordinates of each point.
+    const positionBuffer = new Float32Array(numVertices * 3);
 
+    // Reuse the same vector and object for all coordinate conversions to avoid
+    // generating a large amount of garbage causing GC stalls.
+    const vector = new THREE.Vector3();
+    const screenRect = {x: 0, y: 0, w: 0, h: 0};
 
-  private updatePlotStyles() {
-    if (!this.svg) return;
-    switch (this.numIndeps) {
-      case 1:
-        this.$$('rect.background').style.fill = '#ffffff';
-        this.$.modes2d.style.visibility = 'hidden';
-        this.is1D = true;
-        this.is2D = false;
-        break;
+    // Project the (0, 0) screen position to world coordinates so that widths
+    // and heights in world space can be calculated from the delta.
+    this.projectScreenCoordToWorldCoord(0, 0, vector);
+    const xWorldZero = vector.x,
+          yWorldZero = vector.y;
 
-      case 2:
-        this.$$('rect.background').style.fill = '#222222';
-        this.is1D = false;
-        this.is2D = true;
-        break;
+    const zMin = this.dataLimits.zMin;
+    const zMax = this.dataLimits.zMax;
 
-      default:
-        // Nothing to do.
-        break;
+    for (let obj of this.sceneObjects) {
+      for (let child of obj.children) {
+        const positions = child.geometry.getAttribute('position').array;
+        const colors = (this.numIndeps == 2) ? child.geometry.getAttribute('color').array : [];
+        const data = child.geometry.getAttribute('data').array;
+
+        for (let i = 0, len = data.length / 3; i < len; ++i) {
+          const positionOffset = i * numVertices * 3;
+          const dataOffset = i * 3;
+
+          // Convert the graph (x, y) coordinate to screen coordinates.
+          this.projectGraphCoordToScreenRect(data[dataOffset],
+                                             data[dataOffset + 1],
+                                             screenRect);
+          const xScreen = screenRect.x,
+                yScreen = screenRect.y,
+                wScreen = screenRect.w,
+                hScreen = screenRect.h;
+
+          // Convert screen coordinates into world (3D) coordinates.
+          this.projectScreenCoordToWorldCoord(xScreen, yScreen, vector);
+          const xWorld = vector.x,
+                yWorld = vector.y;
+
+          if (this.numIndeps == 1 || this.drawMode2D == 'dots') {
+            // When dealing with dots, simply copy the world coordinates
+            // into the position array at the correct offset.
+            positions[positionOffset] = xWorld;
+            positions[positionOffset + 1] = yWorld;
+            positions[positionOffset + 2] = 0;
+          } else {
+            // Project the width and height in screen space to world space,
+            // then calculate the size as a delta from world zero.
+            this.projectScreenCoordToWorldCoord(wScreen, -hScreen, vector);
+
+            const wWorldEnd = vector.x,
+                  hWorldEnd = vector.y;
+
+            const wWorld = wWorldEnd - xWorldZero,
+                  hWorld = hWorldEnd - yWorldZero;
+
+            // Copy the plane vertex positions into the buffer for manipulation
+            positionBuffer.set(this.planeVertexPositions);
+
+            // Scale the plane to world width and height
+            this.transformMatrix.makeScale(wWorld, hWorld, 0);
+            this.transformMatrix.applyToVector3Array(positionBuffer);
+
+            // Move plane to the appropriate position
+            this.transformMatrix.makeTranslation(xWorld, yWorld, 0);
+            this.transformMatrix.applyToVector3Array(positionBuffer);
+
+            // Copy the buffer into the buffer geometry at the correct offset
+            positions.set(positionBuffer, positionOffset);
+          }
+
+          if (this.numIndeps == 2) {
+            // Update the colors of each point to reflect the latest scaling of
+            // the zAxis.
+            const color = getColor(data[dataOffset + 2], zMin, zMax);
+
+            // Insert the color of the vertex into the colors array once for each
+            // vertex in the data point.
+            const numColorVals = numVertices * 3;
+            const index = i * numColorVals;
+            for (let j = 0; j < numColorVals; j += 3) {
+              colors[index + j] = color.r / 255;
+              colors[index + j + 1] = color.g / 255;
+              colors[index + j + 2] = color.b / 255;
+            }
+          }
+        }
+        child.geometry.getAttribute('position').needsUpdate = true;
+        child.geometry.computeBoundingSphere();
+
+        if (this.numIndeps == 2) {
+          child.geometry.getAttribute('color').needsUpdate = true;
+        }
+      }
     }
   }
 
 
   /**
-   * Destroys and recreates the plot.
+   * Projects a coordinate in graph coordinates (relative to the axes of the
+   * data) to screen coordinates (relative to the canvas). Additionally
+   * determines the width and height of the coordinate based on its type.
+   *
+   * Mutates `outputObject` by setting the projected `x` and `y` coordinate as
+   * well as `w` and `h` for the projected width and height.
    */
-  redraw(): void {
-    const area = this.$.plot,
-          rect = area.getBoundingClientRect();
-    while (area.firstChild) {
-      area.removeChild(area.firstChild);
+  private projectGraphCoordToScreenRect(
+      x: number, y: number,
+      outputObject: {x: number, y: number, w: number, h: number}): void {
+    let xScreen, yScreen, wScreen, hScreen;
+
+    if (this.numIndeps == 2) {
+      switch (this.drawMode2D) {
+        case 'dots':
+          // Points have a fixed width relative to the screen regardless of zoom.
+          wScreen = PLOT_POINT_SIZE;
+          hScreen = wScreen;
+          break;
+
+        case 'rectfill':
+          wScreen = Math.abs(this.xScale(this.dx0) - this.xScale(0));
+          hScreen = Math.abs(this.yScale(this.dy0) - this.yScale(0));
+          y += this.dy0;
+          break;
+
+        case 'vargrid':
+          wScreen = this.xScale(this.xNext[x]) - this.xScale(x),
+          hScreen = Math.abs(this.yScale(this.yNext[y]) - this.yScale(y));
+          y = this.yNext[y];
+          break;
+
+        default:
+          // Nothing to do.
+          break;
+      }
+
+      xScreen = this.xScale(x) + (wScreen / 2);
+      yScreen = this.yScale(y) + (hScreen / 2);
+
+      if (this.drawMode2D == 'dots') {
+        yScreen = this.yScale(y) - (hScreen / 2);
+      }
+    } else {
+      wScreen = 0;
+      hScreen = 0;
+      xScreen = this.xScale(x);
+      yScreen = this.yScale(y);
     }
-    this.createPlot(area,
-                     Math.max(rect.width, 400),
-                     Math.max(rect.height, 400));
-    this.updatePlotStyles();
-    this.plotData(this.data);
-    this.installMouseListeners();
+
+    outputObject.x = xScreen;
+    outputObject.y = yScreen;
+    outputObject.w = wScreen;
+    outputObject.h = hScreen;
   }
 
 
-  private handleZoom() {
-    // Zoom and pan axes.
+  /**
+   * Projects a coordinate in screen coordinates (relative to the canvas) to
+   * world coordinates (relative to the 3D projection of the scene).
+   *
+   * Mutates `outputVector` to return the projected `x`, `y` and `z`
+   * coordinate.
+   */
+  private projectScreenCoordToWorldCoord(x: number,
+                                         y: number,
+                                         outputVector: THREE.Vector3) {
+    outputVector.set((x / this.width) * 2 - 1,
+                     -(y / this.height) * 2 + 1,
+                     0.5);
+    outputVector.unproject(this.camera);
+  }
+
+
+  private updateZoom() {
+    this.updateZoomRequired = false;
+    this.graphUpdateRequired = true;
     this.svg.select('.x.axis').call(this.xAxis);
     this.svg.select('.y.axis').call(this.yAxis);
+  }
 
-    switch (this.numIndeps) {
-      case 1: this.zoomData1D(); break;
-      case 2: this.zoomData2D(); break;
-      default: break; // Nothing to do.
+
+  private updateColorBarScale() {
+    this.updateColorBarScaleRequired = false;
+
+    if (this.numIndeps == 2) {
+      this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
+      this.zAxis.scale(this.zScale);
+      this.svg.select('.z.axis').call(this.zAxis);
     }
   }
 
 
-  private zoomData1D() {
-    // Adjust data for each trace.
-    for (let k = 0; k < this.numTraces; k++) {
-      this.svg.selectAll(`.line${k}`)
-          .attr('class', `line${k}`)
-          .attr('d', this.line);
-    }
+  /**
+   * Updates the axis scales to reflect the latest data limits.
+   */
+  private updateScales() {
+    this.updateScalesRequired = false;
+
+    this.xScale.domain([this.limits.xMin, this.limits.xMax]);
+    this.yScale.domain([this.limits.yMin, this.limits.yMax]);
+    this.xAxis.scale(this.xScale);
+    this.yAxis.scale(this.yScale);
+
+    this.updateColorBarScale();
   }
 
 
-  private zoomData2D() {
-    const zMin = this.dataLimits.zMin,
-          zMax = this.dataLimits.zMax,
-          p = this;
+  /**
+   * Initiates zooming to be handled by the render loop.
+   */
+  private handleZoom() {
+    this.haveZoomed = true;
+    this.updateZoomRequired = true;
+  }
 
-    let w = 0,
-        h = 0;
 
-    // Rescale the color bar.
-    this.svg.select('.z.axis').call(this.zAxis);
+  /**
+   * Reset to original window size after zoom-in.
+   */
+  private resetZoom() {
+    this.haveZoomed = false;
+    this.resetZoomRequired = false;
 
-    // Adjust size, position, and color of each data rect.
-    switch (this.drawMode2D) {
-    case 'dots':
-      w = 4;
-      h = 4;
-      this.svg.selectAll('rect.data')
-          .attr('x', (d) => p.xScale(d[0]))
-          .attr('y', (d) => p.yScale(d[1]) - h)
-          .attr('width', w)
-          .attr('height', h)
-          .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-      break;
+    this.updateScales();
 
-    case 'rectfill':
-      w = Math.abs(p.xScale(this.dx0) - p.xScale(0));
-      h = Math.abs(p.yScale(this.dy0) - p.yScale(0));
-      this.svg.selectAll('rect.data')
-          .attr('x', (d) => p.xScale(d[0]))
-          .attr('y', (d) => p.yScale(d[1]) - h)
-          .attr('width', w)
-          .attr('height', h)
-          .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-      break;
-
-    case 'vargrid':
-      this.svg.selectAll('rect.data')
-          .attr('x', (d) => p.xScale(d[0]))
-          .attr('y', (d) => p.yScale(p.yNext[d[1]]))
-          .attr('width', (d) => p.xScale(p.xNext[d[0]]) - p.xScale(d[0]))
-          .attr('height', (d) => {
-            return Math.abs(p.yScale(p.yNext[d[1]]) - p.yScale(d[1]));
-          })
-          .style('fill', (d) => getColor(d[p.displaySurface], zMin, zMax));
-      break;
-    }
+    this.zoom.x(this.xScale);
+    this.zoom.y(this.yScale);
+    this.updateZoomRequired = true;
   }
 
 
   /**
    * Zoom into a selected rectangular region on the graph.
    */
-  private zoomRectangle() {
+  private drawZoomRectangle(): void {
     // Only trigger zoom rectangle on left click
     if (d3.event.button !== MOUSE_MAIN_BUTTON) {
       return;
@@ -678,31 +1107,33 @@ export class Plot extends polymer.Base {
     // area. The d3.mouse function returns coordinates relative to the full html
     // element, so we must account for the margins. We also clip the coordinates
     // to the available plot area.
-    const mousePos = () => {
+    const mousePos = (offset) => {
       const [x, y] = d3.mouse(this);
       return [
-        clip(x - this.margin.left, 0, this.width),
-        clip(y - this.margin.top, 0, this.height)
+        clip(x - this.margin.left, 0, this.width + offset),
+        clip(y - this.margin.top, 0, this.height + offset)
       ];
     }
 
-    const [originX, originY] = mousePos(),
-        rect = this.svg.append('rect')
-                       .classed('zoom', true)
-                       .attr('stroke', 'red')
-                       .attr('fill', '#eee')
-                       .attr('fill-opacity', 0.5);
+    const [originX, originY] = mousePos(0);
+
+    const rect = this.$.zoomRectangle;
 
     d3.select(window)
       .on('mousemove', () => {
-        const [x, y] = mousePos();
-        rect.attr('x', Math.min(originX, x))
-            .attr('y', Math.min(originY, y))
-            .attr('width', Math.abs(x - originX))
-            .attr('height', Math.abs(y - originY));
+        const [x, y] = mousePos(-4);
+        const posX = Math.min(originX, x) + this.margin.left;
+        const posY = Math.min(originY, y) + this.margin.top;
+        const width = Math.abs(x - originX);
+        const height = Math.abs(y - originY);
+        rect.style.left = `${posX}px`;
+        rect.style.top = `${posY}px`;
+        rect.style.width = `${width}px`;
+        rect.style.height = `${height}px`;
+        rect.style.display = 'block';
       })
       .on('mouseup', () => {
-        const [x, y] = mousePos();
+        const [x, y] = mousePos(0);
         d3.select(window)
           .on('mousemove', null)
           .on('mouseup', null);
@@ -719,7 +1150,7 @@ export class Plot extends polymer.Base {
           this.zoom.x(xScale.domain([xMin, xMax]))
                    .y(yScale.domain([yMin, yMax]));
         }
-        rect.remove();
+        rect.style.display = 'none';
         this.handleZoom();
       }, true);
     d3.event.preventDefault();
@@ -727,42 +1158,75 @@ export class Plot extends polymer.Base {
   }
 
 
-  private mouseToDataX(x: number): number {
-    x = clip(x - this.margin.left, 0, this.width);
-    return this.xScale.invert(x);
-  }
+  /**
+   * Updates the control event listeners depending on mode.
+   */
+  private updateControlEventListeners(): void {
+    if (!this.isRendering) {
+      return;
+    }
+    const canvas = d3.select(this.renderer.domElement);
+    switch (this.mouseMode) {
+      case 'pan':
+        canvas.on('mousedown', null);
+        canvas.call(this.zoom);
+        this.$.canvas.style.cursor = 'all-scroll';
+        break;
 
+      case 'zoomRect':
+        canvas.on('.zoom', null)
+        canvas.on('mousedown', () => this.drawZoomRectangle());
+        this.$.canvas.style.cursor = 'crosshair';
+        break;
 
-  private mouseToDataY(y: number): number {
-    y = clip(y - this.margin.top, 0, this.height);
-    return this.yScale.invert(y);
+      default:
+        // Do nothing.
+        break;
+    }
   }
 
 
   /**
-   * Reset to original window size after zoom-in.
+   * Update plot style depending on number of variables plotted.
    */
-  resetZoom() {
-    this.xScale.domain([this.limits.xMin, this.limits.xMax]);
-    this.yScale.domain([this.limits.yMin, this.limits.yMax]);
-    this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
-    this.xAxis.scale(this.xScale);
-    this.yAxis.scale(this.yScale);
-    this.zoom.x(this.xScale);
-    this.zoom.y(this.yScale);
-
-    if (this.numIndeps == 2) {
-      this.zAxis.scale(this.zScale);
+  private updatePlotStyles(): void {
+    if (!this.svg) {
+      return;
     }
 
-    this.handleZoom();
+    switch (this.numIndeps) {
+      case 1:
+        this.$$('rect.background').style.fill = '#ffffff';
+        this.$.modes2d.style.visibility = 'hidden';
+        this.is1D = true;
+        this.is2D = false;
+        break;
+
+      case 2:
+        this.$$('rect.background').style.fill = '#222222';
+        this.is1D = false;
+        this.is2D = true;
+        break;
+
+      default:
+        // Do nothing.
+        break;
+    }
+  }
+
+
+  /**
+   * Resets the current zoom level to fit the data.
+   */
+  resetZoomControl(): void {
+    this.resetZoom();
   }
 
 
   /**
    * Sets the control mode to pan/zoom.
    */
-  mouseModeSelectorPan() {
+  mouseModeSelectorPan(): void {
     this.mouseMode = 'pan';
   }
 
@@ -770,7 +1234,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the control mode to zoom rectangle.
    */
-  mouseModeSelectorZoomRect() {
+  mouseModeSelectorZoomRect(): void {
     this.mouseMode = 'zoomRect';
   }
 
@@ -778,7 +1242,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to dots.
    */
-  drawMode2DSelectorDots() {
+  drawMode2DSelectorDots(): void {
     this.drawMode2D = 'dots';
   }
 
@@ -786,7 +1250,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to rect fill.
    */
-  drawMode2DSelectorRectfill() {
+  drawMode2DSelectorRectfill(): void {
     this.drawMode2D = 'rectfill';
   }
 
@@ -794,7 +1258,7 @@ export class Plot extends polymer.Base {
   /**
    * Sets the 2D draw mode to vargrid.
    */
-  drawMode2DSelectorVargrid() {
+  drawMode2DSelectorVargrid(): void {
     this.drawMode2D = 'vargrid';
   }
 
@@ -802,7 +1266,7 @@ export class Plot extends polymer.Base {
   /**
    * Opens the trace selector dialog window.
    */
-  traceSelectorOpen() {
+  traceSelectorOpen(): void {
     this.$.traceSelector.open();
   }
 
@@ -810,7 +1274,7 @@ export class Plot extends polymer.Base {
   /**
    * Selects all available traces.
    */
-  traceSelectorSelectAll() {
+  traceSelectorSelectAll(): void {
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
@@ -822,7 +1286,7 @@ export class Plot extends polymer.Base {
   /**
    * Selects none of the available traces.
    */
-  traceSelectorSelectNone() {
+  traceSelectorSelectNone(): void {
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
     for (let checkbox of checkboxes) {
@@ -835,7 +1299,7 @@ export class Plot extends polymer.Base {
    * Submit the users trace selection. Will not submit if no traces are
    * selected.
    */
-  traceSelectorSubmit() {
+  traceSelectorSubmit(): void {
     const selected: number[] = [];
     const selector = Polymer.dom(this.$.traceSelector);
     const checkboxes = selector.querySelectorAll('[name=traces]');
@@ -866,13 +1330,13 @@ export class Plot extends polymer.Base {
       this.displaySurface = this.displayTraces[0] + 2;
       this.$.traceSelector.close();
       this.userTraces = true;
-      this.redraw();
+      this.redrawScene();
     }
   }
 
 
   @observe('xLabel')
-  private observeXLabel(newLabel: string, oldLabel: string) {
+  private observeXLabel(newLabel: string, oldLabel: string): void {
     if (this.svg) {
       this.svg.select('#x-label').text(newLabel);
     }
@@ -880,7 +1344,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('yLabel')
-  private observeYLabel(newLabel: string, oldLabel: string) {
+  private observeYLabel(newLabel: string, oldLabel: string): void {
     if (this.svg) {
       this.svg.select('#y-label').text(newLabel);
     }
@@ -888,7 +1352,7 @@ export class Plot extends polymer.Base {
 
 
   @observe('mouseMode')
-  private observeMouseMode(newMode: string, oldMode: string) {
+  private observeMouseMode(newMode: string, oldMode: string): void {
     switch (newMode) {
       case 'pan':
         this.$.pan.style.color = 'black';
@@ -904,12 +1368,12 @@ export class Plot extends polymer.Base {
         // Nothing to do.
         break;
     }
-    this.installMouseListeners();
+    this.updateControlEventListeners();
   }
 
 
   @observe('drawMode2D')
-  private observeDrawMode2D(newMode: string, oldMode: string) {
+  private observeDrawMode2D(newMode: string): void {
     switch (newMode) {
       case 'dots':
         this.$.dots.style.color = 'black';
@@ -933,31 +1397,38 @@ export class Plot extends polymer.Base {
         // Nothing to do.
         break;
     }
-    if (oldMode && newMode !== oldMode) {
-      setTimeout(() => this.handleZoom(), 0);
+
+    // Points and square differences require a complete recreation of the data.
+    if (this.isRendering) {
+      this.redrawScene();
     }
   }
 
 
   @observe('numIndeps')
-  private observeNumIndeps(newNum: number, oldNum: number) {
+  private observeNumIndeps(newNum: number, oldNum: number): void {
     this.updatePlotStyles();
   }
 
 
-  @listen('plot.mousemove')
-  private listenPlotMouseMove(event) {
-    const rect = event.currentTarget.getBoundingClientRect();
+  @listen('mousemove')
+  private onCanvasMouseMove(e): void {
+    const rect = this.canvasBoundingRect;
+
+    const xMouseScreen = e.pageX - rect.left,
+          yMouseScreen = e.pageY - rect.top,
+          xMouseGraph = this.xScale.invert(clip(xMouseScreen, 0, this.width)),
+          yMouseGraph = this.yScale.invert(clip(yMouseScreen, 0, this.height));
+
     const xMin = this.xScale.invert(0),
           xMax = this.xScale.invert(this.width),
           yMin = this.yScale.invert(this.height),
           yMax = this.yScale.invert(0),
           dx = (xMax - xMin) / this.width,
-          dy = (yMax - yMin) / this.height,
-          x = this.mouseToDataX(event.pageX - rect.left),
-          y = this.mouseToDataY(event.pageY - rect.top),
-          xStr = prettyNumber(x, xMin, xMax, dx),
-          yStr = prettyNumber(y, yMin, yMax, dy);
+          dy = (yMax - yMin) / this.height;
+
+    const xStr = prettyNumber(xMouseGraph, xMin, xMax, dx),
+          yStr = prettyNumber(yMouseGraph, yMin, yMax, dy);
 
     this.currPos = `(${xStr}, ${yStr})`;
   }

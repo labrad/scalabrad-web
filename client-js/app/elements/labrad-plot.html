@@ -37,14 +37,32 @@
     #dots {
       margin-top: 40px;
     }
+    #plot {
+      position: relative;
+    }
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #zoomRectangle {
+      background-color: #eee;
+      opacity: 0.5;
+      cursor: crosshair;
+      position: absolute;
+      border: 2px solid #f00;
+      display: none;
+    }
   </style>
   <template>
     <div id="plot"></div>
-    <div id="pos">current position: <span>{{currPos}}</span></div>
+    <div id="canvas"></div>
+    <div id="zoomRectangle"></div>
+    <div id="pos">Current Position: <span>{{currPos}}</span></div>
     <div id="buttons">
       <paper-icon-button icon="tab-unselected" id="rect" on-click="mouseModeSelectorZoomRect" title="drag to zoom"></paper-icon-button>
       <paper-icon-button icon="open-with" id="pan" on-click="mouseModeSelectorPan" title="drag to pan"></paper-icon-button>
-      <paper-icon-button icon="home" id="home" on-click="resetZoom" title="zoom out"></paper-icon-button>
+      <paper-icon-button icon="home" id="home" on-click="resetZoomControl" title="zoom out"></paper-icon-button>
       <paper-icon-button icon="list" id="select" on-click="traceSelectorOpen" title="select trace"></paper-icon-button>
       <div id="modes2d">
         <paper-icon-button icon="av:stop" id="dots" on-click="drawMode2DSelectorDots" title="draw with dots"></paper-icon-button>

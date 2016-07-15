@@ -232,7 +232,7 @@ export class DatavaultLiveActivity implements Activity {
     // resize all plots to ensure they fit the view.
     if (this.activities.length <= 3) {
       for (const activity of this.activities) {
-        activity.plot.redraw();
+        activity.plot.redrawScene();
       }
     }
 
@@ -350,6 +350,7 @@ export class DatasetActivity implements Activity {
   }
 
   async stop(): Promise<void> {
+    this.plot.finishRender = true;
     this.lifetime.close();
     await this.api.dataStreamClose({token: this.token});
   }
