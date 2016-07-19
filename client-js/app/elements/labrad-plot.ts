@@ -1,8 +1,8 @@
 import 'd3';
 import THREE from 'three';
 import {viridisData} from '../scripts/colormaps';
-import * as datavault from "../scripts/datavault";
-import {fitParabola, fitExponential} from "../scripts/fit";
+import * as datavault from '../scripts/datavault';
+import {fitParabola, fitExponential} from '../scripts/fit';
 
 
 /**
