@@ -46,6 +46,9 @@ export class LabradGrapher extends polymer.Base {
   @property({type: Object})
   api: datavault.DataVaultApi;
 
+  @property({type: String})
+  connectionError: string;
+
   private showStars: boolean = false;
   private showTrash: boolean = false;
 
