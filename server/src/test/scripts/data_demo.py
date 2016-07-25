@@ -36,6 +36,7 @@ def demo_1d_simple(dv):
         dv.add([x, y])
         time.sleep(0.002)
 
+
 @demo
 def demo_1d_multi_high_variance(dv):
     dv.new('demo_1d_high_var',
@@ -54,6 +55,7 @@ def demo_1d_multi_high_variance(dv):
         dv.add(row)
         time.sleep(0.002)
 
+
 @demo
 def demo_1d_multi(dv):
     dv.new('demo_1d_multi',
@@ -70,6 +72,7 @@ def demo_1d_multi(dv):
         dv.add(row)
         time.sleep(0.002)
 
+
 @demo
 def demo_2d_simple(dv):
     dv.new('demo_2d_simple', ['x [GHz]', 'y [V]'], ['z [a.u.]'])
@@ -81,6 +84,7 @@ def demo_2d_simple(dv):
             z = 5 * math.cos((x**2 + y**2) / 10) + random.random() - 0.5
             dv.add([x, y, z])
             time.sleep(0.002)
+
 
 @demo
 def demo_2d_multi(dv):
@@ -95,6 +99,7 @@ def demo_2d_multi(dv):
             z2 = 5 * 0
             dv.add([x, y, z1, z2])
             time.sleep(0.002)
+
 
 @demo
 def demo_2d_vargrid(dv):
