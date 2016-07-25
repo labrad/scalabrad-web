@@ -38,6 +38,25 @@ def demo_1d_simple(dv):
 
 
 @demo
+def demo_1d_multi_high_variance(dv):
+    dv.new('demo_1d_high_var',
+           ['x [ms]'],
+           ['y (1) [nV]', 'y (2) [nV]', 'y (3) [nV]',
+            'y (4) [nV]', 'y (5) [nV]', 'y (6) [nV]'])
+    add_params(dv)
+    amplitudes = [15, 1, 3, 5, 7, 9]
+    offsets = [100, -50, 10, 0, 0, 0]
+    for i in xrange(1000):
+        x = i / 100
+        row = [x]
+        for i in range(6):
+            y = 5 * amplitudes[i] * math.sin(x + math.pi * i/5) + offsets[i] + random.random() - 0.5
+            row.append(y)
+        dv.add(row)
+        time.sleep(0.002)
+
+
+@demo
 def demo_1d_multi(dv):
     dv.new('demo_1d_multi',
            ['x [ms]'],
@@ -65,6 +84,7 @@ def demo_2d_simple(dv):
             z = 5 * math.cos((x**2 + y**2) / 10) + random.random() - 0.5
             dv.add([x, y, z])
             time.sleep(0.002)
+
 
 @demo
 def demo_2d_multi(dv):

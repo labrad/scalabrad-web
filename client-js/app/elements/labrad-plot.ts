@@ -367,8 +367,21 @@ export class Plot extends polymer.Base {
 
     this.lastData = null;
 
+    this.dataLimits.xMin = NaN;
+    this.dataLimits.xMax = NaN;
+    this.dataLimits.yMin = NaN;
+    this.dataLimits.yMax = NaN;
+    this.dataLimits.zMin = NaN;
+    this.dataLimits.zMax = NaN;
+
     this.plotData(this.data);
 
+    if (!this.haveZoomed) {
+      this.resetZoomRequired = true;
+      this.updateScalesRequired = true;
+    }
+
+    this.updateColorBarScaleRequired = true;
     this.graphUpdateRequired = true;
   }
 
@@ -847,6 +860,11 @@ export class Plot extends polymer.Base {
     this.limits.yMin = isNaN(this.dataLimits.yMin) ? 0 : this.dataLimits.yMin;
     this.limits.yMax = isNaN(this.dataLimits.yMax + this.dy) ?
         0 : this.dataLimits.yMax + this.dy;
+
+    if (this.dataLimits.zMin === this.dataLimits.zMax) {
+      this.dataLimits.zMin -= 1;
+      this.dataLimits.zMax += 1;
+    }
   }
 
 
