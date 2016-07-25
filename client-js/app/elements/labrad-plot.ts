@@ -367,7 +367,17 @@ export class Plot extends polymer.Base {
 
     this.lastData = null;
 
+    this.dataLimits.xMin = 0;
+    this.dataLimits.xMax = 0;
+    this.dataLimits.yMin = 0;
+    this.dataLimits.yMax = 0;
+
     this.plotData(this.data);
+
+    if (!this.haveZoomed) {
+      this.resetZoomRequired = true;
+      this.updateScalesRequired = true;
+    }
 
     this.graphUpdateRequired = true;
   }
