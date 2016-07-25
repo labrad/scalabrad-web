@@ -44,7 +44,7 @@ def demo_1d_multi_high_variance(dv):
            ['y (1) [nV]', 'y (2) [nV]', 'y (3) [nV]',
             'y (4) [nV]', 'y (5) [nV]', 'y (6) [nV]'])
     add_params(dv)
-    amplitudes = [10*random.random() for x in range(6)]
+    amplitudes = [15, 1, 3, 5, 7, 9]
     for i in xrange(1000):
         x = i / 100
         row = [x]
