@@ -367,10 +367,12 @@ export class Plot extends polymer.Base {
 
     this.lastData = null;
 
-    this.dataLimits.xMin = 0;
-    this.dataLimits.xMax = 0;
-    this.dataLimits.yMin = 0;
-    this.dataLimits.yMax = 0;
+    this.dataLimits.xMin = NaN;
+    this.dataLimits.xMax = NaN;
+    this.dataLimits.yMin = NaN;
+    this.dataLimits.yMax = NaN;
+    this.dataLimits.zMin = NaN;
+    this.dataLimits.zMax = NaN;
 
     this.plotData(this.data);
 
@@ -379,6 +381,7 @@ export class Plot extends polymer.Base {
       this.updateScalesRequired = true;
     }
 
+    this.updateColorBarScaleRequired = true;
     this.graphUpdateRequired = true;
   }
 
