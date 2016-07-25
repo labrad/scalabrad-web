@@ -860,6 +860,11 @@ export class Plot extends polymer.Base {
     this.limits.yMin = isNaN(this.dataLimits.yMin) ? 0 : this.dataLimits.yMin;
     this.limits.yMax = isNaN(this.dataLimits.yMax + this.dy) ?
         0 : this.dataLimits.yMax + this.dy;
+
+    if (this.dataLimits.zMin === this.dataLimits.zMax) {
+      this.dataLimits.zMin -= 1;
+      this.dataLimits.zMax += 1;
+    }
   }
 
 
