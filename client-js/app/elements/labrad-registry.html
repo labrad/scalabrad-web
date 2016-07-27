@@ -75,6 +75,9 @@
       color: black;
     }
 
+    paper-dialog {
+      overflow-y: auto;
+    }
     paper-dialog.size-position {
       position: fixed;
       top: 16p
@@ -230,26 +233,22 @@
     <!-- Dialogs for various registry operations -->
 
     <paper-dialog id="newKeyDialog" modal>
-      <h1>Create new key</h1>
-      <paper-dialog-scrollable>
-        <form>
-          <paper-input id="newKeyInput" label="Key"></paper-input>
-          <paper-textarea id="newValueInput" label="Value"></paper-textarea>
-        </form>
-      </paper-dialog-scrollable>
-      <div class="buttons"> 
+      <h1>Create New Key</h1>
+      <form>
+        <paper-input id="newKeyInput" label="Key"></paper-input>
+        <paper-textarea id="newValueInput" label="Value"></paper-textarea>
+      </form>
+      <div class="buttons">
         <paper-button on-click="doNewKey" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
 
     <paper-dialog id="editValueDialog" modal>
-      <h1>Edit: <span>{{selectedItem}}</span></h1>
-      <paper-dialog-scrollable>
-        <form>
-          <paper-textarea id="editValueInput" label="Value"></paper-textarea>
-        </form>
-      </paper-dialog-scrollable>
+      <h1>Edit <span>{{selectedItem}}</span></h1>
+      <form>
+        <paper-textarea id="editValueInput" label="Value"></paper-textarea>
+      </form>
       <div class="buttons">
         <paper-button on-click="doEditValue" dialog-confirm autofocus>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -257,7 +256,7 @@
     </paper-dialog>
 
     <paper-dialog id="newFolderDialog" modal>
-      <h1>Create new folder</h1>
+      <h1>Create New Folder</h1>
       <form>
         <paper-input id="newFolderInput" label="Name"></paper-input>
       </form>
@@ -311,7 +310,7 @@
     </paper-dialog>
 
     <paper-dialog id="pendingDialog" modal>
-      <h1 id="pendingOp"></h1> 
+      <h1 id="pendingOp"></h1>
     </paper-dialog>
 
     <paper-toast id="toastCopySuccess" text="Copy Successful!" duration=3000></paper-toast>
