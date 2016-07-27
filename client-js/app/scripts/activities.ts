@@ -379,6 +379,7 @@ export class ManagerActivity implements Activity {
     });
     var elem = <LabradManager> LabradManager.create();
     elem.connections = connsWithUrl;
+    elem.mgr = this.api;
     return {
       elem: elem,
       route: 'manager'

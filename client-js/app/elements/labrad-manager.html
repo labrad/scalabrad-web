@@ -26,6 +26,12 @@
     tbody tr:nth-child(even):hover {
       background-color: #FFFFAA;
     }
+    .close {
+      text-align: center;
+    }
+    .close a:hover {
+      color: #f00;
+    }
   </style>
   <template>
     <table>
@@ -40,6 +46,7 @@
           <th>Client Reps</th>
           <th>Messages Sent</th>
           <th>Messages Recv</th>
+          <th class='close'>Close</th>
         </tr>
       </thead>
       <tbody>
@@ -70,6 +77,7 @@
             <td><span>{{item.clientRespCount}}</span></td>
             <td><span>{{item.msgSendCount}}</span></td>
             <td><span>{{item.msgRecvCount}}</span></td>
+            <td class='close'><span><a href='#close{{item.id}}' conn-id='{{item.id}}' on-click='closeConnection'>×</span></td>
           </tr>
         </template>
       </tbody>
