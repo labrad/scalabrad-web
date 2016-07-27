@@ -33,6 +33,15 @@ export class LabradRegistry extends polymer.Base {
 
   regex: RegExp; //regular expression for string comparison
 
+
+  attached() {
+    this.bindIronAutogrowTextAreaResizeEvents(this.$.newKeyDialog,
+                                              this.$.newValueInput);
+
+    this.bindIronAutogrowTextAreaResizeEvents(this.$.editValueDialog,
+                                              this.$.editValueInput);
+  }
+
   /**
    * on a path change, we deselect everything, empty filterText
    */
@@ -270,15 +279,8 @@ export class LabradRegistry extends polymer.Base {
    */
   bindIronAutogrowTextAreaResizeEvents(paperDialog: HTMLElement,
                                        ironAutogrowTextarea: HTMLElement) {
-    var resizeOnValueChange = function() {
+    ironAutogrowTextarea.addEventListener('bind-value-changed', () => {
       Polymer.Base.fire("iron-resize", null, {node: ironAutogrowTextarea});
-    };
-
-    ironAutogrowTextarea.addEventListener('bind-value-changed', resizeOnValueChange);
-
-    // Hook dialog close event to clean up the listener.
-    paperDialog.addEventListener('iron-overlay-closed', () => {
-      ironAutogrowTextarea.removeEventListener('bind-value-changed', resizeOnValueChange);
     });
   }
 
@@ -292,8 +294,6 @@ export class LabradRegistry extends polymer.Base {
     newKeyElem.value = '';
     newValueElem.value = '';
     dialog.open();
-
-    this.bindIronAutogrowTextAreaResizeEvents(dialog, newValueElem);
   }
 
   /**
@@ -340,8 +340,6 @@ export class LabradRegistry extends polymer.Base {
     editValueElem.value = value;
     dialog.keyName = name;
     dialog.open();
-
-    this.bindIronAutogrowTextAreaResizeEvents(dialog, editValueElem);
   }
 
   /**
