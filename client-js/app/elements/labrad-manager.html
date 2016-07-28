@@ -32,6 +32,11 @@
     .close a:hover {
       color: #f00;
     }
+    p.connection {
+      text-align: center;
+      font-weight: 800;
+      margin-top: 0px;
+    }
   </style>
   <template>
     <table>
@@ -91,7 +96,8 @@
     </table>
     <paper-dialog id="closeConnectionConfirmation" modal>
       <h1>Close Connection</h1>
-      <p>Are you sure you want to close the connection to {{selectedConnection.name}}?</p>
+      <p>Are you sure you want to close the connection?</p>
+      <p class='connection'>({{selectedConnection.connId}}) {{selectedConnection.name}}</p>
       <div class="buttons">
         <paper-button on-tap="closeConnectionConfirmed"
                       dialog-confirm autofocus>Yes</paper-button>
