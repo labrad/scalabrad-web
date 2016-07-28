@@ -55,10 +55,10 @@
             <td><span>{{item.id}}</span></td>
             <td>
               <template is="dom-if" if="{{item.server}}">
-                <span>server</span>
+                <span>Server</span>
               </template>
               <template is="dom-if" if="{{!item.server}}">
-                <span>client</span>
+                <span>Client</span>
               </template>
             </td>
             <td>
@@ -77,10 +77,26 @@
             <td><span>{{item.clientRespCount}}</span></td>
             <td><span>{{item.msgSendCount}}</span></td>
             <td><span>{{item.msgRecvCount}}</span></td>
-            <td class='close'><span><a href='#close{{item.id}}' conn-id='{{item.id}}' on-click='closeConnection'>×</span></td>
+            <td class='close'>
+              <span>
+                <a href='#closeConnection:{{item.id}}'
+                   conn-id='{{item.id}}'
+                   conn-name='{{item.name}}'
+                   on-tap='closeConnection'>×</a>
+              </span>
+            </td>
           </tr>
         </template>
       </tbody>
     </table>
+    <paper-dialog id="closeConnectionConfirmation" modal>
+      <h1>Close Connection</h1>
+      <p>Are you sure you want to close the connection to {{selectedConnection.name}}?</p>
+      <div class="buttons">
+        <paper-button on-tap="closeConnectionConfirmed"
+                      dialog-confirm autofocus>Yes</paper-button>
+        <paper-button dialog-dismiss>No</paper-button>
+      </div>
+    </paper-dialog>
   </template>
 </dom-module>
