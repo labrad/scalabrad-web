@@ -154,7 +154,11 @@ export class Plot extends polymer.Base {
   private displaySurface: number = 2;
 
   private fitParabola: boolean = false;
-  private fitExponential: boolean = true;
+  private fitExponential: boolean = false;
+
+  private lines: THREE.Line[] = [];
+  private linesFitParabolas: THREE.Line[] = [];
+  private linesFitExponentials: THREE.Line[] = [];
 
   /**
    * A matrix for the use in transforming geometries.
@@ -368,6 +372,12 @@ export class Plot extends polymer.Base {
       this.scene.remove(obj);
     }
     this.sceneObjects = [];
+
+    if (this.is1D) {
+      this.lines = [];
+      this.linesFitParabolas = [];
+      this.linesFitExponentials = [];
+    }
 
     this.lastData = null;
 
@@ -676,12 +686,12 @@ export class Plot extends polymer.Base {
    * Plots a line given a set of data, adding it to the scene.
    */
   private plotLine(data: number[][], yColumn: number = 1,
-                   color: string = "#000", lineWidth: number = 1) {
+                   color: string = "#000", lineWidth: number = 1,
+                   lines: THREE.Line[]) {
     if (data.length < 2) {
       return;
     }
 
-    const ob = this.getSceneObject();
     const dataLength = data.length;
 
     // The positions array is initialized in the geometry here, but positions
@@ -709,7 +719,7 @@ export class Plot extends polymer.Base {
     });
 
     const line = new THREE.Line(geometry, material);
-    ob.add(line);
+    lines.push(line);
   }
 
   /**
@@ -722,23 +732,52 @@ export class Plot extends polymer.Base {
       data.splice(0, 1, this.lastData);
     }
 
+    const ob = this.getSceneObject();
+
+    // Reset fit lines by removing them from the scene. They are fit to the
+    // total data, so they are not incrementally built like the data lines.
+    for (const line of this.linesFitParabolas) {
+      ob.remove(line);
+    }
+    for (const line of this.linesFitExponentials) {
+      ob.remove(line);
+    }
+    this.linesFitParabolas = [];
+    this.linesFitExponentials = [];
+
+    const lines = [];
     for (const i of this.displayTraces) {
       this.plotLine(data, i+1,
                     COLOR_LIST[i % COLOR_LIST.length],
-                    PLOT_LINE_WIDTH);
+                    PLOT_LINE_WIDTH,
+                    lines);
 
-      if (this.fitParabola) {
-        const {coefficients: coPar, data: fitData} = fitParabola(this.data, i+1);
-        this.plotLine(fitData, 1,
-                      COLOR_LIST[i % COLOR_LIST.length],
-                      PLOT_FIT_LINE_WIDTH);
+      const {coefficients: coPar, data: fitData} = fitParabola(this.data, i+1);
+      this.plotLine(fitData, 1,
+                    COLOR_LIST[i % COLOR_LIST.length],
+                    PLOT_FIT_LINE_WIDTH,
+                    this.linesFitParabolas);
+
+      const {coefficients: coExp, data: fitDataExp} = fitExponential(this.data, i+1);
+      this.plotLine(fitDataExp, 1,
+                    COLOR_LIST[i % COLOR_LIST.length],
+                    PLOT_FIT_LINE_WIDTH,
+                    this.linesFitExponentials);
+    }
+
+    for (const line of lines) {
+      ob.add(line);
+    }
+
+    if (this.fitParabola) {
+      for (const line of this.linesFitParabolas) {
+        ob.add(line);
       }
+    }
 
-      if (this.fitExponential) {
-        const {coefficients: coExp, data: fitDataExp} = fitExponential(this.data, i+1);
-        this.plotLine(fitDataExp, 1,
-                      COLOR_LIST[i % COLOR_LIST.length],
-                      PLOT_FIT_LINE_WIDTH);
+    if (this.fitExponential) {
+      for (const line of this.linesFitExponentials) {
+        ob.add(line);
       }
     }
   }
@@ -1322,6 +1361,16 @@ export class Plot extends polymer.Base {
    */
   drawMode2DSelectorVargrid(): void {
     this.drawMode2D = 'vargrid';
+  }
+
+
+  fitFunctionSelectorOpen(): void {
+    this.$.fitFunctionSelector.open();
+  }
+
+
+  fitFunctionSelectorSubmit(): void {
+    this.redrawScene();
   }
 
 
