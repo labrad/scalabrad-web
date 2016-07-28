@@ -46,6 +46,9 @@ export class LabradGrapher extends polymer.Base {
   @property({type: Object})
   api: datavault.DataVaultApi;
 
+  @property({type: String})
+  connectionError: string;
+
   private showStars: boolean = false;
   private showTrash: boolean = false;
 
@@ -83,6 +86,11 @@ export class LabradGrapher extends polymer.Base {
 
   computeSelectedClass(selected: boolean): string {
     return (selected) ? "iron-selected" : "";
+  }
+
+  openUnableToConnectDialog(connectionError: string): void {
+    this.connectionError = connectionError;
+    this.$.errorDialog.open();
   }
 
   @listen("keypress")

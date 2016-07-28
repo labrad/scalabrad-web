@@ -103,6 +103,20 @@
       width: auto;
       margin-left: auto;
     }
+    .item a {
+      text-decoration: none;
+    }
+    .item a span {
+      text-decoration: underline;
+    }
+    .item .back-link,
+    .item .back-link:visited {
+       color: #555;
+    }
+    .item .back-link:hover,
+    .item .back-link:visited:hover {
+      color: #3f51b5;
+    }
   </style>
   <template>
     <div id="outer">
@@ -120,15 +134,23 @@
                 <div class$='row [[computeSelectedClass(selected)]]'>
                   <div class="item">
                     <template is="dom-if" if="[[item.isParent]]">
-                      <iron-icon icon="arrow-back" item-icon></iron-icon>
+                      <a class='back-link' is="app-link" path="[[item.url]]" href="[[item.url]]">
+                        <iron-icon icon="arrow-back" item-icon></iron-icon>
+                        <span>[[item.name]]</span>
+                      </a>
                     </template>
                     <template is="dom-if" if="[[item.isDir]]">
-                      <iron-icon icon="folder" item-icon class="folder"></iron-icon>
+                      <a is="app-link" path="[[item.url]]" href="[[item.url]]">
+                        <iron-icon icon="folder" item-icon class="folder"></iron-icon>
+                        <span>[[item.name]]</span>
+                      </a>
                     </template>
                     <template is="dom-if" if="[[item.isDataset]]">
-                      <iron-icon icon="editor:insert-chart" item-icon class="dataset"></iron-icon>
+                      <a is="app-link" path="[[item.url]]" href="[[item.url]]">
+                        <iron-icon icon="editor:insert-chart" item-icon class="dataset"></iron-icon>
+                        <span>[[item.name]]</span>
+                      </a>
                     </template>
-                    <a is="app-link" path="[[item.url]]" href="[[item.url]]">[[item.name]]</a>
                   </div>
                   <div class="label-wide">
                     <template is="dom-if" if="[[item.starred]]">
@@ -195,5 +217,14 @@
         </paper-header-panel>
       </div>
     </div>
+    <paper-dialog id="errorDialog" modal>
+      <h1>Unable to connect to Data Vault</h1>
+      <div>
+        <span>{{connectionError}}</span>
+      </div>
+      <div class="buttons">
+        <paper-button dialog-dismiss>Close</paper-button>
+      </div>
+    </paper-dialog>
   </template>
 </dom-module>

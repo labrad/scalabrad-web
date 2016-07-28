@@ -33,6 +33,15 @@ export class LabradRegistry extends polymer.Base {
 
   regex: RegExp; //regular expression for string comparison
 
+
+  attached() {
+    this.bindIronAutogrowTextAreaResizeEvents(this.$.newKeyDialog,
+                                              this.$.newValueInput);
+
+    this.bindIronAutogrowTextAreaResizeEvents(this.$.editValueDialog,
+                                              this.$.editValueInput);
+  }
+
   /**
    * on a path change, we deselect everything, empty filterText
    */
@@ -261,6 +270,21 @@ export class LabradRegistry extends polymer.Base {
   }
 
   /**
+   * Bind event listeners to resize dialog box appropriately when an
+   * `iron-autogrow-textarea` is used.
+   *
+   * This works around an issue where it does not fire an `iron-resize` event
+   * when the value updates, and hence a `paper-dialog` is not informed to
+   * update its size or position to accomodate the change in content size.
+   */
+  bindIronAutogrowTextAreaResizeEvents(paperDialog: HTMLElement,
+                                       ironAutogrowTextarea: HTMLElement) {
+    ironAutogrowTextarea.addEventListener('bind-value-changed', () => {
+      Polymer.Base.fire("iron-resize", null, {node: ironAutogrowTextarea});
+    });
+  }
+
+  /**
    * Launch new key dialog.
    */
   newKeyClicked(event) {
@@ -270,7 +294,6 @@ export class LabradRegistry extends polymer.Base {
     newKeyElem.value = '';
     newValueElem.value = '';
     dialog.open();
-    window.setTimeout(() => newKeyElem.$.input.focus(), 0);
   }
 
   /**
@@ -317,7 +340,6 @@ export class LabradRegistry extends polymer.Base {
     editValueElem.value = value;
     dialog.keyName = name;
     dialog.open();
-    window.setTimeout(() => editValueElem.$.input.$.textarea.focus(), 0);
   }
 
   /**

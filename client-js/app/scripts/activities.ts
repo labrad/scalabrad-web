@@ -77,7 +77,7 @@ export class DatavaultActivity implements Activity {
     this.api.newDir.add(x => this.onNewDir(x), this.lifetime);
     this.api.newDataset.add(x => this.onNewDataset(x), this.lifetime);
     this.api.tagsUpdated.add(x => this.tagsUpdated(), this.lifetime);
-    var listing = await this.api.dir(this.path);
+
     var breadcrumbs = [];
     for (var i = 0; i <= this.path.length; i++) {
       breadcrumbs.push({
@@ -86,6 +86,7 @@ export class DatavaultActivity implements Activity {
         url: this.places.grapherUrl(this.path.slice(0, i))
       });
     }
+
     var breadcrumbExtras = [
       { name: 'dir view',
         isLink: false,
@@ -101,8 +102,16 @@ export class DatavaultActivity implements Activity {
     this.elem.api = this.api;
     this.elem.places = this.places;
     this.elem.path = this.path;
-    this.elem.dirs = this.getDirs(listing);
-    this.elem.datasets = this.getDatasets(listing);
+
+    try {
+      var listing = await this.api.dir(this.path);
+      this.elem.dirs = this.getDirs(listing);
+      this.elem.datasets = this.getDatasets(listing);
+    } catch (e) {
+      this.elem.openUnableToConnectDialog(e.message);
+      this.elem.dirs = [];
+      this.elem.datasets = [];
+    }
 
     return {
       elem: this.elem,
@@ -350,7 +359,6 @@ export class DatasetActivity implements Activity {
   }
 
   async stop(): Promise<void> {
-    this.plot.finishRender = true;
     this.lifetime.close();
     await this.api.dataStreamClose({token: this.token});
   }

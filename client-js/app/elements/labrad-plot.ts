@@ -3,6 +3,7 @@ import THREE from 'three';
 import {viridisData} from '../scripts/colormaps';
 import * as datavault from '../scripts/datavault';
 import {fitParabola, fitExponential} from '../scripts/fit';
+import {Lifetime} from '../scripts/lifetime';
 
 
 /**
@@ -91,6 +92,8 @@ export class Plot extends polymer.Base {
 
   @property({type: Array})
   deps: {label: string, legend: string, unit: string}[];
+
+  private lifetime = new Lifetime();
 
   private data: number[][] = []
   private lastData: number[] = null;
@@ -237,7 +240,7 @@ export class Plot extends polymer.Base {
   private haveZoomed: boolean = false;
 
   /** If the render loop should stop. */
-  finishRender: boolean = false;
+  private finishRender: boolean = false;
 
   /** Store the canvas' bounding rectangle for performance. */
   private canvasBoundingRect = null;
@@ -278,7 +281,17 @@ export class Plot extends polymer.Base {
    */
   attached(): void {
     this.render();
-    window.addEventListener('resize', (e) => this.resizePlot());
+    this.lifetime.defer(() => { this.finishRender = true; });
+    const resizeListener = (e) => this.resizePlot();
+    window.addEventListener('resize', resizeListener);
+    this.lifetime.defer(() => {
+      window.removeEventListener('resize', resizeListener);
+    });
+  }
+
+
+  detached(): void {
+    this.lifetime.close();
   }
 
 
@@ -358,8 +371,21 @@ export class Plot extends polymer.Base {
 
     this.lastData = null;
 
+    this.dataLimits.xMin = NaN;
+    this.dataLimits.xMax = NaN;
+    this.dataLimits.yMin = NaN;
+    this.dataLimits.yMax = NaN;
+    this.dataLimits.zMin = NaN;
+    this.dataLimits.zMax = NaN;
+
     this.plotData(this.data);
 
+    if (!this.haveZoomed) {
+      this.resetZoomRequired = true;
+      this.updateScalesRequired = true;
+    }
+
+    this.updateColorBarScaleRequired = true;
     this.graphUpdateRequired = true;
   }
 
@@ -864,6 +890,11 @@ export class Plot extends polymer.Base {
     this.limits.yMin = isNaN(this.dataLimits.yMin) ? 0 : this.dataLimits.yMin;
     this.limits.yMax = isNaN(this.dataLimits.yMax + this.dy) ?
         0 : this.dataLimits.yMax + this.dy;
+
+    if (this.dataLimits.zMin === this.dataLimits.zMax) {
+      this.dataLimits.zMin -= 1;
+      this.dataLimits.zMax += 1;
+    }
   }
 
 
