@@ -18,7 +18,7 @@ import {LabradApp} from "../elements/labrad-app";
 import {LabradGrapher} from "../elements/labrad-grapher";
 import {LabradGrapherLive, LabeledPlot} from "../elements/labrad-grapher-live";
 import {LabradManager} from "../elements/labrad-manager";
-import {LabradNodes, LabradInstanceController, LabradNodeController} from "../elements/labrad-nodes";
+import {LabradExceptionHandler, LabradNodes, LabradInstanceController, LabradNodeController} from "../elements/labrad-nodes";
 import {LabradRegistry} from "../elements/labrad-registry";
 import {LabradServer} from "../elements/labrad-server";
 import {Plot} from "../elements/labrad-plot";
@@ -89,6 +89,7 @@ window.addEventListener('WebComponentsReady', () => {
   LabradRegistry.register();
   LabradNodes.register();
   LabradInstanceController.register();
+  LabradExceptionHandler.register();
   LabradNodeController.register();
   LabradServer.register();
   Plot.register();

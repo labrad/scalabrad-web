@@ -2,6 +2,51 @@
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
 
+<dom-module id="labrad-exception-handler">
+  <style>
+    :host {
+      display: table-row;
+    }
+    td {
+      font-family: "Roboto Regular", sans-serif;
+      font-size: 14px;
+      padding: 7px;
+      color: #F44336;
+      font-weight: 800;
+      background-color: #fff;
+      border-top: 2px solid #f44336;
+    }
+    div.exceptionCollapse {
+      padding: 5px 15px;
+      word-wrap: wrap;
+      font-size: 13px;
+      font-weight: 400;
+    }
+    div.exceptionCollapse span {
+      font-weight: 800;
+    }
+    div.exception {
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 400;
+    }
+  </style>
+  <template>
+    <template is="dom-if" if="{{error}}">
+      <td colspan="3">
+        {{error}}
+
+        <div class="exceptionCollapse">
+          <div><span>Exception</span> <paper-button on-click="toggleException">Show/Hide</paper-button></div>
+          <iron-collapse id="exceptionCollapse">
+            <div class='exception'>{{exception}}</div>
+          </iron-collapse>
+        </div>
+      </td>
+    </template>
+  </template>
+</dom-module>
+
 <dom-module id="labrad-instance-controller">
   <style>
     .divider {
@@ -36,6 +81,7 @@
         <paper-icon-button id="start" icon="av:play-arrow"></paper-icon-button>
         <paper-icon-button id="stop" icon="av:stop"></paper-icon-button>
         <paper-icon-button id="restart" icon="av:replay"></paper-icon-button>
+        <paper-icon-button id="autostartList" icon="av:play"></paper-icon-button>
       </span>
     </div>
   </template>
@@ -74,6 +120,7 @@
     }
     table {
       border-collapse: collapse;
+      width: 100%;
     }
     th {
       padding: 4px;
@@ -85,14 +132,23 @@
       background-color: #440088;
       color: white;
     }
-    tbody tr:nth-child(odd) {
+    tbody tr:nth-of-type(odd) {
       background-color: #EEEEEE;
     }
-    tbody tr:nth-child(odd):hover {
+    tbody tr:nth-of-type(odd):hover {
       background-color: #F6F699;
     }
-    tbody tr:nth-child(even):hover {
+    tbody tr:nth-of-type(even):hover {
       background-color: #FFFFAA;
+    }
+    td.name {
+      padding-left: 10px;
+    }
+    td.version {
+      width: 150px;
+    }
+    td.controls {
+      width: 350px;
     }
   </style>
   <template>
@@ -108,16 +164,17 @@
         <tbody>
           <template is="dom-repeat" items="{{globalServers}}" as="server">
             <tr>
-              <td>{{server.name}}</td>
-              <td>{{server.version}}</td>
+              <td class='name'>{{server.name}}</td>
+              <td class='version'>{{server.version}}</td>
               <template is="dom-repeat" items="{{server.nodes}}" as="node">
-                <td>
+                <td class='controls'>
                   <template is="dom-if" if="{{node.exists}}">
                     <labrad-instance-controller
                       places={{places}}
                       api={{api}}
                       local
                       name={{server.name}}
+                      server={{server}}
                       instance-name={{node.instanceName}}
                       node={{node.name}}
                       status={{node.status}} />
@@ -125,6 +182,9 @@
                 </td>
               </template>
             </tr>
+            <labrad-exception-handler
+              error="{{server.errorString}}"
+              exception="{{server.errorException}}" />
           </template>
         </tbody>
 
@@ -138,15 +198,16 @@
         <tbody>
           <template is="dom-repeat" items="{{localServers}}" as="server">
             <tr>
-              <td>{{server.name}}</td>
-              <td>{{server.version}}</td>
+              <td class='name'>{{server.name}}</td>
+              <td class='version'>{{server.version}}</td>
               <template is="dom-repeat" items="{{server.nodes}}" as="node">
-                <td>
+                <td class='controls'>
                   <template is="dom-if" if="{{node.exists}}">
                     <labrad-instance-controller
                       places={{places}}
                       api={{api}}
                       name={{server.name}}
+                      server={{server}}
                       instance-name={{node.instanceName}}
                       node={{node.name}}
                       status={{node.status}} />
@@ -154,6 +215,9 @@
                 </td>
               </template>
             </tr>
+            <labrad-exception-handler
+              error="{{server.errorString}}"
+              exception="{{server.errorException}}" />
           </template>
         </tbody>
       </table>

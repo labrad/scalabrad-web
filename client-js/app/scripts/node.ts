@@ -57,9 +57,11 @@ export class NodeService extends rpc.RpcService implements NodeApi {
   restartServer(params: {node: string; server: string}): Promise<void> {
     return this.call<void>('restartServer', params);
   }
+
   startServer(params: {node: string; server: string}): Promise<void> {
     return this.call<void>('startServer', params);
   }
+
   stopServer(params: {node: string; server: string}): Promise<void> {
     return this.call<void>('stopServer', params);
   }
