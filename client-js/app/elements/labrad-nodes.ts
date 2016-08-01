@@ -13,8 +13,13 @@ export class LabradExceptionHandler extends polymer.Base {
   exception: string;
 
   toggleException() {
-    const collapse = <any>(this.querySelector('#exceptionCollapse'));
+    const collapse: any = this.querySelector('#exceptionCollapse');
     collapse.toggle();
+  }
+
+  dismissException() {
+    this.error = '';
+    this.exception = '';
   }
 }
 
@@ -73,8 +78,9 @@ export class LabradInstanceController extends polymer.Base {
       this.set("server.errorString", "");
       this.set("server.errorException", "");
     } catch (e) {
-      console.error("Exception while starting server: ", e);
-      this.set("server.errorString", "An error occurred while starting the server.");
+      const message = `${this.instanceName} (${this.node}): An error occured while starting the server`;
+      console.error(message, e);
+      this.set("server.errorString", message);
       this.set("server.errorException", e.message);
     }
   }
@@ -88,8 +94,9 @@ export class LabradInstanceController extends polymer.Base {
       this.set("server.errorString", "");
       this.set("server.errorException", "");
     } catch (e) {
-      console.error("Exception while stopping server: ", e);
-      this.set("server.errorString", "An error occurred while starting the server.");
+      const message = `${this.instanceName} (${this.node}): An error occured while stopping the server`;
+      console.error(message, e);
+      this.set("server.errorString", message);
       this.set("server.errorException", e.message);
     }
   }
@@ -103,8 +110,9 @@ export class LabradInstanceController extends polymer.Base {
       this.set("server.errorString", "");
       this.set("server.errorException", "");
     } catch (e) {
-      console.error("Exception while restarting server: ", e);
-      this.set("server.errorString", "An error occurred while starting the server.");
+      const message = `${this.instanceName} (${this.node}): An error occured while restarting the server`;
+      console.error(message, e);
+      this.set("server.errorString", message);
       this.set("server.errorException", e.message);
     }
   }
@@ -174,7 +182,7 @@ export class LabradNodeController extends polymer.Base {
     try {
       await this.api.refreshNode(this.name);
     } catch (e) {
-      console.error("Exception while refreshing server: ", e);
+      console.error(`Exception while refreshing node: ${this.name}`, e);
     } finally {
       this.active = false;
     }

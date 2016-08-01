@@ -30,14 +30,21 @@
       font-size: 12px;
       font-weight: 400;
     }
+    paper-button.dismiss {
+      float: right;
+    }
   </style>
   <template>
     <template is="dom-if" if="{{error}}">
-      <td colspan="3">
+      <td colspan="999">
         {{error}}
+        <paper-button class='dismiss' on-click="dismissException">Dismiss</paper-button>
 
         <div class="exceptionCollapse">
-          <div><span>Exception</span> <paper-button on-click="toggleException">Show/Hide</paper-button></div>
+          <div>
+            <span>Exception</span>
+            <paper-button on-click="toggleException">Show/Hide</paper-button>
+          </div>
           <iron-collapse id="exceptionCollapse">
             <div class='exception'>{{exception}}</div>
           </iron-collapse>
