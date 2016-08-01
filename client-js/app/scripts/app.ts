@@ -21,7 +21,9 @@ import {LabradManager} from "../elements/labrad-manager";
 import {LabradNodes, LabradInstanceController, LabradNodeController} from "../elements/labrad-nodes";
 import {LabradRegistry} from "../elements/labrad-registry";
 import {LabradServer} from "../elements/labrad-server";
+import {LabradSetting} from "../elements/labrad-setting";
 import {Plot} from "../elements/labrad-plot";
+import {SelectableTable} from "../elements/selectable-table";
 
 
 /**
@@ -91,7 +93,9 @@ window.addEventListener('WebComponentsReady', () => {
   LabradInstanceController.register();
   LabradNodeController.register();
   LabradServer.register();
+  LabradSetting.register();
   Plot.register();
+  SelectableTable.register();
   LabeledPlot.register();
 
   var prefix = "";

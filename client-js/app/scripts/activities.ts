@@ -13,6 +13,7 @@ import {LabradManager} from "../elements/labrad-manager";
 import {LabradNodes} from "../elements/labrad-nodes";
 import {LabradRegistry} from "../elements/labrad-registry";
 import {LabradServer} from "../elements/labrad-server";
+import {LabradSetting} from "../elements/labrad-setting";
 import {Plot} from "../elements/labrad-plot";
 
 export class RegistryActivity implements Activity {
