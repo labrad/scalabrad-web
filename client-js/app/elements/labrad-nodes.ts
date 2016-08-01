@@ -3,6 +3,26 @@ import {ManagerApi, ServerConnectMessage, ServerDisconnectMessage} from '../scri
 import {NodeApi, NodeStatus, ServerStatus, ServerStatusMessage} from '../scripts/node';
 import {Places} from '../scripts/places';
 
+
+@component('labrad-exception-handler')
+export class LabradExceptionHandler extends polymer.Base {
+  @property({type: String, value: '', notify: true})
+  error: string;
+
+  @property({type: String, value: '', notify: true})
+  exception: string;
+
+  toggleException() {
+    const collapse: any = this.querySelector('#exceptionCollapse');
+    collapse.toggle();
+  }
+
+  dismissException() {
+    this.set('error', '');
+    this.set('exception', '');
+  }
+}
+
 @component('labrad-instance-controller')
 export class LabradInstanceController extends polymer.Base {
   @property()
@@ -26,6 +46,9 @@ export class LabradInstanceController extends polymer.Base {
   @property({type: Boolean, value: false})
   active: boolean;
 
+  @property({type: Object, notify: true})
+  server: ServerInfo;
+
   @property()
   api: NodeApi;
 
@@ -46,23 +69,54 @@ export class LabradInstanceController extends polymer.Base {
     this.updateButtonState(newStatus);
   }
 
+
   @listen('start.click')
-  doStart() {
+  async doStart() {
     console.info(`Start: server='${this.name}', node='${this.node}'`);
-    this.api.startServer({node: this.node, server: this.name});
+    try {
+      await this.api.startServer({node: this.node, server: this.name});
+      this.set('server.errorString', '');
+      this.set('server.errorException', '');
+    } catch (e) {
+      const message = `${this.instanceName} (${this.node}): An error occured while starting the server`;
+      console.error(message, e);
+      this.set('server.errorString', message);
+      this.set('server.errorException', e.message);
+    }
   }
+
 
   @listen('stop.click')
-  doStop() {
+  async doStop() {
     console.info(`Stop: server='${this.name}', node='${this.node}'`);
-    this.api.stopServer({node: this.node, server: this.instanceName});
+    try {
+      await this.api.stopServer({node: this.node, server: this.instanceName});
+      this.set('server.errorString', '');
+      this.set('server.errorException', '');
+    } catch (e) {
+      const message = `${this.instanceName} (${this.node}): An error occured while stopping the server`;
+      console.error(message, e);
+      this.set('server.errorString', message);
+      this.set('server.errorException', e.message);
+    }
   }
 
+
   @listen('restart.click')
-  doRestart() {
+  async doRestart() {
     console.info(`Restart: server='${this.name}', node='${this.node}'`);
-    this.api.restartServer({node: this.node, server: this.instanceName});
+    try {
+      await this.api.restartServer({node: this.node, server: this.instanceName});
+      this.set('server.errorString', '');
+      this.set('server.errorException', '');
+    } catch (e) {
+      const message = `${this.instanceName} (${this.node}): An error occured while restarting the server`;
+      console.error(message, e);
+      this.set('server.errorString', message);
+      this.set('server.errorException', e.message);
+    }
   }
+
 
   statusChange(msg: ServerStatusMessage): void {
     if (this.name === msg.server) {
@@ -74,7 +128,7 @@ export class LabradInstanceController extends polymer.Base {
           case 'STOPPED': this.updateButtonState(this.status); break;
           case 'STARTING': this.updateButtonState('RUNNING_ELSEWHERE'); break;
           case 'STARTED': this.updateButtonState('RUNNING_ELSEWHERE'); break;
-          case 'STOPPPING': this.updateButtonState('RUNNING_ELSEWHERE'); break;
+          case 'STOPPING': this.updateButtonState('RUNNING_ELSEWHERE'); break;
         }
       }
     }
@@ -127,6 +181,8 @@ export class LabradNodeController extends polymer.Base {
     this.active = true;
     try {
       await this.api.refreshNode(this.name);
+    } catch (e) {
+      console.error(`Exception while refreshing node: ${this.name}`, e);
     } finally {
       this.active = false;
     }
@@ -139,6 +195,8 @@ export class LabradNodeController extends polymer.Base {
 interface ServerInfo {
   name: string;
   version: string;
+  errorString: string;
+  errorException: string;
   nodes: Array<{name: string, exists: boolean, status?: string, instanceName?: string}>;
 }
 
@@ -318,6 +376,8 @@ export class LabradNodes extends polymer.Base {
       return {
         name: server,
         version: version,
+        errorString: '',
+        errorException: '',
         nodes: nodeNames.map((node) => {
           var status = statusMap.get(node).get(server);
           if (typeof status === 'undefined') {
@@ -350,6 +410,8 @@ export class LabradNodes extends polymer.Base {
       return {
         name: server,
         version: version,
+        errorString: '',
+        errorException: '',
         nodes: nodeNames.map((node) => {
           var status = statusMap.get(node).get(server);
           if (typeof status === 'undefined') {
