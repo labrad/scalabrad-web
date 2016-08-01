@@ -15,13 +15,16 @@ import {obligate} from "./obligation";
 
 import {AppLink} from "../elements/app-link";
 import {LabradApp} from "../elements/labrad-app";
+import {LabradBreadcrumbs} from "../elements/labrad-breadcrumbs";
 import {LabradGrapher} from "../elements/labrad-grapher";
 import {LabradGrapherLive, LabeledPlot} from "../elements/labrad-grapher-live";
 import {LabradManager} from "../elements/labrad-manager";
 import {LabradNodes, LabradInstanceController, LabradNodeController} from "../elements/labrad-nodes";
 import {LabradRegistry} from "../elements/labrad-registry";
 import {LabradServer} from "../elements/labrad-server";
+import {LabradSetting} from "../elements/labrad-setting";
 import {Plot} from "../elements/labrad-plot";
+import {SelectableTable} from "../elements/selectable-table";
 
 
 /**
@@ -83,6 +86,7 @@ window.addEventListener('WebComponentsReady', () => {
   // register our custom elements with polymer
   AppLink.register();
   LabradApp.register();
+  LabradBreadcrumbs.register();
   LabradGrapher.register();
   LabradGrapherLive.register();
   LabradManager.register();
@@ -90,9 +94,11 @@ window.addEventListener('WebComponentsReady', () => {
   LabradNodes.register();
   LabradInstanceController.register();
   LabradNodeController.register();
-  LabradServer.register();
-  Plot.register();
   LabeledPlot.register();
+  LabradServer.register();
+  LabradSetting.register();
+  Plot.register();
+  SelectableTable.register();
 
   var prefix = "";
   var baseElem = document.querySelector("base");
