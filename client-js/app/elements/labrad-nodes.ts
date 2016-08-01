@@ -6,10 +6,10 @@ import {Places} from '../scripts/places';
 
 @component('labrad-exception-handler')
 export class LabradExceptionHandler extends polymer.Base {
-  @property({type: String, value: ''})
+  @property({type: String, value: '', notify: true})
   error: string;
 
-  @property({type: String, value: ''})
+  @property({type: String, value: '', notify: true})
   exception: string;
 
   toggleException() {
@@ -18,8 +18,8 @@ export class LabradExceptionHandler extends polymer.Base {
   }
 
   dismissException() {
-    this.error = '';
-    this.exception = '';
+    this.set('error', '');
+    this.set('exception', '');
   }
 }
 
@@ -75,13 +75,13 @@ export class LabradInstanceController extends polymer.Base {
     console.info(`Start: server='${this.name}', node='${this.node}'`);
     try {
       await this.api.startServer({node: this.node, server: this.name});
-      this.set("server.errorString", "");
-      this.set("server.errorException", "");
+      this.set('server.errorString', '');
+      this.set('server.errorException', '');
     } catch (e) {
       const message = `${this.instanceName} (${this.node}): An error occured while starting the server`;
       console.error(message, e);
-      this.set("server.errorString", message);
-      this.set("server.errorException", e.message);
+      this.set('server.errorString', message);
+      this.set('server.errorException', e.message);
     }
   }
 
@@ -91,13 +91,13 @@ export class LabradInstanceController extends polymer.Base {
     console.info(`Stop: server='${this.name}', node='${this.node}'`);
     try {
       await this.api.stopServer({node: this.node, server: this.instanceName});
-      this.set("server.errorString", "");
-      this.set("server.errorException", "");
+      this.set('server.errorString', '');
+      this.set('server.errorException', '');
     } catch (e) {
       const message = `${this.instanceName} (${this.node}): An error occured while stopping the server`;
       console.error(message, e);
-      this.set("server.errorString", message);
-      this.set("server.errorException", e.message);
+      this.set('server.errorString', message);
+      this.set('server.errorException', e.message);
     }
   }
 
@@ -107,13 +107,13 @@ export class LabradInstanceController extends polymer.Base {
     console.info(`Restart: server='${this.name}', node='${this.node}'`);
     try {
       await this.api.restartServer({node: this.node, server: this.instanceName});
-      this.set("server.errorString", "");
-      this.set("server.errorException", "");
+      this.set('server.errorString', '');
+      this.set('server.errorException', '');
     } catch (e) {
       const message = `${this.instanceName} (${this.node}): An error occured while restarting the server`;
       console.error(message, e);
-      this.set("server.errorString", message);
-      this.set("server.errorException", e.message);
+      this.set('server.errorString', message);
+      this.set('server.errorException', e.message);
     }
   }
 
