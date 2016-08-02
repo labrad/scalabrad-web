@@ -94,7 +94,18 @@
         <paper-icon-button id="start" icon="av:play-arrow"></paper-icon-button>
         <paper-icon-button id="stop" icon="av:stop"></paper-icon-button>
         <paper-icon-button id="restart" icon="av:replay"></paper-icon-button>
-        <paper-icon-button class$="autostart {{autostartClass}}" id="autostart" icon="maps:directions-car"></paper-icon-button>
+        <paper-icon-button
+            hidden$="{{!autostart}}"
+            class="autostart autostartOn"
+            id="autostart"
+            icon="stars"
+            title="Autostart: On"></paper-icon-button>
+        <paper-icon-button
+            hidden$="{{autostart}}"
+            class="autostart"
+            id="autostart"
+            icon="stars"
+            title="Autostart: Off"></paper-icon-button>
       </span>
     </div>
   </template>
@@ -122,7 +133,10 @@
 
     <span hidden$="{{active}}">
       <paper-icon-button id="refresh" icon="av:replay"></paper-icon-button>
-      <paper-icon-button id="autostart" icon="maps:directions-car"></paper-icon-button>
+      <paper-icon-button
+        id="autostart"
+        icon="stars"
+        title="Start All Autostart Servers"></paper-icon-button>
     </span>
   </template>
 </dom-module>
