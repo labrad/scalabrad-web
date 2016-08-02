@@ -52,14 +52,16 @@ export class LabradInstanceController extends polymer.Base {
   @property({type: Boolean})
   autostart: boolean;
 
-  @property({type: String})
-  autostartClass: string;
-
   @property()
   api: NodeApi;
 
   @property()
   places: Places;
+
+  @computed()
+  autostartClass(autostart: boolean): String {
+    return (autostart) ? "autostartOn" : "";
+  }
 
   @computed()
   serverUrl(instanceName: string, places: Places): string {
