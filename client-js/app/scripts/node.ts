@@ -31,8 +31,8 @@ export interface NodeApi {
 
   autostartNode(node: string): Promise<string>;
   autostartList(node: string): Promise<string[]>;
-  autostartAdd(node: string): Promise<string>;
-  autostartRemove(node: string): Promise<string>;
+  autostartAdd(params: {node: string; server: string}): Promise<void>;
+  autostartRemove(params: {node: string; server: string}): Promise<void>;
 
   restartServer(params: {node: string; server: string}): Promise<void>;
   startServer(params: {node: string; server: string}): Promise<void>;
@@ -69,12 +69,12 @@ export class NodeService extends rpc.RpcService implements NodeApi {
     return this.call<string[]>('autostartList', [node]);
   }
 
-  autostartAdd(node: string): Promise<string> {
-    return this.call<string>('autostartAdd', [node]);
+  autostartAdd(params: {node: string; server: string}): Promise<void> {
+    return this.call<void>('autostartAdd', params);
   }
 
-  autostartRemove(node: string): Promise<string> {
-    return this.call<string>('autostartRemove', [node]);
+  autostartRemove(params: {node: string; server: string}): Promise<void> {
+    return this.call<void>('autostartRemove', params);
   }
 
   restartServer(params: {node: string; server: string}): Promise<void> {

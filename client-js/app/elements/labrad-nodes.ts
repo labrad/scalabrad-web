@@ -49,7 +49,7 @@ export class LabradInstanceController extends polymer.Base {
   @property({type: Object, notify: true})
   server: ServerInfo;
 
-  @property({type: Boolean})
+  @property({type: Boolean, notify: false})
   autostart: boolean;
 
   @property()
@@ -119,6 +119,28 @@ export class LabradInstanceController extends polymer.Base {
       this.set('server.errorException', '');
     } catch (e) {
       const message = `${this.instanceName} (${this.node}): An error occured while restarting the server`;
+      console.error(message, e);
+      this.set('server.errorString', message);
+      this.set('server.errorException', e.message);
+    }
+  }
+
+
+  @listen('autostart.click')
+  async doAutostart() {
+    console.info(`Autostart: server='${this.name}', node='${this.node}'`);
+    try {
+      if (this.autostart) {
+        await this.api.autostartRemove({node: this.node, server: this.name});
+        this.set('autostart', false);
+      } else {
+        await this.api.autostartAdd({node: this.node, server: this.name});
+        this.set('autostart', true);
+      }
+      this.set('server.errorString', '');
+      this.set('server.errorException', '');
+    } catch (e) {
+      const message = `${this.instanceName} (${this.node}): An error occured while starting the server`;
       console.error(message, e);
       this.set('server.errorString', message);
       this.set('server.errorException', e.message);
@@ -277,10 +299,12 @@ export class LabradNodes extends polymer.Base {
 
   // callbacks invoked when we receive remote messages
 
-  onNodeStatus(msg: NodeStatus): void {
+  async onNodeStatus(msg: NodeStatus) {
     // we need to splice this new NodeStatus into the current info array.
     // first, check to see whether we already have status for this node.
     var idx = this._nodeIndex(msg.name);
+
+    msg.autostartList = await this.api.autostartList(msg.name);
 
     if (idx === -1) {
       this.push('info', msg);
