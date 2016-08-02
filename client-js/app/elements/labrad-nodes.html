@@ -88,6 +88,9 @@
         <paper-icon-button id="start" icon="av:play-arrow"></paper-icon-button>
         <paper-icon-button id="stop" icon="av:stop"></paper-icon-button>
         <paper-icon-button id="restart" icon="av:replay"></paper-icon-button>
+        <template is="dom-if" if="{{autostart}}">
+          <paper-icon-button class$="{{autostartClass}}" id="autostart" icon="maps:directions-car"></paper-icon-button>
+        </template>
       </span>
     </div>
   </template>
@@ -115,6 +118,7 @@
 
     <span hidden$="{{active}}">
       <paper-icon-button id="refresh" icon="av:replay"></paper-icon-button>
+      <paper-icon-button id="autostart" icon="maps:directions-car"></paper-icon-button>
     </span>
   </template>
 </dom-module>
@@ -183,7 +187,8 @@
                       server={{server}}
                       instance-name={{node.instanceName}}
                       node={{node.name}}
-                      status={{node.status}} />
+                      status={{node.status}}
+                      autostart={{node.autostart}} />
                   </template>
                 </td>
               </template>

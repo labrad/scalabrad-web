@@ -49,6 +49,12 @@ export class LabradInstanceController extends polymer.Base {
   @property({type: Object, notify: true})
   server: ServerInfo;
 
+  @property({type: Boolean})
+  autostart: boolean;
+
+  @property({type: String})
+  autostartClass: string;
+
   @property()
   api: NodeApi;
 
@@ -183,6 +189,18 @@ export class LabradNodeController extends polymer.Base {
       await this.api.refreshNode(this.name);
     } catch (e) {
       console.error(`Exception while refreshing node: ${this.name}`, e);
+    } finally {
+      this.active = false;
+    }
+  }
+
+  @listen('autostart.click')
+  async onAutostart() {
+    this.active = true;
+    try {
+      await this.api.autostartNode(this.name);
+    } catch (e) {
+      console.error(`Exception while autostarting node: ${this.name}`, e);
     } finally {
       this.active = false;
     }
@@ -356,6 +374,18 @@ export class LabradNodes extends polymer.Base {
     return versionMap;
   }
 
+  private _autostartMap(info: Array<NodeStatus>): Map<string, Set<string>> {
+    var infoMap = new Map<string, Set<string>>();
+    for (const item of info) {
+      const set = new Set();
+      for (const server of item.autostartList) {
+        set.add(server);
+      }
+      infoMap.set(item.name, set);
+    }
+    return infoMap;
+  }
+
   @computed()
   nodeNames(info: Array<NodeStatus>, kick: number): Array<string> {
     return this._nodeNames(info)
@@ -367,6 +397,7 @@ export class LabradNodes extends polymer.Base {
     var serverNames = this._serverNames(info, {global: true});
     var statusMap = this._statusMap(info);
     var versionMap = this._versionMap(info);
+    var autostartMap = this._autostartMap(info);
 
     return serverNames.map((server) => {
       var versions = versionMap.get(server);
@@ -386,6 +417,7 @@ export class LabradNodes extends polymer.Base {
             return {
               name: node,
               exists: true,
+              autostart: autostartMap.get(node).has(server),
               status: status.instances.length > 0 ? 'STARTED' : 'STOPPED',
               instanceName: status.instances[0] || server
             }

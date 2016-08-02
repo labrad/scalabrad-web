@@ -413,6 +413,10 @@ export class NodesActivity implements Activity {
 
   async start(): Promise<ActivityState> {
     var nodesInfo = await this.nodeApi.allNodes();
+    for (const node of nodesInfo) {
+      var list = await this.nodeApi.autostartList(node.name);
+      node.autostartList = list;
+    }
     var elem = <LabradNodes> LabradNodes.create();
     elem.info = nodesInfo;
     elem.places = this.places;
