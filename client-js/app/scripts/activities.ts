@@ -371,15 +371,10 @@ export class ManagerActivity implements Activity {
 
   async start(): Promise<ActivityState> {
     var connections = await this.api.connections();
-    for (let c of connections) {
-      if (c.server) {
-        c.url = this.places.serverUrl(c.name);
-      }
-    }
     var elem = <LabradManager> LabradManager.create();
-    elem.connections = connections;
     elem.mgr = this.api;
     elem.places = this.places;
+    elem.setConnections(connections);
     return {
       elem: elem,
       route: 'manager'

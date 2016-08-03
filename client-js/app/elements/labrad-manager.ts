@@ -5,8 +5,8 @@ import {Places} from "../scripts/places";
 @component('labrad-manager')
 export class LabradManager extends polymer.Base {
 
-  @property({type: Array, notify: true})
-  connections: Array<ConnectionInfo>;
+  @property({type: Array, notify: true, value: () => { return []; }})
+  connections: ConnectionInfo[];
 
   @property({type: Object, notify: true})
   selectedConnection: {connId: number, name: string};
@@ -45,13 +45,17 @@ export class LabradManager extends polymer.Base {
     this.updateConnections();
   }
 
-  private async updateConnections(): Promise<void> {
-    const connections = await this.mgr.connections();
+  setConnections(connections: ConnectionInfo[]) {
     for (let c of connections) {
       if (c.server) {
         c.url = this.places.serverUrl(c.name);
       }
     }
     this.splice('connections', 0, this.connections.length, ...connections);
+  }
+
+  private async updateConnections(): Promise<void> {
+    const connections = await this.mgr.connections();
+    this.setConnections(connections);
   }
 }
