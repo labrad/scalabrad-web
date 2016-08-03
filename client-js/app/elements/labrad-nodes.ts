@@ -40,7 +40,7 @@ export class LabradInstanceController extends polymer.Base {
   @property({type: Boolean})
   runningElsewhere: boolean;
 
-  @property()
+  @property({type: String, notify: true})
   status: string;
 
   @property({type: Boolean, value: false})
@@ -63,9 +63,6 @@ export class LabradInstanceController extends polymer.Base {
     return places.serverUrl(instanceName);
   }
 
-  ready() {
-    this.updateButtonState(this.status);
-  }
 
   @observe('status')
   statusChanged(newStatus: string, oldStatus: string) {
@@ -145,8 +142,8 @@ export class LabradInstanceController extends polymer.Base {
   statusChange(msg: ServerStatusMessage): void {
     if (this.name === msg.server) {
       if (this.node === msg.node) {
-        this.status = msg.status;
-        this.instanceName = msg.instance;
+        this.set('status', msg.status);
+        this.set('instanceName', msg.instance);
       } else if (this.local) {
         switch (msg.status) {
           case 'STOPPED': this.updateButtonState(this.status); break;
@@ -163,6 +160,7 @@ export class LabradInstanceController extends polymer.Base {
    * state of this particular server instance.
    */
   updateButtonState(status: string) {
+    console.log(this.name, status, this.status);
     var options = {info: false, start: false, stop: false, restart: false};
     switch (status) {
       case 'STOPPED': this.active = false; options.start = true; break;
@@ -233,10 +231,11 @@ interface ServerInfo {
   version: string;
   errorString: string;
   errorException: string;
-  nodes: Array<{name: string, exists: boolean, status?: string, instanceName?: string}>;
+  nodes: Array<{name: string, exists: boolean, autostart?: boolean, status?: string, instanceName?: string}>;
 }
 
 type ListItemFilterFunction = (item: (NodeStatus | ServerDisconnectMessage)) => boolean;
+
 
 @component('labrad-nodes')
 export class LabradNodes extends polymer.Base {
@@ -257,6 +256,12 @@ export class LabradNodes extends polymer.Base {
 
   @property({type: Boolean, value: false, notify: true})
   isAutostartFiltered: boolean;
+
+  @property({type: Object, value: []})
+  globalServers: ServerInfo[];
+
+  @property({type: Object, value: []})
+  localServers: ServerInfo[];
 
   private lifetime = new Lifetime();
 
@@ -336,6 +341,16 @@ export class LabradNodes extends polymer.Base {
     return idx;
   }
 
+  private getServerIndex(server: ServerStatus, servers: ServerInfo[]): number {
+    for (let idx = 0; idx < servers.length; ++idx) {
+      const s = servers[idx];
+      if (s.name === server.name) {
+        return idx;
+      }
+    }
+    return -1;
+  }
+
 
   addItemToList(item: NodeStatus): void {
     const idx = this.getNodeIndex(item, this.info);
@@ -344,6 +359,33 @@ export class LabradNodes extends polymer.Base {
     } else {
       this.splice('info', idx, 1, item);
     }
+
+    for (const server of item.servers) {
+      const isGlobal = server.environmentVars.length === 0;
+      const newServer = {
+        name: server.name,
+        version: '1',
+        errorString: '',
+        errorException: '',
+        nodes: []
+      };
+
+      if (isGlobal) {
+        let idx = this.getServerIndex(server, this.globalServers);
+        if (idx === -1) {
+          this.push('globalServers', newServer);
+        }
+      } else {
+        let idx = this.getServerIndex(server, this.localServers);
+        if (idx === -1) {
+          this.push('localServers', newServer);
+        }
+      }
+    }
+
+    this.updateNodeServerBinding(this.globalServers, 'globalServers');
+    this.updateNodeServerBinding(this.localServers, 'localServers');
+
     this.kick++;
   }
 
@@ -352,6 +394,72 @@ export class LabradNodes extends polymer.Base {
     const idx = this.getNodeIndex(item, this.info);
     if (idx !== -1) {
       this.splice('info', idx, 1);
+    }
+
+    this.updateNodeServerBinding(this.globalServers, 'globalServers');
+    this.updateNodeServerBinding(this.localServers, 'localServers');
+
+    this.kick++;
+  }
+
+
+  private updateNodeServerBinding(servers: ServerInfo[], serversName: string): void {
+    // Create a map of all nodes already in the server.
+    const nodesSet = new Set();
+    for (const node of this.info) {
+      nodesSet.add(node.name);
+    }
+
+    for (let idx = 0; idx < servers.length; ++idx) {
+      // Create a set of all nodes already in the server.
+      const nodeSet = new Set();
+      for (let nodeIdx = 0; nodeIdx < servers[idx].nodes.length; ++nodeIdx) {
+        const node = servers[idx].nodes[nodeIdx];
+
+        // If the server contains a node that isn't in the global nodes pool,
+        // remove the node from the server's node list.
+        if (nodesSet.has(node.name)) {
+          nodeSet.add(node.name);
+        } else {
+          this.splice(`${serversName}.#${idx}.nodes`, nodeIdx, 1);
+        }
+      }
+
+      for (const node of this.info) {
+        // If this node is already listed, continue.
+        if (nodeSet.has(node.name)) {
+          continue;
+        }
+
+        // Create a map of all the servers on the node.
+        const serverMap = new Map<String, ServerStatus>();
+        for (const server of node.servers) {
+          serverMap.set(server.name, server);
+        }
+
+        const server = servers[idx];
+        if (!serverMap.has(server.name)) {
+          // If the node doesn't have this server, we need to push a non-existing
+          // node to the list so that it renders properly.
+          this.push(`${serversName}.#${idx}.nodes`, {
+            name: node.name,
+            exists: false
+          });
+        } else {
+          const serverStatus = serverMap.get(server.name);
+          const autostartSet = new Set();
+          for (const server of node.autostartList) {
+            autostartSet.add(server);
+          }
+          this.push(`${serversName}.#${idx}.nodes`, {
+            name: node.name,
+            exists: true,
+            autostart: autostartSet.has(server.name),
+            status: serverStatus.instances.length > 0 ? 'STARTED' : 'STOPPED',
+            instanceName: serverStatus.instances[0] || server.name
+          });
+        }
+      }
     }
   }
 
@@ -371,35 +479,6 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private _serverNames(info: Array<NodeStatus>, options: {global: boolean}): Array<string> {
-    var nameSet = new Set<string>();
-    for (let nodeInfo of info) {
-      for (let server of nodeInfo.servers) {
-        var isGlobal = server.environmentVars.length === 0;
-        if (isGlobal === options.global) {
-          nameSet.add(server.name);
-        }
-      }
-    }
-    var names = Array.from(nameSet.values());
-    names.sort();
-    return names;
-  }
-
-
-  private _statusMap(info: Array<NodeStatus>): Map<string, Map<string, ServerStatus>> {
-    var statusMap = new Map<string, Map<string, ServerStatus>>();
-    for (let nodeStatus of info) {
-      var serverMap = new Map<string, ServerStatus>();
-      for (let serverStatus of nodeStatus.servers) {
-        serverMap.set(serverStatus.name, serverStatus);
-      }
-      statusMap.set(nodeStatus.name, serverMap);
-    }
-    return statusMap;
-  }
-
-
   private _versionMap(info: Array<NodeStatus>): Map<string, Array<string>> {
     var versionMap = new Map<string, Array<string>>();
     for (let nodeStatus of info) {
@@ -414,112 +493,8 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private _autostartMap(info: Array<NodeStatus>): Map<string, Set<string>> {
-    const infoMap = new Map<string, Set<string>>();
-    for (const item of info) {
-      const set = new Set();
-      for (const server of item.autostartList) {
-        set.add(server);
-      }
-      infoMap.set(item.name, set);
-    }
-    return infoMap;
-  }
-
-
-  private _autostartSet(info: Array<NodeStatus>): Set<string> {
-    const set = new Set();
-    for (const item of info) {
-      for (const server of item.autostartList) {
-        set.add(server);
-      }
-    }
-    return set;
-  }
-
-
   @computed()
   nodeNames(info: Array<NodeStatus>, kick: number): Array<string> {
     return this._nodeNames(info)
-  }
-
-
-  @computed()
-  globalServers(info: Array<NodeStatus>, kick: number): Array<ServerInfo> {
-    var nodeNames = this._nodeNames(info);
-    var serverNames = this._serverNames(info, {global: true});
-    var statusMap = this._statusMap(info);
-    var versionMap = this._versionMap(info);
-    var autostartMap = this._autostartMap(info);
-
-    var servers = serverNames.map((server) => {
-      var versions = versionMap.get(server);
-      var versionSet = new Set(versions);
-      var version = versionSet.size === 1 ? versions[0] : 'version conflict!';
-
-      return {
-        name: server,
-        version: version,
-        errorString: '',
-        errorException: '',
-        nodes: nodeNames.map((node) => {
-          var status = statusMap.get(node).get(server);
-          if (typeof status === 'undefined') {
-            return {name: node, exists: false};
-          } else {
-            return {
-              name: node,
-              exists: true,
-              autostart: autostartMap.get(node).has(server),
-              status: status.instances.length > 0 ? 'STARTED' : 'STOPPED',
-              instanceName: status.instances[0] || server
-            }
-          }
-        })
-      };
-    });
-
-    const autostartSet = this._autostartSet(this.info);
-    const filterFunction = this.filterServersFunction(autostartSet);
-    return servers.filter(filterFunction);
-  }
-
-
-  @computed()
-  localServers(info: Array<NodeStatus>, kick: number): Array<ServerInfo> {
-    var nodeNames = this._nodeNames(info);
-    var serverNames = this._serverNames(info, {global: false});
-    var statusMap = this._statusMap(info);
-    var versionMap = this._versionMap(info);
-
-    const servers = serverNames.map((server) => {
-      var versions = versionMap.get(server);
-      var versionSet = new Set(versions);
-      var version = versionSet.size === 1 ? versions[0] : 'version conflict!';
-
-      return {
-        name: server,
-        version: version,
-        errorString: '',
-        errorException: '',
-        nodes: nodeNames.map((node) => {
-          var status = statusMap.get(node).get(server);
-          if (typeof status === 'undefined') {
-            return {name: node, exists: false};
-          } else {
-            return {
-              name: node,
-              exists: true,
-              status: status.instances.length > 0 ? 'STARTED' : 'STOPPED',
-              instanceName: status.instances[0] || server
-            }
-          }
-        })
-      };
-    });
-
-    const autostartSet = this._autostartSet(this.info);
-    const filterFunction = this.filterServersFunction(autostartSet);
-    return servers.filter(filterFunction);
   }
 }
