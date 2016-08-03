@@ -12,7 +12,7 @@ export interface ConnectionInfo {
   clientRespCount: number;
   msgSendCount: number;
   msgRecvCount: number;
-  url?: boolean;
+  url?: string;
 }
 
 export interface SettingInfo {

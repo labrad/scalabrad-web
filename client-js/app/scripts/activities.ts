@@ -370,17 +370,11 @@ export class ManagerActivity implements Activity {
               private api: manager.ManagerApi) {}
 
   async start(): Promise<ActivityState> {
-    var conns = await this.api.connections();
-    var connsWithUrl = conns.map((c) => {
-      var x = <any> c;
-      if (c.server) {
-        x['url'] = this.places.serverUrl(c.name);
-      }
-      return x;
-    });
+    var connections = await this.api.connections();
     var elem = <LabradManager> LabradManager.create();
-    elem.connections = connsWithUrl;
     elem.mgr = this.api;
+    elem.places = this.places;
+    elem.setConnections(connections);
     return {
       elem: elem,
       route: 'manager'
