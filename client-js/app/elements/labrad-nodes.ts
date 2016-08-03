@@ -237,10 +237,12 @@ interface ServerInfo {
   nodes: Array<{name: string, exists: boolean, status?: string, instanceName?: string}>;
 }
 
+type ListItemFilterFunction = (item: (NodeStatus | ServerDisconnectMessage)) => boolean;
+
 @component('labrad-nodes')
 export class LabradNodes extends polymer.Base {
-  @property({type: Array, notify: true})
-  info: Array<NodeStatus>;
+  @property({type: Array, notify: true, value: []})
+  info: NodeStatus[];
 
   @property({type: Object})
   api: NodeApi;
@@ -254,29 +256,32 @@ export class LabradNodes extends polymer.Base {
   @property({type: Number, value: 0})
   kick: number;
 
-  private lifetime = new Lifetime();
-  // Used to manage cleanup operations that should be performed when this
-  // component is destroyed. We register all such cleanup operations (such as
-  // Observable callback removals) with this lifetime, and then close it when
-  // the component is detached.
+  @property({type: Boolean, value: false, notify: true})
+  isAutostartFiltered: boolean;
 
-  /**
-   * Polymer lifecyle callback invoked when this component is detached from the
-   * DOM and ready to be cleaned up.
-   */
+  private lifetime = new Lifetime();
+
+
   detached() {
     this.lifetime.close();
   }
+
 
   defined(x: any): boolean {
     return (typeof x !== 'undefined') && (x !== null);
   }
 
+
+  autostartFilter() {
+    this.set('isAutostartFiltered', !this.isAutostartFiltered);
+    this.kick++;
+  }
+
+
   // Listeners called on api object properties when they get set. This is
   // necessary because these properties are set asynchronously sometime after
   // the component is constructed, so we cannot access the values when the
   // ready() lifecycle method is invoked, for example.
-
   @observe('api')
   apiChanged(newApi: NodeApi, oldApi: NodeApi) {
     if (this.defined(newApi)) {
@@ -285,6 +290,7 @@ export class LabradNodes extends polymer.Base {
     }
   }
 
+
   @observe('managerApi')
   managerChanged(newManager: ManagerApi, oldManager: ManagerApi) {
     if (this.defined(newManager)) {
@@ -292,32 +298,19 @@ export class LabradNodes extends polymer.Base {
     }
   }
 
-  // callbacks invoked when we receive remote messages
 
+  // Callbacks invoked when we receive remote messages.
   async onNodeStatus(msg: NodeStatus) {
-    // we need to splice this new NodeStatus into the current info array.
-    // first, check to see whether we already have status for this node.
-    var idx = this._nodeIndex(msg.name);
-
     msg.autostartList = await this.api.autostartList(msg.name);
-
-    if (idx === -1) {
-      this.push('info', msg);
-    } else {
-      this.splice('info', idx, 1, msg);
-    }
-    this.kick++;
+    this.addItemToList(msg);
   }
+
 
   onServerDisconnected(msg: ServerDisconnectMessage): void {
     console.warn('Server disconnected:', msg.name);
-    var idx = this._nodeIndex(msg.name);
-
-    if (idx >= 0) {
-      this.splice('info', idx, 1);
-      this.kick++;
-    }
+    this.removeItemFromList(msg);
   }
+
 
   onServerStatus(msg: ServerStatusMessage): void {
     var instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
@@ -333,15 +326,10 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  /**
-   * Find the index in the node info list of a node with the given name.
-   *
-   * If no such node is found, returns -1.
-   */
-  private _nodeIndex(name: string): number {
-    var idx = -1;
-    for (var i = 0; i < this.info.length; i++) {
-      if (this.info[i].name === name) {
+  private getNodeIndex(item: (NodeStatus | ServerDisconnectMessage), array: NodeStatus[]): number {
+    let idx = -1;
+    for (let i = 0; i < array.length; ++i) {
+      if (array[i].name === item.name) {
         idx = i;
         break;
       }
@@ -349,11 +337,43 @@ export class LabradNodes extends polymer.Base {
     return idx;
   }
 
+
+  addItemToList(item: NodeStatus): void {
+    const idx = this.getNodeIndex(item, this.info);
+    if (idx === -1) {
+      this.push('info', item);
+    } else {
+      this.splice('info', idx, 1, item);
+    }
+
+    this.kick++;
+  }
+
+
+  private removeItemFromList(item: ServerDisconnectMessage): void {
+    const idx = this.getNodeIndex(item, this.info);
+    if (idx !== -1) {
+      this.splice('info', idx, 1);
+    }
+
+    this.kick++;
+  }
+
+
+  private filterServersFunction(autostartSet: Set<string>): ListItemFilterFunction {
+    if (this.isAutostartFiltered) {
+      return (x) => autostartSet.has(x.name);
+    }
+    return (x) => true;
+  }
+
+
   private _nodeNames(info: Array<NodeStatus>): Array<string> {
     var names = info.map((n) => n.name);
     names.sort();
     return names;
   }
+
 
   private _serverNames(info: Array<NodeStatus>, options: {global: boolean}): Array<string> {
     var nameSet = new Set<string>();
@@ -370,6 +390,7 @@ export class LabradNodes extends polymer.Base {
     return names;
   }
 
+
   private _statusMap(info: Array<NodeStatus>): Map<string, Map<string, ServerStatus>> {
     var statusMap = new Map<string, Map<string, ServerStatus>>();
     for (let nodeStatus of info) {
@@ -381,6 +402,7 @@ export class LabradNodes extends polymer.Base {
     }
     return statusMap;
   }
+
 
   private _versionMap(info: Array<NodeStatus>): Map<string, Array<string>> {
     var versionMap = new Map<string, Array<string>>();
@@ -395,8 +417,9 @@ export class LabradNodes extends polymer.Base {
     return versionMap;
   }
 
+
   private _autostartMap(info: Array<NodeStatus>): Map<string, Set<string>> {
-    var infoMap = new Map<string, Set<string>>();
+    const infoMap = new Map<string, Set<string>>();
     for (const item of info) {
       const set = new Set();
       for (const server of item.autostartList) {
@@ -407,10 +430,23 @@ export class LabradNodes extends polymer.Base {
     return infoMap;
   }
 
+
+  private _autostartSet(info: Array<NodeStatus>): Set<string> {
+    const set = new Set();
+    for (const item of info) {
+      for (const server of item.autostartList) {
+        set.add(server);
+      }
+    }
+    return set;
+  }
+
+
   @computed()
   nodeNames(info: Array<NodeStatus>, kick: number): Array<string> {
     return this._nodeNames(info)
   }
+
 
   @computed()
   globalServers(info: Array<NodeStatus>, kick: number): Array<ServerInfo> {
@@ -420,7 +456,7 @@ export class LabradNodes extends polymer.Base {
     var versionMap = this._versionMap(info);
     var autostartMap = this._autostartMap(info);
 
-    return serverNames.map((server) => {
+    var servers = serverNames.map((server) => {
       var versions = versionMap.get(server);
       var versionSet = new Set(versions);
       var version = versionSet.size === 1 ? versions[0] : 'version conflict!';
@@ -446,7 +482,12 @@ export class LabradNodes extends polymer.Base {
         })
       };
     });
+
+    const autostartSet = this._autostartSet(this.info);
+    const filterFunction = this.filterServersFunction(autostartSet);
+    return servers.filter(filterFunction);
   }
+
 
   @computed()
   localServers(info: Array<NodeStatus>, kick: number): Array<ServerInfo> {
@@ -455,7 +496,7 @@ export class LabradNodes extends polymer.Base {
     var statusMap = this._statusMap(info);
     var versionMap = this._versionMap(info);
 
-    return serverNames.map((server) => {
+    const servers = serverNames.map((server) => {
       var versions = versionMap.get(server);
       var versionSet = new Set(versions);
       var version = versionSet.size === 1 ? versions[0] : 'version conflict!';
@@ -480,5 +521,9 @@ export class LabradNodes extends polymer.Base {
         })
       };
     });
+
+    const autostartSet = this._autostartSet(this.info);
+    const filterFunction = this.filterServersFunction(autostartSet);
+    return servers.filter(filterFunction);
   }
 }

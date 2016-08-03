@@ -146,6 +146,16 @@
     :host {
       display: block;
     }
+    #container {
+      display: flex;
+      flex-grow: 1;
+    }
+    #left-column {
+      flex-basis: 100%;
+      flex-direction: column;
+      flex-grow: 1;
+      border-right: 1px solid #AAA;
+    }
     table {
       border-collapse: collapse;
       width: 100%;
@@ -178,9 +188,40 @@
     td.controls {
       width: 350px;
     }
+    #buttons {
+      height: 50px;
+    }
+    #buttons paper-icon-button {
+      margin: 5px;
+    }
+    .autostartFilterOn {
+      color: #000;
+    }
+    .autostartFilterOff {
+      color: #aaa;
+    }
   </style>
   <template>
-    <div>
+   <div id="container" class='fit'>
+   <paper-header-panel id="left-column">
+    <div class="paper-header" id="buttons">
+      <paper-icon-button
+        hidden$={{isAutostartFiltered}}
+        class='autostartFilterOff'
+        icon="stars"
+        id="star"
+        on-click="autostartFilter"
+        title="Show Only Autostart Servers"></paper-icon-button>
+      <paper-icon-button
+        hidden$={{!isAutostartFiltered}}
+        class='autostartFilterOn'
+        icon="stars"
+        id="star"
+        on-click="autostartFilter"
+        title="Show All Servers"></paper-icon-button>
+    </div>
+
+    <div class='fit'>
       <table>
         <thead>
           <th>Global Servers</th>
@@ -251,5 +292,7 @@
         </tbody>
       </table>
     </div>
+   </paper-header-panel>
+   </div>
   </template>
 </dom-module>
