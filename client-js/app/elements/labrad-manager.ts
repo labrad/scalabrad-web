@@ -1,5 +1,6 @@
 import {Lifetime} from '../scripts/lifetime';
 import {ConnectionInfo, ManagerApi} from '../scripts/manager';
+import {Places} from "../scripts/places";
 
 @component('labrad-manager')
 export class LabradManager extends polymer.Base {
@@ -11,6 +12,7 @@ export class LabradManager extends polymer.Base {
   selectedConnection: {connId: number, name: string};
 
   mgr: ManagerApi;
+  places: Places;
 
   private lifetime: Lifetime = new Lifetime();
 
@@ -45,9 +47,11 @@ export class LabradManager extends polymer.Base {
 
   private async updateConnections(): Promise<void> {
     const connections = await this.mgr.connections();
-    this.splice('connections', 0, this.connections.length);
     for (let c of connections) {
-      this.push('connections', c);
+      if (c.server) {
+        c.url = this.places.serverUrl(c.name);
+      }
     }
+    this.splice('connections', 0, this.connections.length, ...connections);
   }
 }
