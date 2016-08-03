@@ -121,7 +121,6 @@ export class LabradInstanceController extends polymer.Base {
   }
 
 
-  @listen('autostart.click')
   async doAutostart() {
     console.info(`Autostart: server='${this.name}', node='${this.node}'`);
     try {
@@ -345,7 +344,6 @@ export class LabradNodes extends polymer.Base {
     } else {
       this.splice('info', idx, 1, item);
     }
-
     this.kick++;
   }
 
@@ -355,8 +353,6 @@ export class LabradNodes extends polymer.Base {
     if (idx !== -1) {
       this.splice('info', idx, 1);
     }
-
-    this.kick++;
   }
 
 
