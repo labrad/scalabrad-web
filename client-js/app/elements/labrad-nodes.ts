@@ -74,7 +74,6 @@ export class LabradInstanceController extends polymer.Base {
     });
   }
 
-
   @observe('status')
   statusChanged(newStatus: string, oldStatus: string) {
     this.updateButtonState(newStatus);
@@ -285,7 +284,23 @@ export class LabradNodes extends polymer.Base {
 
   @listen('labrad-instance-controller::ready')
   onLabradInstanceControllerReady(event) {
-    this.onServerStatus(event.detail);
+    // If a new labrad-instance-controller has readied, we need to broadcast
+    // the state of each controller of that server type to all others of the
+    // same type. This informs existing servers of the new server state, and
+    // informs the new server of the existing servers' states.
+    const instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
+    for (var i = 0; i < instances.length; i++) {
+      const instance = <any>instances[i];
+      if (instance.name == event.detail.server) {
+        const msg = {
+          node: instance.node,
+          server: instance.name,
+          instance: instance.instanceName,
+          status: instance.status
+        };
+        this.onServerStatus(msg);
+      }
+    }
   }
 
 
