@@ -63,8 +63,7 @@ export class LabradInstanceController extends polymer.Base {
     return places.serverUrl(instanceName);
   }
 
-  ready() {
-    this.updateButtonState(this.status);
+  attached() {
     this.async(() => {
       this.fire('labrad-instance-controller::ready', {
         node: this.node,
@@ -74,6 +73,7 @@ export class LabradInstanceController extends polymer.Base {
       });
     });
   }
+
 
   @observe('status')
   statusChanged(newStatus: string, oldStatus: string) {
@@ -342,11 +342,29 @@ export class LabradNodes extends polymer.Base {
 
   onServerDisconnected(msg: ServerDisconnectMessage): void {
     console.warn('Server disconnected:', msg.name);
+
+    // If the disconnected server is a node, broadcast to all controllers that
+    // the servers on the node are now offline.
+    for (const node of this.info) {
+      if (node.name == msg.name) {
+        for (const server of node.servers) {
+          this.onServerStatus({
+            node: node.name,
+            server: server.name,
+            instance: '',
+            status: 'STOPPED'
+          });
+        }
+        break;
+      }
+    }
+
     this.removeItemFromList(msg);
   }
 
 
   onServerStatus(msg: ServerStatusMessage): void {
+    console.log(msg.node, msg.server, msg.status);
     var instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
     for (var i = 0; i < instances.length; i++) {
       var instance = <any>instances[i];
