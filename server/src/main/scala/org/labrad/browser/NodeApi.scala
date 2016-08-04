@@ -63,12 +63,16 @@ class NodeApi(cxn: LabradConnection)(implicit ec: ExecutionContext) extends Logg
     }
   }
 
-  def autostartAdd(node: String, server: String): Unit = {
-    cxn.to(node).call("autostart_add", Str(server))
+  def autostartAdd(node: String, server: String): Future[Unit] = {
+    async {
+      cxn.to(node).call("autostart_add", Str(server))
+    }
   }
 
-  def autostartRemove(node: String, server: String): Unit = {
-    cxn.to(node).call("autostart_remove", Str(server))
+  def autostartRemove(node: String, server: String): Future[Unit] = {
+    async {
+      cxn.to(node).call("autostart_remove", Str(server))
+    }
   }
 
   def restartServer(node: String, server: String) = doRequest(node, server, "restart")

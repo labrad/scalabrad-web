@@ -121,7 +121,7 @@ export class LabradInstanceController extends polymer.Base {
   }
 
 
-  async doAutostart() {
+  async toggleAutostart() {
     console.info(`Autostart: server='${this.name}', node='${this.node}'`);
     try {
       if (this.autostart) {
