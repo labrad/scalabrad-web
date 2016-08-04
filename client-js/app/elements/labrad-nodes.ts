@@ -280,6 +280,9 @@ export class LabradNodes extends polymer.Base {
   @property({type: Object, value: []})
   localServersFiltered: ServerInfo[];
 
+  @property({type: Array, value: []})
+  nodeNames: String;
+
   private lifetime = new Lifetime();
 
   @listen('labrad-instance-controller::ready')
@@ -413,11 +416,16 @@ export class LabradNodes extends polymer.Base {
     return -1;
   }
 
+  sortNodes(a: string, b: string) {
+    if (a === b) return 0;
+    return a > b ? 1 : -1;
+  }
 
   addItemToList(item: NodeStatus): void {
     const idx = this.getNodeIndex(item, this.info);
     if (idx === -1) {
       this.push('info', item);
+      this.push('nodeNames', item.name);
     } else {
       this.splice('info', idx, 1, item);
     }
@@ -464,22 +472,19 @@ export class LabradNodes extends polymer.Base {
     this.updateNodeServerBinding('localServersFiltered');
 
     this.updateFilters();
-
-    this.kick++;
   }
 
   private removeItemFromList(item: ServerDisconnectMessage): void {
     const idx = this.getNodeIndex(item, this.info);
     if (idx !== -1) {
       this.splice('info', idx, 1);
+      this.splice('nodeNames', idx, 1);
     }
 
     this.updateNodeServerBinding('globalServersFiltered');
     this.updateNodeServerBinding('localServersFiltered');
 
     this.updateFilters();
-
-    this.kick++;
   }
 
 
@@ -590,13 +595,6 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private _nodeNames(info: Array<NodeStatus>): Array<string> {
-    var names = info.map((n) => n.name);
-    names.sort();
-    return names;
-  }
-
-
   private _versionMap(info: Array<NodeStatus>): Map<string, Set<string>> {
     var versionMap = new Map<string, Set<string>>();
     for (let nodeStatus of info) {
@@ -608,11 +606,5 @@ export class LabradNodes extends polymer.Base {
       }
     }
     return versionMap;
-  }
-
-
-  @computed()
-  nodeNames(info: Array<NodeStatus>, kick: number): Array<string> {
-    return this._nodeNames(info)
   }
 }
