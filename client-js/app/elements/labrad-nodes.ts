@@ -364,7 +364,6 @@ export class LabradNodes extends polymer.Base {
 
 
   onServerStatus(msg: ServerStatusMessage): void {
-    console.log(msg.node, msg.server, msg.status);
     var instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
     for (var i = 0; i < instances.length; i++) {
       var instance = <any>instances[i];
@@ -410,11 +409,17 @@ export class LabradNodes extends polymer.Base {
 
     const filterFunction = this.filterServersFunction();
 
+    const versionMap = this._versionMap(this.info);
+
     for (const server of item.servers) {
+      const versions = versionMap.get(server.name);
+      const version = (versions.size === 1) ? versions.values().next().value
+                                            : 'Version Conflict!';
+
       const isGlobal = server.environmentVars.length === 0;
       const newServer = {
         name: server.name,
-        version: '1',
+        version: version,
         autostart: false,
         errorString: '',
         errorException: '',
@@ -422,7 +427,7 @@ export class LabradNodes extends polymer.Base {
       };
 
       if (isGlobal) {
-        let idx = this.getServerIndex(server, this.globalServers);
+        const idx = this.getServerIndex(server, this.globalServers);
         if (idx === -1) {
           this.push('globalServers', newServer);
           if (filterFunction(newServer)) {
@@ -430,7 +435,7 @@ export class LabradNodes extends polymer.Base {
           }
         }
       } else {
-        let idx = this.getServerIndex(server, this.localServers);
+        const idx = this.getServerIndex(server, this.localServers);
         if (idx === -1) {
           this.push('localServers', newServer);
           if (filterFunction(newServer)) {
@@ -577,14 +582,14 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private _versionMap(info: Array<NodeStatus>): Map<string, Array<string>> {
-    var versionMap = new Map<string, Array<string>>();
+  private _versionMap(info: Array<NodeStatus>): Map<string, Set<string>> {
+    var versionMap = new Map<string, Set<string>>();
     for (let nodeStatus of info) {
       for (let {name, version} of nodeStatus.servers) {
         if (!versionMap.has(name)) {
-          versionMap.set(name, []);
+          versionMap.set(name, new Set());
         }
-        versionMap.get(name).push(version);
+        versionMap.get(name).add(version);
       }
     }
     return versionMap;
