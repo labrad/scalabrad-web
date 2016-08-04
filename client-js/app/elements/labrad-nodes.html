@@ -233,7 +233,7 @@
           </template>
         </thead>
         <tbody>
-          <template is="dom-repeat" items="{{globalServers}}" as="server">
+          <template is="dom-repeat" items="{{globalServersFiltered}}" as="server">
             <tr>
               <td class='name'>{{server.name}}</td>
               <td class='version'>{{server.version}}</td>
@@ -268,7 +268,7 @@
           </template>
         </thead>
         <tbody>
-          <template is="dom-repeat" items="{{localServers}}" as="server">
+          <template is="dom-repeat" items="{{localServersFiltered}}" as="server">
             <tr>
               <td class='name'>{{server.name}}</td>
               <td class='version'>{{server.version}}</td>
