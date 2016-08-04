@@ -467,7 +467,7 @@ export class LabradNodes extends polymer.Base {
 
     this.updateNodeServerBinding('globalServersFiltered');
     this.updateNodeServerBinding('localServersFiltered');
-t 
+
     this.updateFilters();
   }
 
