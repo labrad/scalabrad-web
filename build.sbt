@@ -31,7 +31,7 @@ lazy val server = project.in(file("server"))
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-async" % "0.9.2",
       "org.jsoup" % "jsoup" % "1.9.2",
-      "org.labrad" %% "scalabrad" % "0.6.2"
+      "org.labrad" %% "scalabrad" % "0.7.2"
     ),
 
     // When running, connect std in and tell server to stop on EOF (ctrl+D).

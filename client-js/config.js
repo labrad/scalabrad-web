@@ -15,6 +15,7 @@ System.config({
     "three": "github:mrdoob/three.js@r78",
     "traceur": "github:jmcriffey/bower-traceur@0.0.88",
     "traceur-runtime": "github:jmcriffey/bower-traceur-runtime@0.0.88",
+    "whatwg-fetch": "npm:whatwg-fetch@1.0.0",
     "github:jspm/nodelibs-process@0.1.1": {
       "process": "npm:process@0.10.1"
     },

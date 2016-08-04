@@ -82,6 +82,10 @@
       background-color: var(--paper-indigo-500);
       flex-shrink: 0;
     }
+
+    paper-dialog hr {
+      margin: 0 0 0 0;
+    }
   </style>
   <template>
     <paper-drawer-panel id="drawerPanel" force-narrow disable-edge-swipe>
@@ -157,15 +161,25 @@
       <template is="dom-if" if="{{host}}">
         <h2>on <span>{{host}}</span></h2>
       </template>
-      <form id="loginForm">
-        <paper-input id="passwordInput" label="password" always-float-label type="password"></paper-input>
-        <paper-checkbox id="rememberPassword">Remember password</paper-checkbox>
-      </form>
+      <div class="buttons" hidden$={{!allowOAuthLogin}}>
+        <paper-button id="oauthButton">Login with Google</paper-button>
+      </div>
+      <hr hidden$={{!allowOAuthLogin}}>
+      <div hidden$={{allowOAuthLogin}}>
+        <form id="loginForm">
+          <paper-input id="usernameInput" label="username" always-float-label hidden$={{!allowUsernameLogin}}></paper-input>
+          <paper-input id="passwordInput" label="password" always-float-label type="password"></paper-input>
+        </form>
+        <div class="buttons">
+          <paper-button id="loginButton">Login with Password</paper-button>
+        </div>
+      </div>
+      <hr hidden$={{allowOAuthLogin}}>
+      <div>
+        <paper-checkbox id="rememberPassword">Remember me</paper-checkbox>
+      </div>
       <div>
         <span>{{loginError}}</span>
-      </div>
-      <div class="buttons">
-        <paper-button id="loginButton">Login</paper-button>
       </div>
     </paper-dialog>
 

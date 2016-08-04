@@ -26,6 +26,12 @@ export class LabradApp extends polymer.Base {
   @property({type: Array, value: () => []})
   breadcrumbExtras: {name: string; isLink: boolean; url?: string}[];
 
+  @property({type: Boolean})
+  allowUsernameLogin: boolean;
+
+  @property({type: Boolean})
+  allowOAuthLogin: boolean;
+
   @property({type: String})
   loginError: string;
 

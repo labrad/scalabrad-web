@@ -177,6 +177,7 @@ class WebServer(config: WebServerConfig) {
        pipeline.addLast(new RoutingHandler(
          WebSocketRoute(GET, "^/api/socket$".r, false, () => new ApiBackend(connectionConfig)),
          AppRoute(GET, "^(/[a-zA-Z0-9\\-_.]+)?/$".r, appFunc),
+         AppRoute(GET, "^(/[a-zA-Z0-9\\-_.]+)?/oauth2callback.*$".r, appFunc),
          AppRoute(GET, "^(/[a-zA-Z0-9\\-_.]+)?/dataset.*$".r, appFunc),
          AppRoute(GET, "^(/[a-zA-Z0-9\\-_.]+)?/grapher.*$".r, appFunc),
          AppRoute(GET, "^(/[a-zA-Z0-9\\-_.]+)?/nodes.*$".r, appFunc),

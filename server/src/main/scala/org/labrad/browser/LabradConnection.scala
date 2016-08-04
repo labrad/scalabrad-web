@@ -4,7 +4,9 @@ import java.util.{Timer, TimerTask}
 import org.labrad._
 import org.labrad.data._
 import org.labrad.events.{ConnectionEvent, ConnectionListener, MessageEvent, MessageListener}
+import org.labrad.manager.auth.Authenticator
 import org.labrad.util.Logging
+import play.api.libs.json._
 import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
@@ -13,6 +15,12 @@ case class LabradConnectionConfig(
   hosts: Map[String, String],
   suffix: Option[String]
 )
+
+case class OAuthInfo(clientId: String, clientSecret: String)
+
+object OAuthInfo {
+  implicit val format = Json.format[OAuthInfo]
+}
 
 object LabradConnection {
   val timer = new Timer(true)
@@ -47,26 +55,78 @@ class LabradConnection(
     setupFuncs += f
   }
 
-  def login(username: String, password: String, host: String/* = ""*/): Unit = {
-    val hostname = config.hosts.get(host).getOrElse {
-      if (!host.isEmpty && !host.contains(".")) {
-        host + config.suffix.getOrElse("")
-      } else {
-        host
-      }
-    }
-    if (hostname == host) {
-      println(s"logging in to host: '$host'")
-    } else {
-      println(s"logging in to host: '$host' ($hostname)")
-    }
-    val cxn = hostname match {
-      case "" => new Client("Browser", password = password.toCharArray)
-      case host => new Client("Browser", host = host, password = password.toCharArray)
-    }
+  def login(username: String, password: String, manager: String = ""): Unit = {
+    doLogin(Password(username, password.toCharArray), manager)
+  }
+
+  def oauthLogin(idToken: String, manager: String = ""): Unit = {
+    doLogin(OAuthToken(idToken), manager)
+  }
+
+  private def doLogin(credential: Credential, manager: String): Unit = {
+    val host = getHost(manager)
+    log.info(s"logging in: manager='$manager', host='$host', credential=${credential.getClass.getName}")
+    val cxn = new Client("Browser", host = host, credential = credential)
     handleConnectionEvents(cxn)
     cxn.connect()
     runSetupFuncs(cxn)
+  }
+
+  private def getHost(manager: String): String = {
+    config.hosts.get(manager).getOrElse {
+      if (!manager.isEmpty && !manager.contains(".")) {
+        manager + config.suffix.getOrElse("")
+      } else {
+        manager
+      }
+    } match {
+      case "" => Client.defaults.host
+      case host => host
+    }
+  }
+
+  /**
+   * Get allowed auth methods from the manager.
+   */
+  def authMethods(manager: String): Seq[String] = {
+    withTempConnection(manager) { cxn =>
+      try {
+        val f = cxn.sendManagerRequest(Authenticator.METHODS_SETTING_ID)
+        Await.result(f, 10.seconds).get[Seq[String]]
+      } catch {
+        case e: Exception => Nil
+      }
+    }
+  }
+
+  /**
+   * Get OAuth information from the manager, if OAuth is configured.
+   */
+  def oauthInfo(manager: String): Option[OAuthInfo] = {
+    withTempConnection(manager) { cxn =>
+      try {
+        val f = cxn.sendManagerRequest(Authenticator.INFO_SETTING_ID, "oauth_token".toData)
+        val oauthInfo = Await.result(f, 10.seconds)
+        var clientId: String = null
+        var clientSecret: String = null
+        for (kv <- oauthInfo.clusterIterator) {
+          val (key, value) = kv.get[(String, Data)]
+          key match {
+            case "web_client_id" => clientId = value.get[String]
+            case "web_client_secret" => clientSecret = value.get[String]
+            case _ =>
+          }
+        }
+        if (clientId == null || clientSecret == null) {
+          log.error("OAuth info did not contain web_client_id and web_client_secret")
+          None
+        } else {
+          Some(OAuthInfo(clientId = clientId, clientSecret = clientSecret))
+        }
+      } catch {
+        case e: Exception => None
+      }
+    }
   }
 
   def ping(): Unit = {
@@ -91,6 +151,23 @@ class LabradConnection(
   }
 
   /**
+   * Create a temporary connection to the given manager without logging in.
+   *
+   * This is used for getting information about allowed authentication methods,
+   * which we need to do before we can actually log in.
+   */
+  private def withTempConnection[A](manager: String)(f: Client => A): A = {
+    val host = getHost(manager)
+    val cxn = new Client("Browser", host = host, credential = OAuthToken(""))
+    cxn.connect(login = false)
+    try {
+      f(cxn)
+    } finally {
+      cxn.close()
+    }
+  }
+
+  /**
    * Handle connection and disconnection events on our client
    */
   private def handleConnectionEvents(cxn: Connection) {
@@ -108,7 +185,12 @@ class LabradConnection(
 
         if (live) {
           // reconnect after some delay
-          val newCxn = new Client("Browser", host = cxn.host, port = cxn.port, password = cxn.password)
+          val newCxn = new Client(
+            "Browser",
+            host = cxn.host,
+            port = cxn.port,
+            credential = cxn.credential
+          )
           handleConnectionEvents(newCxn)
           doLater(RECONNECT_TIMEOUT) {
             startConnection(newCxn)
