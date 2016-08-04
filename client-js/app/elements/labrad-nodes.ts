@@ -262,9 +262,6 @@ export class LabradNodes extends polymer.Base {
   @property({type: Object})
   managerApi: ManagerApi;
 
-  @property({type: Number, value: 0})
-  kick: number;
-
   @property({type: Boolean, value: false, notify: true})
   isAutostartFiltered: boolean;
 
@@ -470,7 +467,7 @@ export class LabradNodes extends polymer.Base {
 
     this.updateNodeServerBinding('globalServersFiltered');
     this.updateNodeServerBinding('localServersFiltered');
-
+t 
     this.updateFilters();
   }
 
