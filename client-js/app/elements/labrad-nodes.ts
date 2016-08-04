@@ -40,10 +40,10 @@ export class LabradInstanceController extends polymer.Base {
   @property({type: Boolean})
   runningElsewhere: boolean;
 
-  @property({type: String, notify: true})
+  @property({type: String, notify: true, value: 'STOPPED'})
   status: string;
 
-  @property({type: Boolean, value: true})
+  @property({type: Boolean, notify: true, value: true})
   active: boolean;
 
   @property({type: Object, notify: true})
@@ -274,6 +274,36 @@ export class LabradNodes extends polymer.Base {
   localServersFiltered: ServerInfo[];
 
   private lifetime = new Lifetime();
+
+
+  attached() {
+    // Global servers are unique, and hence, on initial page load, we need to
+    // sync the state between various control components to reflect that a
+    // server running on one node may exist on another node.
+
+    // Get the current status of all server/node combinations
+    const nodeServerStatus = {};
+    const instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
+    for (let i = 0; i < instances.length; i++) {
+      const instance = <any>instances[i];
+      if (!nodeServerStatus.hasOwnProperty(instance.node)) {
+        nodeServerStatus[instance.node] = {};
+      }
+      nodeServerStatus[instance.node][instance.name] = instance.status;
+    }
+
+    // Announce to all nodes the status of each other node
+    for (const node of this.info) {
+      for (const server of node.servers) {
+        this.onServerStatus({
+          node: node.name,
+          server: server.name,
+          instance: server.instanceName,
+          status: nodeServerStatus[node.name][server.name]
+        });
+      }
+    }
+  }
 
   detached() {
     this.lifetime.close();
