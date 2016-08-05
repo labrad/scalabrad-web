@@ -146,16 +146,14 @@
 <dom-module id="labrad-nodes">
   <style>
     :host {
-      display: block;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
     }
     #container {
-      display: flex;
-      flex-grow: 1;
+      width: 100%;
     }
     #left-column {
-      flex-basis: 100%;
-      flex-direction: column;
-      flex-grow: 1;
       border-right: 1px solid #AAA;
     }
     table {
@@ -204,7 +202,7 @@
     }
   </style>
   <template>
-   <div id="container" class="fit">
+   <div id="container">
    <paper-header-panel id="left-column">
     <div class="paper-header" id="buttons">
       <paper-icon-button
