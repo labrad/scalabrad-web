@@ -73,10 +73,10 @@
       top: 5px;
     }
     paper-icon-button.autostart {
-      color: #75787B;
+      color: #85888B;
     }
     paper-icon-button.autostartOn {
-      color: #0F9D58;
+      color: #0FBD78;
     }
   </style>
   <template>
@@ -98,14 +98,14 @@
             hidden$="{{!autostart}}"
             class="autostart autostartOn"
             id="autostart"
-            icon="stars"
+            icon="star"
             on-click="toggleAutostart"
             title="Autostart: On"></paper-icon-button>
         <paper-icon-button
             hidden$="{{autostart}}"
             class="autostart"
             id="autostart"
-            icon="stars"
+            icon="star-border"
             on-click="toggleAutostart"
             title="Autostart: Off"></paper-icon-button>
       </span>
@@ -208,14 +208,14 @@
       <paper-icon-button
         hidden$={{isAutostartFiltered}}
         class="autostartFilterOff"
-        icon="stars"
+        icon="star"
         id="star"
         on-click="toggleAutostartFilter"
         title="Show Only Autostart Servers"></paper-icon-button>
       <paper-icon-button
         hidden$={{!isAutostartFiltered}}
         class="autostartFilterOn"
-        icon="stars"
+        icon="star"
         id="star"
         on-click="toggleAutostartFilter"
         title="Show All Servers"></paper-icon-button>
