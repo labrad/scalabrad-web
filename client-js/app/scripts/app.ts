@@ -423,7 +423,7 @@ window.addEventListener('WebComponentsReady', () => {
       throw new Error('no credentials');
     }
     try {
-      // TODO: in TS2.0 compiler will understand .kind; can then remove casts
+      // TODO(maffoo): TS2 compiler understands .kind; can then remove casts.
       switch (credential.kind) {
         case 'oauth_token':
           await mgr.oauthLogin({
@@ -442,7 +442,7 @@ window.addEventListener('WebComponentsReady', () => {
       }
     } catch (error) {
       if (isPasswordError(error)) {
-        // if we had credentials, clear them out
+        // If we had credentials, clear them out.
         storage.removeItem(key);
       }
       throw error;
