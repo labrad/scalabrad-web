@@ -16,6 +16,7 @@ const PLOT_TOP_MARGIN = 50;
 const PLOT_BOTTOM_MARGIN = 50;
 const PLOT_LINE_WIDTH = 1.5;
 const PLOT_POINT_SIZE = 6;
+const PLOT_ZOOM_RECTANGLE_BORDER = 2;
 
 
 /**
@@ -1126,33 +1127,36 @@ export class Plot extends polymer.Base {
 
 
   /**
+   * Helper function to get mouse position in the coordinates of the svg plot
+   * area. The d3.mouse function returns coordinates relative to the full html
+   * element, so we must account for the margins. We also clip the coordinates
+   * to the available plot area.
+   */
+  private mousePositionClipped(offset: number): number[] {
+    const [x, y] = d3.mouse(this);
+    return [
+      clip(x - this.margin.left, 0, this.width + offset),
+      clip(y - this.margin.top, 0, this.height + offset)
+    ];
+  }
+
+
+  /**
    * Zoom into a selected rectangular region on the graph.
    */
-  private drawZoomRectangle(): void {
+  private drawRectangle(callback: Function): void {
     // Only trigger zoom rectangle on left click
     if (d3.event.button !== MOUSE_MAIN_BUTTON) {
       return;
     }
 
-    // Helper function to get mouse position in the coordinates of the svg plot
-    // area. The d3.mouse function returns coordinates relative to the full html
-    // element, so we must account for the margins. We also clip the coordinates
-    // to the available plot area.
-    const mousePos = (offset) => {
-      const [x, y] = d3.mouse(this);
-      return [
-        clip(x - this.margin.left, 0, this.width + offset),
-        clip(y - this.margin.top, 0, this.height + offset)
-      ];
-    }
-
-    const [originX, originY] = mousePos(0);
+    const [originX, originY] = this.mousePositionClipped(0);
 
     const rect = this.$.zoomRectangle;
 
     d3.select(window)
       .on('mousemove', () => {
-        const [x, y] = mousePos(-4);
+        const [x, y] = this.mousePositionClipped(-2 * PLOT_ZOOM_RECTANGLE_BORDER);
         const posX = Math.min(originX, x) + this.margin.left;
         const posY = Math.min(originY, y) + this.margin.top;
         const width = Math.abs(x - originX);
@@ -1164,28 +1168,41 @@ export class Plot extends polymer.Base {
         rect.style.display = 'block';
       })
       .on('mouseup', () => {
-        const [x, y] = mousePos(0);
+        const [x, y] = this.mousePositionClipped(0);
         d3.select(window)
           .on('mousemove', null)
           .on('mouseup', null);
-        if (x !== originX && y !== originY) {
-          // Convert box limits from screen to data coordinates and make sure
-          // they are in the right order, regardless of which way the user
-          // dragged the box.
-          const xScale = this.xScale,
-                yScale = this.yScale,
-                xMin = Math.min(xScale.invert(originX), xScale.invert(x)),
-                xMax = Math.max(xScale.invert(originX), xScale.invert(x)),
-                yMin = Math.min(yScale.invert(originY), yScale.invert(y)),
-                yMax = Math.max(yScale.invert(originY), yScale.invert(y));
-          this.zoom.x(xScale.domain([xMin, xMax]))
-                   .y(yScale.domain([yMin, yMax]));
-        }
-        rect.style.display = 'none';
-        this.handleZoom();
+
+        callback(rect, x, y, originX, originY);
       }, true);
     d3.event.preventDefault();
     d3.event.stopPropagation();
+  }
+
+
+  /**
+   * Hooks the mouse to draw a rectangle for setting the zoom bounds.
+   * Sets a callback to set the zoom bounds and zoom on mouse up.
+   */
+  private drawZoomRectangle() {
+    this.drawRectangle((rect, x, y, originX, originY) => {
+      rect.style.display = 'none';
+
+      if (x !== originX && y !== originY) {
+        // Convert box limits from screen to data coordinates and make sure
+        // they are in the right order, regardless of which way the user
+        // dragged the box.
+        const xScale = this.xScale,
+              yScale = this.yScale,
+              xMin = Math.min(xScale.invert(originX), xScale.invert(x)),
+              xMax = Math.max(xScale.invert(originX), xScale.invert(x)),
+              yMin = Math.min(yScale.invert(originY), yScale.invert(y)),
+              yMax = Math.max(yScale.invert(originY), yScale.invert(y));
+        this.zoom.x(xScale.domain([xMin, xMax]))
+                 .y(yScale.domain([yMin, yMax]));
+      }
+      this.handleZoom();
+    });
   }
 
 
