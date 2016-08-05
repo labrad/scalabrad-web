@@ -289,9 +289,6 @@ export class LabradNodes extends polymer.Base {
   @property({type: Object})
   managerApi: ManagerApi;
 
-  @property({type: Number, value: 0})
-  kick: number;
-
   @property({type: Boolean, value: false, notify: true})
   isAutostartFiltered: boolean;
 
@@ -306,6 +303,9 @@ export class LabradNodes extends polymer.Base {
 
   @property({type: Array, value: () => []})
   localServersFiltered: ServerInfo[];
+
+  @property({type: Array, value: []})
+  nodeNames: String;
 
   private lifetime = new Lifetime();
 
@@ -457,11 +457,16 @@ export class LabradNodes extends polymer.Base {
     return -1;
   }
 
+  sortNodes(a: string, b: string) {
+    if (a === b) return 0;
+    return a > b ? 1 : -1;
+  }
 
   addItemToList(item: NodeStatus): void {
     const idx = this.getNodeIndex(item, this.info);
     if (idx === -1) {
       this.push('info', item);
+      this.push('nodeNames', item.name);
     } else {
       this.splice('info', idx, 1, item);
     }
@@ -506,24 +511,35 @@ export class LabradNodes extends polymer.Base {
 
     this.updateNodeServerBinding('globalServersFiltered');
     this.updateNodeServerBinding('localServersFiltered');
+    this.updateNodeServerBinding('globalServers');
+    this.updateNodeServerBinding('localServers');
 
-    this.updateFilters();
-
-    this.kick++;
+    // If a node comes online that has a server marked as autostart that wasn't
+    // previously, and we are currently filtering, then we need to update the
+    // filters to show the new server(s).
+    if (this.isAutostartFiltered) {
+      this.updateFilters();
+    }
   }
 
   private removeItemFromList(item: ServerDisconnectMessage): void {
     const idx = this.getNodeIndex(item, this.info);
     if (idx !== -1) {
       this.splice('info', idx, 1);
+      this.splice('nodeNames', idx, 1);
     }
 
     this.updateNodeServerBinding('globalServersFiltered');
     this.updateNodeServerBinding('localServersFiltered');
+    this.updateNodeServerBinding('globalServers');
+    this.updateNodeServerBinding('localServers');
 
-    this.updateFilters();
-
-    this.kick++;
+    // If a node goes offline that has a server marked as autostart that no
+    // other does, and we are currently filtering, then we need to update the
+    // filters to hide the invalid server(s).
+    if (this.isAutostartFiltered) {
+      this.updateFilters();
+    }
   }
 
 
@@ -637,14 +653,7 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private _nodeNames(info: Array<NodeStatus>): Array<string> {
-    const names = info.map((n) => n.name);
-    names.sort();
-    return names;
-  }
-
-
-  private versionMap(info: Array<NodeStatus>): Map<string, Set<string>> {
+  private versionMap(info: NodeStatus[]): Map<string, Set<string>> {
     const versionMap = new Map<string, Set<string>>();
     for (let nodeStatus of info) {
       for (let {name, version} of nodeStatus.servers) {
@@ -655,11 +664,5 @@ export class LabradNodes extends polymer.Base {
       }
     }
     return versionMap;
-  }
-
-
-  @computed()
-  nodeNames(info: Array<NodeStatus>, kick: number): Array<string> {
-    return this._nodeNames(info)
   }
 }
