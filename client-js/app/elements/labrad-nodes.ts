@@ -170,7 +170,7 @@ export class LabradInstanceController extends polymer.Base {
    * state of this particular server instance.
    */
   updateButtonState(status: string) {
-    var options = {info: false, start: false, stop: false, restart: false};
+    const options = {info: false, start: false, stop: false, restart: false};
     switch (status) {
       case 'STOPPED': this.active = false; options.start = true; break;
       case 'STARTING': this.active = true; break;
@@ -178,8 +178,8 @@ export class LabradInstanceController extends polymer.Base {
       case 'STOPPING': this.active = true; break;
       default: break;
     }
-    var updateButton = (name: string): void => {
-      var button = this.$[name];
+    const updateButton = (name: string): void => {
+      const button = this.$[name];
       if (options[name]) {
         button.removeAttribute('disabled');
       } else {
@@ -387,8 +387,8 @@ export class LabradNodes extends polymer.Base {
 
 
   onServerStatus(msg: ServerStatusMessage): void {
-    var instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
-    for (const inst of instance) {
+    const instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
+    for (const inst of instances) {
       const instance = <any>inst;
       if (instance.name === msg.server) {
         // Send the server status to all instance controllers, even if they are
@@ -607,14 +607,14 @@ export class LabradNodes extends polymer.Base {
 
 
   private _nodeNames(info: Array<NodeStatus>): Array<string> {
-    var names = info.map((n) => n.name);
+    const names = info.map((n) => n.name);
     names.sort();
     return names;
   }
 
 
   private versionMap(info: Array<NodeStatus>): Map<string, Set<string>> {
-    var versionMap = new Map<string, Set<string>>();
+    const versionMap = new Map<string, Set<string>>();
     for (let nodeStatus of info) {
       for (let {name, version} of nodeStatus.servers) {
         if (!versionMap.has(name)) {
