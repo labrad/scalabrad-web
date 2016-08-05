@@ -528,6 +528,9 @@ export class LabradNodes extends polymer.Base {
     for (let nodeIdx = nodes.length - 1; nodeIdx >= 0; --nodeIdx) {
       const node = nodes[nodeIdx];
       if (!onlineNodes.has(node.name)) {
+        // The Polymer way to mutate the array that exists at
+        // `this[serversName][serverIdx].nodes`.
+        // The # is used to access a particular index in an array.
         this.splice(`${serversName}.#${serverIdx}.nodes`, nodeIdx, 1);
       }
     }
