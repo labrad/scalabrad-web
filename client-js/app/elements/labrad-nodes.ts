@@ -439,7 +439,7 @@ export class LabradNodes extends polymer.Base {
 
     const filterFunction = this.filterServersFunction();
 
-    const versionMap = this._versionMap(this.info);
+    const versionMap = this.versionMap(this.info);
 
     for (const server of item.servers) {
       const versions = versionMap.get(server.name);
@@ -498,7 +498,7 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private _serverStatusMap(statuses: ServerStatus[]): Map<String, ServerStatus> {
+  private serverStatusMap(statuses: ServerStatus[]): Map<String, ServerStatus> {
     const serverStatusMap = new Map<String, ServerStatus>();
     for (const s of statuses) {
       serverStatusMap.set(s.name, s);
@@ -507,7 +507,7 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private _nodeAutostartSet(node: NodeStatus): Set<String> {
+  private nodeAutostartSet(node: NodeStatus): Set<String> {
     const nodeAutostartSet = new Set();
     for (const server of node.autostartList) {
       nodeAutostartSet.add(server);
@@ -543,7 +543,7 @@ export class LabradNodes extends polymer.Base {
     }
 
     for (const node of this.info) {
-      const serverStatusMap = this._serverStatusMap(node.servers);
+      const serverStatusMap = this.serverStatusMap(node.servers);
 
       const nodeHasServer = serverStatusMap.has(server.name);
       const serverHasNode = serverNodes.has(node.name);
@@ -554,7 +554,7 @@ export class LabradNodes extends polymer.Base {
         // insert a noop node into the server so it is still displayed properly.
         if (nodeHasServer) {
           const serverStatus = serverStatusMap.get(server.name);
-          const nodeAutostartSet = this._nodeAutostartSet(node);
+          const nodeAutostartSet = this.nodeAutostartSet(node);
 
           this.push(`${serversName}.#${serverIdx}.nodes`, {
             name: node.name,
@@ -605,14 +605,14 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private _nodeNames(info: Array<NodeStatus>): Array<string> {
+  private nodeNames(info: Array<NodeStatus>): Array<string> {
     var names = info.map((n) => n.name);
     names.sort();
     return names;
   }
 
 
-  private _versionMap(info: Array<NodeStatus>): Map<string, Set<string>> {
+  private versionMap(info: Array<NodeStatus>): Map<string, Set<string>> {
     var versionMap = new Map<string, Set<string>>();
     for (let nodeStatus of info) {
       for (let {name, version} of nodeStatus.servers) {
@@ -628,6 +628,6 @@ export class LabradNodes extends polymer.Base {
 
   @computed()
   nodeNames(info: Array<NodeStatus>, kick: number): Array<string> {
-    return this._nodeNames(info)
+    return this.nodeNames(info)
   }
 }
