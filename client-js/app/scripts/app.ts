@@ -5,7 +5,7 @@ import "whatwg-fetch";
 
 import {Activity} from "./activity";
 import * as activities from "./activities";
-import {Credential, Password, OAuthToken, loadCredential, saveCredential} from "./credentials";
+import {Credential, Password, OAuthToken, loadCredential, saveCredential, clearCredential} from "./credentials";
 import {ManagerApi, ManagerServiceJsonRpc} from "./manager";
 import * as registry from "./registry";
 import * as datavault from "./datavault";
@@ -412,10 +412,6 @@ window.addEventListener('WebComponentsReady', () => {
    * from this storage object.
    */
   async function attemptLogin(mgr: ManagerApi, manager: string, storage: Storage): Promise<void> {
-    var key = 'labrad-credentials';
-    if (manager) {
-      key = `${key}.${manager}`;
-    }
     var credential = loadCredential(manager, storage);
     if (credential === null) {
       throw new Error('no credentials');
@@ -441,7 +437,7 @@ window.addEventListener('WebComponentsReady', () => {
     } catch (error) {
       if (isPasswordError(error)) {
         // If we had credentials, clear them out.
-        storage.removeItem(key);
+        clearCredential(manager, storage);
       }
       throw error;
     }

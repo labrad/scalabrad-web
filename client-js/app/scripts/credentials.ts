@@ -28,12 +28,8 @@ export type Credential = Password | OAuthToken;
  * If valid a credential is not found, return null.
  */
 export function loadCredential(manager: string, storage: Storage): Credential {
-  var key = 'labrad-credentials';
-  if (manager) {
-    key += '.' + manager;
-  }
   try {
-    return JSON.parse(storage.getItem(key)) as Credential;
+    return JSON.parse(storage.getItem(storageKey(manager))) as Credential;
   } catch (e) {
     return null;
   }
@@ -44,9 +40,21 @@ export function loadCredential(manager: string, storage: Storage): Credential {
  */
 export function saveCredential(manager: string, storage: Storage,
                                credential: Credential) {
+  storage.setItem(storageKey(manager), JSON.stringify(credential));
+}
+
+/**
+ * Clear credential from the given Storage object.
+ */
+export function clearCredential(manager: string, storage: Storage): void {
+  storage.removeItem(storageKey(manager));
+}
+
+function storageKey(manager: string): string {
   var key = 'labrad-credentials';
   if (manager) {
-    key += '.' + manager;
+    key = `${key}.${manager}`;
   }
-  storage.setItem(key, JSON.stringify(credential));
+  return key;
 }
+
