@@ -296,8 +296,9 @@ export class LabradNodes extends polymer.Base {
     // same type. This informs existing servers of the new server state, and
     // informs the new server of the existing servers' states.
     const instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
-    for (var i = 0; i < instances.length; i++) {
-      const instance = <any>instances[i];
+    for (const inst of instances) {
+      // Required to make the compiler cast the object correctly.
+      const instance = <any>inst;
       if (instance.name == event.detail.server) {
         const msg = {
           node: instance.node,
@@ -387,8 +388,8 @@ export class LabradNodes extends polymer.Base {
 
   onServerStatus(msg: ServerStatusMessage): void {
     var instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
-    for (var i = 0; i < instances.length; i++) {
-      var instance = <any>instances[i];
+    for (const inst of instance) {
+      const instance = <any>inst;
       if (instance.name === msg.server) {
         // Send the server status to all instance controllers, even if they are
         // on other nodes. This is because for global servers we must lock out
@@ -605,7 +606,7 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private nodeNames(info: Array<NodeStatus>): Array<string> {
+  private _nodeNames(info: Array<NodeStatus>): Array<string> {
     var names = info.map((n) => n.name);
     names.sort();
     return names;
@@ -628,6 +629,6 @@ export class LabradNodes extends polymer.Base {
 
   @computed()
   nodeNames(info: Array<NodeStatus>, kick: number): Array<string> {
-    return this.nodeNames(info)
+    return this._nodeNames(info)
   }
 }
