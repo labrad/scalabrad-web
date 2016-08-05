@@ -241,10 +241,17 @@ interface ServerInfo {
   autostart: boolean;
   errorString: string;
   errorException: string;
-  nodes: Array<NodeServerStatus>;
+  nodes: NodeServerStatus[];
 }
 
-type NodeServerStatus = {name: string, exists: boolean, autostart?: boolean, status?: string, instanceName?: string};
+type NodeServerStatus = {
+  name: string,
+  exists: boolean,
+  autostart?: boolean,
+  status?: string,
+  instanceName?: string
+};
+
 type ServerFilterFunction = (item: ServerInfo) => boolean;
 
 

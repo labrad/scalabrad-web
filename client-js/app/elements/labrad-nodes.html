@@ -38,7 +38,7 @@
     <template is="dom-if" if="{{error}}">
       <td colspan="999">
         {{error}}
-        <paper-button class='dismiss' on-click="dismissException">Dismiss</paper-button>
+        <paper-button class="dismiss" on-click="dismissException">Dismiss</paper-button>
 
         <div class="exceptionCollapse">
           <div>
@@ -46,7 +46,7 @@
             <paper-button on-click="toggleException">Show/Hide</paper-button>
           </div>
           <iron-collapse id="exceptionCollapse">
-            <div class='exception'>{{exception}}</div>
+            <div class="exception">{{exception}}</div>
           </iron-collapse>
         </div>
       </td>
@@ -204,26 +204,26 @@
     }
   </style>
   <template>
-   <div id="container" class='fit'>
+   <div id="container" class="fit">
    <paper-header-panel id="left-column">
     <div class="paper-header" id="buttons">
       <paper-icon-button
         hidden$={{isAutostartFiltered}}
-        class='autostartFilterOff'
+        class="autostartFilterOff"
         icon="stars"
         id="star"
         on-click="autostartFilter"
         title="Show Only Autostart Servers"></paper-icon-button>
       <paper-icon-button
         hidden$={{!isAutostartFiltered}}
-        class='autostartFilterOn'
+        class="autostartFilterOn"
         icon="stars"
         id="star"
         on-click="autostartFilter"
         title="Show All Servers"></paper-icon-button>
     </div>
 
-    <div class='fit'>
+    <div class="fit">
       <table>
         <thead>
           <th>Global Servers</th>
@@ -235,10 +235,10 @@
         <tbody>
           <template is="dom-repeat" items="{{globalServersFiltered}}" as="server">
             <tr>
-              <td class='name'>{{server.name}}</td>
-              <td class='version'>{{server.version}}</td>
+              <td class="name">{{server.name}}</td>
+              <td class="version">{{server.version}}</td>
               <template is="dom-repeat" items="{{server.nodes}}" as="node">
-                <td class='controls'>
+                <td class="controls">
                   <template is="dom-if" if="{{node.exists}}">
                     <labrad-instance-controller
                       places={{places}}
@@ -270,10 +270,10 @@
         <tbody>
           <template is="dom-repeat" items="{{localServersFiltered}}" as="server">
             <tr>
-              <td class='name'>{{server.name}}</td>
-              <td class='version'>{{server.version}}</td>
+              <td class="name">{{server.name}}</td>
+              <td class="version">{{server.version}}</td>
               <template is="dom-repeat" items="{{server.nodes}}" as="node">
-                <td class='controls'>
+                <td class="controls">
                   <template is="dom-if" if="{{node.exists}}">
                     <labrad-instance-controller
                       places={{places}}
