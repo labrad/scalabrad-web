@@ -4,8 +4,8 @@
 export interface ActivityState {
   elem: HTMLElement;
   route: string
-  breadcrumbs?: Array<{name: string; isLink: boolean; url?: string}>;
-  breadcrumbExtras?: Array<{name: string; isLink: boolean; url?: string}>;
+  breadcrumbs?: {name: string; isLink: boolean; url?: string}[];
+  breadcrumbExtras?: {name: string; isLink: boolean; url?: string}[];
 }
 
 /**

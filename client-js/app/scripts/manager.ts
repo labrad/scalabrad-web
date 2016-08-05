@@ -19,8 +19,8 @@ export interface SettingInfo {
   id: number;
   name: string;
   doc: string;
-  acceptedTypes: Array<string>;
-  returnedTypes: Array<string>;
+  acceptedTypes: string[];
+  returnedTypes: string[];
 }
 
 export interface ServerInfo {
@@ -29,9 +29,9 @@ export interface ServerInfo {
   description: string;
   version: string;
   instanceName: string;
-  environmentVars: Array<string>;
-  instances: Array<string>;
-  settings: Array<SettingInfo>;
+  environmentVars: string[];
+  instances: string[];
+  settings: SettingInfo[];
 }
 
 export interface LabradConnectMessage { host: string; }
@@ -43,7 +43,7 @@ export interface ManagerApi {
   login(params: {username: string; password: string, host: string}): Promise<void>;
   ping(): Promise<void>;
   version(): Promise<string>;
-  connections(): Promise<Array<ConnectionInfo>>;
+  connections(): Promise<ConnectionInfo[]>;
   connectionClose(id: number): Promise<string>;
   serverInfo(name: String): Promise<ServerInfo>;
 
@@ -80,8 +80,8 @@ export class ManagerServiceJsonRpc extends rpc.RpcService implements ManagerApi 
     return this.call<string>("version", []);
   }
 
-  connections(): Promise<Array<ConnectionInfo>> {
-    return this.call<Array<ConnectionInfo>>("connections", []);
+  connections(): Promise<ConnectionInfo[]> {
+    return this.call<ConnectionInfo[]>("connections", []);
   }
 
   connectionClose(id: number): Promise<string> {

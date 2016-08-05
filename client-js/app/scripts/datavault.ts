@@ -2,23 +2,23 @@ import {Observable} from './observable';
 import * as rpc from './rpc';
 
 export interface DataVaultListing {
-  path: Array<string>;
-  dirs: Array<{name: string; tags: Array<string>}>;
-  datasets: Array<{name: string; tags: Array<string>}>;
+  path: string[];
+  dirs: {name: string; tags: string[]}[];
+  datasets: {name: string; tags: string[]}[];
 }
 
 export interface DatasetInfo {
-  path: Array<string>;
+  path: string[];
   name: string;
   num: number;
-  independents: Array<{label: string; unit: string}>;
-  dependents: Array<{label: string; legend: string; unit: string}>;
-  params?: Array<{name: string; value: string}>;
+  independents: {label: string; unit: string}[];
+  dependents: {label: string; legend: string; unit: string}[];
+  params?: {name: string; value: string}[];
 }
 
 export interface TagsMessage {
-  dirTags: {[name: string]: Array<string>};
-  datasetTags: {[name: string]: Array<string>};
+  dirTags: {[name: string]: string[]};
+  datasetTags: {[name: string]: string[]};
 }
 
 export interface DataVaultApi {
@@ -30,14 +30,14 @@ export interface DataVaultApi {
   newParameter: Observable<void>;
   commentsAvailable: Observable<void>;
 
-  dir(path: Array<string>): Promise<DataVaultListing>;
-  datasetInfo(params: {path: Array<string>; dataset: number; includeParams?: boolean}): Promise<DatasetInfo>;
+  dir(path: string[]): Promise<DataVaultListing>;
+  datasetInfo(params: {path: string[]; dataset: number; includeParams?: boolean}): Promise<DatasetInfo>;
 
-  dataStreamOpen(params: {token: string; path: Array<string>; dataset: number}): Promise<void>;
-  dataStreamGet(params: {token: string; limit?: number}): Promise<Array<Array<number>>>;
+  dataStreamOpen(params: {token: string; path: string[]; dataset: number}): Promise<void>;
+  dataStreamGet(params: {token: string; limit?: number}): Promise<number[][]>;
   dataStreamClose(params: {token: string}): Promise<void>;
 
-  updateTags(params: {path: Array<string>; name: string; isDir: boolean; tags: Array<string>}): Promise<void>;
+  updateTags(params: {path: string[]; name: string; isDir: boolean; tags: string[]}): Promise<void>;
 }
 
 export class DataVaultService extends rpc.RpcService implements DataVaultApi {
@@ -60,27 +60,27 @@ export class DataVaultService extends rpc.RpcService implements DataVaultApi {
     this.connect('org.labrad.datavault.commentsAvailable', this.commentsAvailable);
   }
 
-  dir(path: Array<string>): Promise<DataVaultListing> {
+  dir(path: string[]): Promise<DataVaultListing> {
     return this.call<DataVaultListing>('dir', [path]);
   }
 
-  datasetInfo(params: {path: Array<string>; dataset: number; includeParams?: boolean}): Promise<DatasetInfo> {
+  datasetInfo(params: {path: string[]; dataset: number; includeParams?: boolean}): Promise<DatasetInfo> {
     return this.call<DatasetInfo>('datasetInfo', params);
   }
 
-  dataStreamOpen(params: {token: string; path: Array<string>; dataset: number}): Promise<void> {
+  dataStreamOpen(params: {token: string; path: string[]; dataset: number}): Promise<void> {
     return this.call<void>('dataStreamOpen', params);
   }
 
-  dataStreamGet(params: {token: string; limit?: number}): Promise<Array<Array<number>>> {
-    return this.call<Array<Array<number>>>('dataStreamGet', params);
+  dataStreamGet(params: {token: string; limit?: number}): Promise<number[][]> {
+    return this.call<number[][]>('dataStreamGet', params);
   }
 
   dataStreamClose(params: {token: string}): Promise<void> {
     return this.call<void>('dataStreamClose', params);
   }
 
-  updateTags(params: {name: string; isDir: boolean; tags: Array<string>}): Promise<void> {
+  updateTags(params: {name: string; isDir: boolean; tags: string[]}): Promise<void> {
     return this.call<void>('updateTags', params);
   }
 }

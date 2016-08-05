@@ -67,7 +67,7 @@ function pathRoute(n: number): string {
  * This is a helper to be used with heirarchical routes for the registry and
  * datavault, as created by the pathRoute function.
  */
-function getPath(ctx): Array<string> {
+function getPath(ctx): string[] {
   var path = [], i = 0;
   while (true) {
     var name = `p${i}`;

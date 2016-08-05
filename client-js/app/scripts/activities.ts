@@ -22,7 +22,7 @@ export class RegistryActivity implements Activity {
 
   constructor(private places: Places,
               private api: registry.RegistryApi,
-              public path: Array<string>) {}
+              public path: string[]) {}
 
   async start(): Promise<ActivityState> {
     this.api.newItem.add(() => this.onNewItem(), this.lifetime);
@@ -71,7 +71,7 @@ export class DatavaultActivity implements Activity {
 
   constructor(private places: Places,
               private api: datavault.DataVaultService,
-              public path: Array<string>) {}
+              public path: string[]) {}
 
   async start(): Promise<ActivityState> {
     console.info('Loading datavault:', this.path);
@@ -122,7 +122,7 @@ export class DatavaultActivity implements Activity {
     };
   }
 
-  private onNewDir(item: {name: string, tags?: Array<string>}) {
+  private onNewDir(item: {name: string, tags?: string[]}) {
     this.elem.newDir({
       name: item.name,
       url: this.places.grapherUrl(this.path, item.name),
@@ -130,7 +130,7 @@ export class DatavaultActivity implements Activity {
     });
   }
 
-  private onNewDataset(item: {name: string, tags?: Array<string>}) {
+  private onNewDataset(item: {name: string, tags?: string[]}) {
     this.elem.newDataset({
       name: item.name,
       url: this.places.datasetUrl(this.path, item.name.split(" - ")[0]),
@@ -171,13 +171,13 @@ export class DatavaultActivity implements Activity {
 
 export class DatavaultLiveActivity implements Activity {
   private elem: LabradGrapherLive;
-  private plots: Array<Plot> = [];
+  private plots: Plot[] = [];
   private lifetime = new Lifetime();
-  private activities: Array<DatasetActivity> = [];
+  private activities: DatasetActivity[] = [];
 
   constructor(private places: Places,
               private api: datavault.DataVaultApi,
-              public path: Array<string>) {}
+              public path: string[]) {}
 
   async start(): Promise<ActivityState> {
     this.api.newDataset.add(item => this.onNewDataset(item.name), this.lifetime);
@@ -219,7 +219,7 @@ export class DatavaultLiveActivity implements Activity {
     this.addDataset(name);
   }
 
-  private async addInitialDatasets(datasets: Array<string>) {
+  private async addInitialDatasets(datasets: string[]) {
     for (let dataset of datasets) {
       await this.addDataset(dataset);
     }
@@ -278,7 +278,7 @@ export class DatasetActivity implements Activity {
 
   constructor(private places: Places,
               private api: datavault.DataVaultApi,
-              public path: Array<string>,
+              public path: string[],
               public dataset: number) {
     this.lifetime.defer(() => this.dataAvailable.close());
   }

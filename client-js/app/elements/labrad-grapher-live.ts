@@ -1,10 +1,10 @@
 @component('labrad-grapher-live')
 export class LabradGrapherLive extends polymer.Base {
-  @property({type: Array})
-  plots: Array<HTMLElement> = [];
+  @property({type: Array, value: () => []})
+  plots: HTMLElement[];
 
   @property({type: Array})
-  path: Array<string>;
+  path: string[];
 
   addPlot(plot: HTMLElement): void {
     var plots = this.$.plots;

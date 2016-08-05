@@ -130,7 +130,7 @@ export class JsonRpcSocket {
    * (call by name). The returned Promise will be resolved or rejected
    * when we receive a success or error response, respectively.
    */
-  async call(method: string, params: Array<string> | Object): Promise<any> {
+  async call(method: string, params: string[] | Object): Promise<any> {
     await this.openPromise;
     var id = this.nextId;
     this.nextId += 1;
@@ -154,7 +154,7 @@ export class JsonRpcSocket {
    * the remote party, whether notification was delivered successfully
    * or not.
    */
-  async notify(method: string, params: Array<string> | Object) {
+  async notify(method: string, params: string[] | Object) {
     await this.openPromise;
     var message = {
       jsonrpc: "2.0",
@@ -190,11 +190,11 @@ export class RpcService {
     this.prefix = prefix;
   }
 
-  call<A>(method: string, params: Array<string> | Object): Promise<A> {
+  call<A>(method: string, params: string[] | Object): Promise<A> {
     return <Promise<A>> this.socket.call(this.prefix + method, params);
   }
 
-  notify(method: string, params: Array<string> | Object): void {
+  notify(method: string, params: string[] | Object): void {
     this.socket.notify(this.prefix + method, params);
   }
 
