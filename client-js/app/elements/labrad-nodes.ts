@@ -275,16 +275,16 @@ export class LabradNodes extends polymer.Base {
   @property({type: Boolean, value: false, notify: true})
   isAutostartFiltered: boolean;
 
-  @property({type: Object, value: []})
+  @property({type: Array, value: []})
   globalServers: ServerInfo[];
 
-  @property({type: Object, value: []})
+  @property({type: Array, value: []})
   localServers: ServerInfo[];
 
-  @property({type: Object, value: []})
+  @property({type: Array, value: []})
   globalServersFiltered: ServerInfo[];
 
-  @property({type: Object, value: []})
+  @property({type: Array, value: []})
   localServersFiltered: ServerInfo[];
 
   private lifetime = new Lifetime();
@@ -321,7 +321,7 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  autostartFilter() {
+  toggleAutostartFilter() {
     this.set('isAutostartFiltered', !this.isAutostartFiltered);
     this.updateFilters();
   }
@@ -399,17 +399,25 @@ export class LabradNodes extends polymer.Base {
   }
 
 
+  /**
+   * The index of a given node within an array.
+   *
+   * Returns -1 if item is not found.
+   **/
   private getNodeIndex(item: (NodeStatus | ServerDisconnectMessage), array: NodeStatus[]): number {
-    let idx = -1;
     for (let i = 0; i < array.length; ++i) {
       if (array[i].name === item.name) {
-        idx = i;
-        break;
+        return i;
       }
     }
-    return idx;
+    return -1;
   }
 
+  /**
+   * The index of a given server within an array.
+   *
+   * Returns -1 if item is not found.
+   **/
   private getServerIndex(server: ServerStatus, servers: ServerInfo[]): number {
     for (let idx = 0; idx < servers.length; ++idx) {
       const s = servers[idx];
