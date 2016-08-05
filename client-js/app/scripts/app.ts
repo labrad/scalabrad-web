@@ -308,7 +308,7 @@ window.addEventListener('WebComponentsReady', () => {
           password: password
         };
         const storage = rememberPassword ? window.localStorage
-                                       : window.sessionStorage;
+                                         : window.sessionStorage;
         saveCredential(manager, storage, credential);
         app.$.loginDialog.close();
         obligation.resolve();

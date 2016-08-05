@@ -1,3 +1,4 @@
+import {BreadcrumbItem} from './labrad-breadcrumbs';
 import {Places} from '../scripts/places';
 
 @component('labrad-app')
@@ -21,10 +22,10 @@ export class LabradApp extends polymer.Base {
   hasBreadcrumbs: boolean;
 
   @property({type: Array})
-  breadcrumbs: {name: string; isLink: boolean; url?: string}[];
+  breadcrumbs: BreadcrumbItem[];
 
   @property({type: Array, value: () => []})
-  breadcrumbExtras: {name: string; isLink: boolean; url?: string}[];
+  breadcrumbExtras: BreadcrumbItem[];
 
   @property({type: Boolean})
   allowUsernameLogin: boolean;
