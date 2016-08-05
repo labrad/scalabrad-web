@@ -76,6 +76,10 @@ class ApiBackend(config: LabradConnectionConfig)(implicit ec: ExecutionContext) 
 
       CALL  org.labrad.node.allNodes       nodeApi.allNodes
       CALL                 .refreshNode           .refreshNode
+      CALL                 .autostartNode         .autostartNode
+      CALL                 .autostartList         .autostartList
+      CALL                 .autostartAdd          .autostartAdd
+      CALL                 .autostartRemove       .autostartRemove
       CALL                 .restartServer         .restartServer
       CALL                 .startServer           .startServer
       CALL                 .stopServer            .stopServer

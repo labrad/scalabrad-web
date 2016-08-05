@@ -6,13 +6,15 @@ export interface ServerStatus {
   description: string;
   version: string;
   instanceName: string;
-  environmentVars: Array<string>;
-  instances: Array<string>;
+  environmentVars: string[];
+  instances: string[];
+  autostart: boolean;
 }
 
 export interface NodeStatus {
   name: string;
-  servers: Array<ServerStatus>;
+  servers: ServerStatus[];
+  autostartList: string[];
 }
 
 export interface ServerStatusMessage {
@@ -26,6 +28,11 @@ export interface NodeApi {
   allNodes(): Promise<Array<NodeStatus>>;
 
   refreshNode(node: string): Promise<string>;
+
+  autostartNode(node: string): Promise<string>;
+  autostartList(node: string): Promise<string[]>;
+  autostartAdd(params: {node: string; server: string}): Promise<void>;
+  autostartRemove(params: {node: string; server: string}): Promise<void>;
 
   restartServer(params: {node: string; server: string}): Promise<void>;
   startServer(params: {node: string; server: string}): Promise<void>;
@@ -52,6 +59,22 @@ export class NodeService extends rpc.RpcService implements NodeApi {
 
   refreshNode(node: string): Promise<string> {
     return this.call<string>('refreshNode', [node]);
+  }
+
+  autostartNode(node: string): Promise<string> {
+    return this.call<string>('autostartNode', [node]);
+  }
+
+  autostartList(node: string): Promise<string[]> {
+    return this.call<string[]>('autostartList', [node]);
+  }
+
+  autostartAdd(params: {node: string; server: string}): Promise<void> {
+    return this.call<void>('autostartAdd', params);
+  }
+
+  autostartRemove(params: {node: string; server: string}): Promise<void> {
+    return this.call<void>('autostartRemove', params);
   }
 
   restartServer(params: {node: string; server: string}): Promise<void> {
