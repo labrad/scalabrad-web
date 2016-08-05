@@ -6,7 +6,7 @@ import "whatwg-fetch";
 import {Activity} from "./activity";
 import * as activities from "./activities";
 import {Credential, Password, OAuthToken, loadCredential, saveCredential} from "./credentials";
-import {ManagerApi, ManagerApiImpl} from "./manager";
+import {ManagerApi, ManagerServiceJsonRpc} from "./manager";
 import * as registry from "./registry";
 import * as datavault from "./datavault";
 import * as nodeApi from "./node";
@@ -494,7 +494,7 @@ window.addEventListener('WebComponentsReady', () => {
       });
     }
 
-    var mgr = new ManagerApiImpl(socket);
+    var mgr = new ManagerServiceJsonRpc(socket);
     if (topLevel) {
       mgr.version().then((version) => {
         app.serverVersion = version;
