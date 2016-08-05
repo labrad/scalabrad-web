@@ -278,12 +278,12 @@ window.addEventListener('WebComponentsReady', () => {
     }
   }
 
-  // create route for OAuth login callback
+  // Create route for OAuth login callback.
   page(prefix + '/oauth2callback', (ctx, next) => {
     finishOAuthLogin(ctx.querystring);
   });
 
-  // create the rest of the application routes
+  // Create the rest of the application routes.
   createRoutes(false);
   createRoutes(true);
 
@@ -291,23 +291,23 @@ window.addEventListener('WebComponentsReady', () => {
    * Launch a dialog box to let the user log in to labrad.
    */
   async function loginWithDialog(mgr: ManagerApi, manager: string): Promise<void> {
-    var {obligation, promise} = obligate<void>();
+    const {obligation, promise} = obligate<void>();
     async function doLogin() {
-      var username = app.$.usernameInput.value,
-          password = app.$.passwordInput.value,
-          rememberPassword = app.$.rememberPassword.checked;
+      const username = app.$.usernameInput.value,
+            password = app.$.passwordInput.value,
+            rememberPassword = app.$.rememberPassword.checked;
       try {
-        var result = await mgr.login({
+        const result = await mgr.login({
           username: username,
           password: password,
           manager: manager
         });
-        var credential: Password = {
+        const credential: Password = {
           kind: 'username+password',
           username: username,
           password: password
         };
-        var storage = rememberPassword ? window.localStorage
+        const storage = rememberPassword ? window.localStorage
                                        : window.sessionStorage;
         saveCredential(manager, storage, credential);
         app.$.loginDialog.close();
@@ -369,10 +369,8 @@ window.addEventListener('WebComponentsReady', () => {
   async function finishOAuthLogin(queryString: string) {
     const params = decodeQueryString(queryString);
     const state = JSON.parse(params['state']);
-    console.log(params);
-    console.log(state);
 
-    // now, exchange the access token for an ID token
+    // Exchange the access token for an ID token.
     const requestParams = {
       code: params['code'],
       client_id: state['client_id'],
@@ -416,7 +414,7 @@ window.addEventListener('WebComponentsReady', () => {
   async function attemptLogin(mgr: ManagerApi, manager: string, storage: Storage): Promise<void> {
     var key = 'labrad-credentials';
     if (manager) {
-      key += '.' + manager;
+      key = `${key}.${manager}`;
     }
     var credential = loadCredential(manager, storage);
     if (credential === null) {

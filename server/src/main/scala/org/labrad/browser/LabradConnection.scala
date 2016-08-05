@@ -184,7 +184,7 @@ class LabradConnection(
         client.disconnected(cxn.host)
 
         if (live) {
-          // reconnect after some delay
+          // Reconnect after some delay.
           val newCxn = new Client(
             "Browser",
             host = cxn.host,
