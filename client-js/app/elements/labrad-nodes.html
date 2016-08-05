@@ -38,7 +38,7 @@
     <template is="dom-if" if="{{error}}">
       <td colspan="999">
         {{error}}
-        <paper-button class='dismiss' on-click="dismissException">Dismiss</paper-button>
+        <paper-button class="dismiss" on-click="dismissException">Dismiss</paper-button>
 
         <div class="exceptionCollapse">
           <div>
@@ -46,7 +46,7 @@
             <paper-button on-click="toggleException">Show/Hide</paper-button>
           </div>
           <iron-collapse id="exceptionCollapse">
-            <div class='exception'>{{exception}}</div>
+            <div class="exception">{{exception}}</div>
           </iron-collapse>
         </div>
       </td>
@@ -146,7 +146,15 @@
 <dom-module id="labrad-nodes">
   <style>
     :host {
-      display: block;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+    }
+    #container {
+      width: 100%;
+    }
+    #left-column {
+      border-right: 1px solid #AAA;
     }
     table {
       border-collapse: collapse;
@@ -180,23 +188,62 @@
     td.controls {
       width: 350px;
     }
+    #buttons {
+      height: 50px;
+    }
+    #buttons paper-icon-button {
+      margin: 5px;
+    }
+    .autostartFilterOn {
+      color: #000;
+    }
+    .autostartFilterOff {
+      color: #aaa;
+    }
   </style>
   <template>
-    <div>
+   <div id="container">
+   <paper-header-panel id="left-column">
+    <div class="paper-header" id="buttons">
+      <paper-icon-button
+        hidden$={{isAutostartFiltered}}
+        class="autostartFilterOff"
+        icon="stars"
+        id="star"
+        on-click="toggleAutostartFilter"
+        title="Show Only Autostart Servers"></paper-icon-button>
+      <paper-icon-button
+        hidden$={{!isAutostartFiltered}}
+        class="autostartFilterOn"
+        icon="stars"
+        id="star"
+        on-click="toggleAutostartFilter"
+        title="Show All Servers"></paper-icon-button>
+    </div>
+
+    <div class="fit">
       <table>
         <thead>
           <th>Global Servers</th>
           <th></th>
-          <template is="dom-repeat" items="{{nodeNames}}" as="node">
+          <template is="dom-repeat"
+                    items="{{nodeNames}}"
+                    as="node"
+                    sort="sortNodes">
             <th><labrad-node-controller places={{places}} api={{api}} name={{node}}></labrad-node-controller></th>
           </template>
         </thead>
         <tbody>
-          <template is="dom-repeat" items="{{globalServers}}" as="server">
+          <template is="dom-repeat"
+                    items="{{globalServersFiltered}}"
+                    as="server">
             <tr>
               <td class='name'>{{server.name}}</td>
               <td class='version'>{{server.version}}</td>
-              <template is="dom-repeat" items="{{server.nodes}}" as="node">
+              <template is="dom-repeat"
+                        items="{{server.nodes}}"
+                        as="node"
+                        sort="sortNodes">
                 <td class='controls'>
                   <template is="dom-if" if="{{node.exists}}">
                     <labrad-instance-controller
@@ -227,12 +274,12 @@
           </template>
         </thead>
         <tbody>
-          <template is="dom-repeat" items="{{localServers}}" as="server">
+          <template is="dom-repeat" items="{{localServersFiltered}}" as="server">
             <tr>
-              <td class='name'>{{server.name}}</td>
-              <td class='version'>{{server.version}}</td>
+              <td class="name">{{server.name}}</td>
+              <td class="version">{{server.version}}</td>
               <template is="dom-repeat" items="{{server.nodes}}" as="node">
-                <td class='controls'>
+                <td class="controls">
                   <template is="dom-if" if="{{node.exists}}">
                     <labrad-instance-controller
                       places={{places}}
@@ -241,7 +288,8 @@
                       server={{server}}
                       instance-name={{node.instanceName}}
                       node={{node.name}}
-                      status={{node.status}} />
+                      status={{node.status}}
+                      autostart={{node.autostart}} />
                   </template>
                 </td>
               </template>
@@ -253,5 +301,7 @@
         </tbody>
       </table>
     </div>
+   </paper-header-panel>
+   </div>
   </template>
 </dom-module>
