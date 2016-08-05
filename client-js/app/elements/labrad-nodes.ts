@@ -170,22 +170,42 @@ export class LabradInstanceController extends polymer.Base {
    * state of this particular server instance.
    */
   updateButtonState(status: string) {
-    var options = {info: false, start: false, stop: false, restart: false};
+    const options = {
+      info: false,
+      start: false,
+      stop: false,
+      restart: false
+    };
+
     switch (status) {
-      case 'STOPPED': this.active = false; options.start = true; break;
-      case 'STARTING': this.active = true; break;
-      case 'STARTED': this.active = false; options.info = true; options.stop = true; options.restart = true; break;
-      case 'STOPPING': this.active = true; break;
+      case 'STOPPED':
+        this.active = false;
+        options.start = true;
+        break;
+      case 'STARTING':
+        this.active = true;
+        break;
+      case 'STARTED':
+        this.active = false;
+        options.info = true;
+        options.stop = true;
+        options.restart = true;
+        break;
+      case 'STOPPING':
+        this.active = true;
+        break;
       default: break;
     }
-    var updateButton = (name: string): void => {
-      var button = this.$[name];
+
+    const updateButton = (name: string): void => {
+      const button = this.$[name];
       if (options[name]) {
         button.removeAttribute('disabled');
       } else {
         button.setAttribute('disabled', 'disabled');
       }
     }
+
     updateButton('info');
     updateButton('start');
     updateButton('stop');
@@ -241,16 +261,23 @@ interface ServerInfo {
   autostart: boolean;
   errorString: string;
   errorException: string;
-  nodes: Array<NodeServerStatus>;
+  nodes: NodeServerStatus[];
 }
 
-type NodeServerStatus = {name: string, exists: boolean, autostart?: boolean, status?: string, instanceName?: string};
+type NodeServerStatus = {
+  name: string,
+  exists: boolean,
+  autostart?: boolean,
+  status?: string,
+  instanceName?: string
+};
+
 type ServerFilterFunction = (item: ServerInfo) => boolean;
 
 
 @component('labrad-nodes')
 export class LabradNodes extends polymer.Base {
-  @property({type: Array, notify: true, value: []})
+  @property({type: Array, notify: true, value: () => []})
   info: NodeStatus[];
 
   @property({type: Object})
@@ -265,16 +292,16 @@ export class LabradNodes extends polymer.Base {
   @property({type: Boolean, value: false, notify: true})
   isAutostartFiltered: boolean;
 
-  @property({type: Object, value: []})
+  @property({type: Array, value: () => []})
   globalServers: ServerInfo[];
 
-  @property({type: Object, value: []})
+  @property({type: Array, value: () => []})
   localServers: ServerInfo[];
 
-  @property({type: Object, value: []})
+  @property({type: Array, value: () => []})
   globalServersFiltered: ServerInfo[];
 
-  @property({type: Object, value: []})
+  @property({type: Array, value: () => []})
   localServersFiltered: ServerInfo[];
 
   @property({type: Array, value: []})
@@ -288,9 +315,11 @@ export class LabradNodes extends polymer.Base {
     // the state of each controller of that server type to all others of the
     // same type. This informs existing servers of the new server state, and
     // informs the new server of the existing servers' states.
-    const instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
-    for (var i = 0; i < instances.length; i++) {
-      const instance = <any>instances[i];
+    const instances = Polymer.dom(this.root)
+                             .querySelectorAll('labrad-instance-controller');
+    for (const inst of instances) {
+      // Required to make the compiler cast the object correctly.
+      const instance = <any>inst;
       if (instance.name == event.detail.server) {
         const msg = {
           node: instance.node,
@@ -314,7 +343,7 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  autostartFilter() {
+  toggleAutostartFilter() {
     this.set('isAutostartFiltered', !this.isAutostartFiltered);
     this.updateFilters();
   }
@@ -322,8 +351,10 @@ export class LabradNodes extends polymer.Base {
 
   updateFilters() {
     const filterFunction = this.filterServersFunction();
-    this.set('globalServersFiltered', this.globalServers.filter(filterFunction));
-    this.set('localServersFiltered', this.localServers.filter(filterFunction));
+    this.set('globalServersFiltered',
+             this.globalServers.filter(filterFunction));
+    this.set('localServersFiltered',
+             this.localServers.filter(filterFunction));
   }
 
 
@@ -334,8 +365,10 @@ export class LabradNodes extends polymer.Base {
   @observe('api')
   apiChanged(newApi: NodeApi, oldApi: NodeApi) {
     if (this.defined(newApi)) {
-      newApi.nodeStatus.add((msg) => this.onNodeStatus(msg), this.lifetime);
-      newApi.serverStatus.add((msg) => this.onServerStatus(msg), this.lifetime);
+      newApi.nodeStatus.add(
+        (msg) => this.onNodeStatus(msg), this.lifetime);
+      newApi.serverStatus.add(
+        (msg) => this.onServerStatus(msg), this.lifetime);
     }
   }
 
@@ -343,7 +376,8 @@ export class LabradNodes extends polymer.Base {
   @observe('managerApi')
   managerChanged(newManager: ManagerApi, oldManager: ManagerApi) {
     if (this.defined(newManager)) {
-      newManager.serverDisconnected.add((msg) => this.onServerDisconnected(msg), this.lifetime);
+      newManager.serverDisconnected.add(
+        (msg) => this.onServerDisconnected(msg), this.lifetime);
     }
   }
 
@@ -379,9 +413,10 @@ export class LabradNodes extends polymer.Base {
 
 
   onServerStatus(msg: ServerStatusMessage): void {
-    var instances = Polymer.dom(this.root).querySelectorAll('labrad-instance-controller');
-    for (var i = 0; i < instances.length; i++) {
-      var instance = <any>instances[i];
+    const instances = Polymer.dom(this.root)
+                             .querySelectorAll('labrad-instance-controller');
+    for (const inst of instances) {
+      const instance = <any>inst;
       if (instance.name === msg.server) {
         // Send the server status to all instance controllers, even if they are
         // on other nodes. This is because for global servers we must lock out
@@ -392,17 +427,26 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private getNodeIndex(item: (NodeStatus | ServerDisconnectMessage), array: NodeStatus[]): number {
-    let idx = -1;
+  /**
+   * The index of a given node within an array.
+   *
+   * Returns -1 if item is not found.
+   **/
+  private getNodeIndex(item: (NodeStatus | ServerDisconnectMessage),
+                       array: NodeStatus[]): number {
     for (let i = 0; i < array.length; ++i) {
       if (array[i].name === item.name) {
-        idx = i;
-        break;
+        return i;
       }
     }
-    return idx;
+    return -1;
   }
 
+  /**
+   * The index of a given server within an array.
+   *
+   * Returns -1 if item is not found.
+   **/
   private getServerIndex(server: ServerStatus, servers: ServerInfo[]): number {
     for (let idx = 0; idx < servers.length; ++idx) {
       const s = servers[idx];
@@ -429,7 +473,7 @@ export class LabradNodes extends polymer.Base {
 
     const filterFunction = this.filterServersFunction();
 
-    const versionMap = this._versionMap(this.info);
+    const versionMap = this.versionMap(this.info);
 
     for (const server of item.servers) {
       const versions = versionMap.get(server.name);
@@ -499,8 +543,7 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-
-  private _serverStatusMap(statuses: ServerStatus[]): Map<String, ServerStatus> {
+  private serverStatusMap(statuses: ServerStatus[]): Map<String, ServerStatus> {
     const serverStatusMap = new Map<String, ServerStatus>();
     for (const s of statuses) {
       serverStatusMap.set(s.name, s);
@@ -509,7 +552,7 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private _nodeAutostartSet(node: NodeStatus): Set<String> {
+  private nodeAutostartSet(node: NodeStatus): Set<String> {
     const nodeAutostartSet = new Set();
     for (const server of node.autostartList) {
       nodeAutostartSet.add(server);
@@ -529,6 +572,9 @@ export class LabradNodes extends polymer.Base {
     for (let nodeIdx = nodes.length - 1; nodeIdx >= 0; --nodeIdx) {
       const node = nodes[nodeIdx];
       if (!onlineNodes.has(node.name)) {
+        // The Polymer way to mutate the array that exists at
+        // `this[serversName][serverIdx].nodes`.
+        // The # is used to access a particular index in an array.
         this.splice(`${serversName}.#${serverIdx}.nodes`, nodeIdx, 1);
       }
     }
@@ -545,7 +591,7 @@ export class LabradNodes extends polymer.Base {
     }
 
     for (const node of this.info) {
-      const serverStatusMap = this._serverStatusMap(node.servers);
+      const serverStatusMap = this.serverStatusMap(node.servers);
 
       const nodeHasServer = serverStatusMap.has(server.name);
       const serverHasNode = serverNodes.has(node.name);
@@ -556,7 +602,7 @@ export class LabradNodes extends polymer.Base {
         // insert a noop node into the server so it is still displayed properly.
         if (nodeHasServer) {
           const serverStatus = serverStatusMap.get(server.name);
-          const nodeAutostartSet = this._nodeAutostartSet(node);
+          const nodeAutostartSet = this.nodeAutostartSet(node);
 
           this.push(`${serversName}.#${serverIdx}.nodes`, {
             name: node.name,
@@ -607,8 +653,8 @@ export class LabradNodes extends polymer.Base {
   }
 
 
-  private _versionMap(info: Array<NodeStatus>): Map<string, Set<string>> {
-    var versionMap = new Map<string, Set<string>>();
+  private versionMap(info: NodeStatus[]): Map<string, Set<string>> {
+    const versionMap = new Map<string, Set<string>>();
     for (let nodeStatus of info) {
       for (let {name, version} of nodeStatus.servers) {
         if (!versionMap.has(name)) {
