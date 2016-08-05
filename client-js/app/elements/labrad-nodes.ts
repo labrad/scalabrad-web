@@ -511,8 +511,15 @@ export class LabradNodes extends polymer.Base {
 
     this.updateNodeServerBinding('globalServersFiltered');
     this.updateNodeServerBinding('localServersFiltered');
+    this.updateNodeServerBinding('globalServers');
+    this.updateNodeServerBinding('localServers');
 
-    this.updateFilters();
+    // If a node comes online that has a server marked as autostart that wasn't
+    // previously, and we are currently filtering, then we need to update the
+    // filters to show the new server(s).
+    if (this.isAutostartFiltered) {
+      this.updateFilters();
+    }
   }
 
   private removeItemFromList(item: ServerDisconnectMessage): void {
@@ -524,8 +531,15 @@ export class LabradNodes extends polymer.Base {
 
     this.updateNodeServerBinding('globalServersFiltered');
     this.updateNodeServerBinding('localServersFiltered');
+    this.updateNodeServerBinding('globalServers');
+    this.updateNodeServerBinding('localServers');
 
-    this.updateFilters();
+    // If a node goes offline that has a server marked as autostart that no
+    // other does, and we are currently filtering, then we need to update the
+    // filters to hide the invalid server(s).
+    if (this.isAutostartFiltered) {
+      this.updateFilters();
+    }
   }
 
 
