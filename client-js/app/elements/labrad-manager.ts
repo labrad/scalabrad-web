@@ -5,7 +5,7 @@ import {Places} from "../scripts/places";
 @component('labrad-manager')
 export class LabradManager extends polymer.Base {
 
-  @property({type: Array, notify: true, value: () => { return []; }})
+  @property({type: Array, notify: true, value: () => []})
   connections: ConnectionInfo[];
 
   @property({type: Object, notify: true})

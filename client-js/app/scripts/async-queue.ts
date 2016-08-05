@@ -6,8 +6,8 @@ import {Obligation, obligate} from './obligation';
  * be resolved if there were already items in the queue).
  */
 export class AsyncQueue<A> {
-  private items: Array<A> = [];
-  private waiters: Array<Obligation<A>> = [];
+  private items: A[] = [];
+  private waiters: Obligation<A>[] = [];
 
   /**
    * Add an item to the queue.

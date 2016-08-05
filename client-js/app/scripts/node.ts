@@ -25,7 +25,7 @@ export interface ServerStatusMessage {
 }
 
 export interface NodeApi {
-  allNodes(): Promise<Array<NodeStatus>>;
+  allNodes(): Promise<NodeStatus[]>;
 
   refreshNode(node: string): Promise<string>;
 
@@ -53,8 +53,8 @@ export class NodeService extends rpc.RpcService implements NodeApi {
     this.connect('org.labrad.node.serverStatus', this.serverStatus);
   }
 
-  allNodes(): Promise<Array<NodeStatus>> {
-    return this.call<Array<NodeStatus>>('allNodes', []);
+  allNodes(): Promise<NodeStatus[]> {
+    return this.call<NodeStatus[]>('allNodes', []);
   }
 
   refreshNode(node: string): Promise<string> {

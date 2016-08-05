@@ -304,7 +304,7 @@ export class LabradNodes extends polymer.Base {
   @property({type: Array, value: () => []})
   localServersFiltered: ServerInfo[];
 
-  @property({type: Array, value: []})
+  @property({type: Array, value: () => []})
   nodeNames: String;
 
   private lifetime = new Lifetime();

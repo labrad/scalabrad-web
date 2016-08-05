@@ -15,15 +15,15 @@ export class Places {
     return this.fullPrefix + '/nodes';
   }
 
-  grapherUrl(path: Array<string>, dir?: string): string {
+  grapherUrl(path: string[], dir?: string): string {
     return this.fullPrefix + '/grapher/' + pathStr(path, dir);
   }
 
-  datasetUrl(path: Array<string>, dataset: string): string {
+  datasetUrl(path: string[], dataset: string): string {
     return this.fullPrefix + '/dataset/' + pathStr(path, dataset);
   }
 
-  registryUrl(path: Array<string>, dir?: string): string {
+  registryUrl(path: string[], dir?: string): string {
     return this.fullPrefix + '/registry/' + pathStr(path, dir);
   }
 
@@ -33,7 +33,7 @@ export class Places {
 }
 
 // helper function to creating URL from a list of segments
-function pathStr(path: Array<string>, dir?: string): string {
+function pathStr(path: string[], dir?: string): string {
   var url = '';
   path.forEach(function(seg) {
     url += encodeURIComponent(seg) + '/';

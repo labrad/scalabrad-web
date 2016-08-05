@@ -17,19 +17,19 @@ type ListItemFilterFunction = (item: ListItem) => boolean;
 @component('labrad-grapher')
 export class LabradGrapher extends polymer.Base {
   @property({type: Array, notify: true})
-  path: Array<string>;
+  path: string[];
 
-  @property({type: Array, value: () => { return []; }})
-  dirs: Array<{name: string; url: string; tags: Array<string>}>;
+  @property({type: Array, value: () => []})
+  dirs: {name: string; url: string; tags: string[]}[];
 
-  @property({type: Array, value: () => { return []; }})
-  datasets: Array<{name: string; url: string; tags: Array<string>}>;
+  @property({type: Array, value: () => []})
+  datasets: {name: string; url: string; tags: string[]}[];
 
-  @property({type: Array, value: () => { return []; }})
-  filteredListItems: Array<ListItem>;
+  @property({type: Array, value: () => []})
+  filteredListItems: ListItem[];
 
-  @property({type: Array, value: () => { return []; }})
-  private listItems: Array<ListItem>;
+  @property({type: Array, value: () => []})
+  private listItems: ListItem[];
 
   @property({type: Object, notify: true})
   selected: ListItem;
@@ -149,7 +149,7 @@ export class LabradGrapher extends polymer.Base {
     }
   }
 
-  newDir(dir: {name: string; url: string; tags: Array<string>}): void {
+  newDir(dir: {name: string; url: string; tags: string[]}): void {
     this.addItemToList({
       id: 'dir:' + dir.name,
       name: dir.name,
@@ -162,7 +162,7 @@ export class LabradGrapher extends polymer.Base {
     });
   }
 
-  newDataset(dataset: {name: string; url: string; tags: Array<string>}): void {
+  newDataset(dataset: {name: string; url: string; tags: string[]}): void {
     this.addItemToList({
       id: 'dataset:' + dataset.name,
       name: dataset.name,
@@ -176,9 +176,9 @@ export class LabradGrapher extends polymer.Base {
   }
 
   private initializeListItems(
-      path: Array<string>,
-      dirs: Array<{name: string; url: string; tags: Array<string>}>,
-      datasets: Array<{name: string; url: string; tags: Array<string>}>): void {
+      path: string[],
+      dirs: {name: string; url: string; tags: string[]}[],
+      datasets: {name: string; url: string; tags: string[]}[]): void {
     if (path.length > 0 && this.places) {
       this.push('listItems', {
         id: '..',
@@ -232,7 +232,7 @@ export class LabradGrapher extends polymer.Base {
     this.set('filteredListItems', this.listItems.filter(filterFunction));
   }
 
-  private isTagged(item: {tags: Array<string>}, tag: string): boolean {
+  private isTagged(item: {tags: string[]}, tag: string): boolean {
     for (let t of item.tags) {
       if (t === tag) return true;
     }

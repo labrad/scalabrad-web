@@ -5,13 +5,13 @@ import {Places} from '../scripts/places';
 export class LabradRegistry extends polymer.Base {
 
   @property({type: Array, notify: true})
-  dirs: Array<{name: string; url: string}>;
+  dirs: {name: string; url: string}[];
 
   @property({type: Array, notify: true})
-  keys: Array<{name: string; value: string}>;
+  keys: {name: string; value: string}[];
 
   @property({type: Array, notify: true})
-  path: Array<string>;
+  path: string[];
 
   @property({type: Array, notify: true})
   selectedIdx: number;
@@ -70,11 +70,11 @@ export class LabradRegistry extends polymer.Base {
 
   @computed()
   listItems(
-    path: Array<string>,
-    dirs: Array<{name: string; url: string}>,
-    keys: Array<{name: string; value: string}>,
+    path: string[],
+    dirs: {name: string; url: string}[],
+    keys: {name: string; value: string}[],
     kick: number
-  ): Array<{name: string; isParent: boolean; isDir: boolean; isKey: boolean; url?: string; value?: string}> {
+  ): {name: string; isParent: boolean; isDir: boolean; isKey: boolean; url?: string; value?: string}[] {
     var items = [];
     if (path.length > 0 && this.places) {
       var url = this.places.registryUrl(path.slice(0, -1));

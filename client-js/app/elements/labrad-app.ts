@@ -2,10 +2,10 @@ import {Places} from '../scripts/places';
 
 @component('labrad-app')
 export class LabradApp extends polymer.Base {
-  @property({type: String, value: '<unknwon>'})
+  @property({type: String, value: '<unknown>'})
   clientVersion: string;
 
-  @property({type: String, value: '<unknwon>'})
+  @property({type: String, value: '<unknown>'})
   serverVersion: string;
 
   @property({type: String, value: ''})
@@ -21,10 +21,10 @@ export class LabradApp extends polymer.Base {
   hasBreadcrumbs: boolean;
 
   @property({type: Array})
-  breadcrumbs: Array<{name: string; isLink: boolean; url?: string}>;
+  breadcrumbs: {name: string; isLink: boolean; url?: string}[];
 
-  @property({type: Array, value: []})
-  breadcrumbExtras: Array<{name: string; isLink: boolean; url?: string}>;
+  @property({type: Array, value: () => []})
+  breadcrumbExtras: {name: string; isLink: boolean; url?: string}[];
 
   @property({type: String})
   loginError: string;
