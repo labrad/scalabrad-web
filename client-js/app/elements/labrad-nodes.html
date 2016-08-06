@@ -229,7 +229,7 @@
           <template is="dom-repeat"
                     items="{{nodeNames}}"
                     as="node"
-                    sort="sortNodes">
+                    sort="compareNodeNames">
             <th><labrad-node-controller places={{places}} api={{api}} name={{node}}></labrad-node-controller></th>
           </template>
         </thead>
@@ -243,7 +243,7 @@
               <template is="dom-repeat"
                         items="{{server.nodes}}"
                         as="node"
-                        sort="sortNodes">
+                        sort="compareNodes">
                 <td class='controls'>
                   <template is="dom-if" if="{{node.exists}}">
                     <labrad-instance-controller
@@ -278,7 +278,10 @@
             <tr>
               <td class="name">{{server.name}}</td>
               <td class="version">{{server.version}}</td>
-              <template is="dom-repeat" items="{{server.nodes}}" as="node">
+              <template is="dom-repeat"
+                        items="{{server.nodes}}"
+                        as="node"
+                        sort="compareNodes">
                 <td class="controls">
                   <template is="dom-if" if="{{node.exists}}">
                     <labrad-instance-controller

@@ -457,9 +457,13 @@ export class LabradNodes extends polymer.Base {
     return -1;
   }
 
-  sortNodes(a: string, b: string) {
+  compareNodeNames(a: string, b: string): number {
     if (a === b) return 0;
     return a > b ? 1 : -1;
+  }
+
+  compareNodes(a: NodeServerStatus, b: NodeServerStatus): number {
+    return this.compareNodeNames(a.name, b.name);
   }
 
   addItemToList(item: NodeStatus): void {
