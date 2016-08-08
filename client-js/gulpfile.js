@@ -29,7 +29,7 @@ var minimist = require('minimist');
 
 var knownOptions = {
   string: 'api-host',
-  default: { 
+  default: {
     'api-host': 'localhost:7667'
   }
 };
@@ -299,6 +299,12 @@ gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'elements', 'images
   browserSync({
     notify: false,
     open: false,
+    snippetOptions: {
+      rule: {
+        match: '<span id="browser-sync-binding"></span>',
+        fn: function (snippet) { return snippet; }
+      }
+    },
     server: {
       baseDir: ['.tmp', 'app'],
       routes: {
