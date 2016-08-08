@@ -31,9 +31,9 @@ def demo_1d_exponential(dv):
     add_params(dv)
 
     # Generate points between -5 and 5 in 0.1 increments
-    for i in [x * 0.1 for x in range(-50, 50)]:
-        x = i
-        y = pow(math.e, x) + random.random()*10
+    for i in range(-50, 50):
+        x = 0.1 * i
+        y = math.e**(-x) + random.random()*10
         dv.add([x, y])
         time.sleep(0.002)
 
@@ -43,7 +43,7 @@ def demo_1d_parabola(dv):
     add_params(dv)
     for i in xrange(-1000, 1000):
         x = i
-        y = pow(i, 2) + i + random.random()*5000
+        y = i**2 + i + random.random()*5000
         dv.add([x, y])
         time.sleep(0.002)
 
@@ -53,7 +53,7 @@ def demo_1d_parabola_2(dv):
     add_params(dv)
     for i in xrange(-100, 100):
         x = i
-        y = 10*pow(i, 2) + i + random.random()*5000 + 500
+        y = 10 * i**2 + i + random.random()*5000 + 500
         dv.add([x, y])
         time.sleep(0.002)
 
