@@ -2,6 +2,7 @@ import 'd3';
 import THREE from 'three';
 import {viridisData} from '../scripts/colormaps';
 import * as datavault from '../scripts/datavault';
+import {fitParabola, fitExponential} from '../scripts/fit';
 import {Lifetime} from '../scripts/lifetime';
 
 
@@ -15,6 +16,7 @@ const PLOT_RIGHT_MARGIN = 10;
 const PLOT_TOP_MARGIN = 50;
 const PLOT_BOTTOM_MARGIN = 50;
 const PLOT_LINE_WIDTH = 1.5;
+const PLOT_FIT_LINE_WIDTH = 3.0;
 const PLOT_POINT_SIZE = 6;
 
 
@@ -151,6 +153,12 @@ export class Plot extends polymer.Base {
   private is2D: boolean;
   private displaySurface: number = 2;
 
+  private fitParabola: boolean = false;
+  private fitExponential: boolean = false;
+
+  private lines: THREE.Line[] = [];
+  private linesFitParabolas: THREE.Line[] = [];
+  private linesFitExponentials: THREE.Line[] = [];
 
   /**
    * A matrix for the use in transforming geometries.
@@ -364,6 +372,12 @@ export class Plot extends polymer.Base {
       this.scene.remove(obj);
     }
     this.sceneObjects = [];
+
+    if (this.is1D) {
+      this.lines = [];
+      this.linesFitParabolas = [];
+      this.linesFitExponentials = [];
+    }
 
     this.lastData = null;
 
@@ -654,54 +668,115 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Generate the geometries and materials for a 1D plot.
+   * Helper method to get the scene object, or create it if it doesn't already
+   * exist.
    */
-  private plotData1D(data: number[][]): void {
-    this.dataLimits1D(data);
-
+  private getSceneObject() {
     if (this.sceneObjects.length == 0) {
       const ob = new THREE.Object3D();
       this.sceneObjects.push(ob);
       this.scene.add(ob);
     }
 
-    const ob = this.sceneObjects[0];
+    return this.sceneObjects[0];
+  }
 
-    for (let i of this.displayTraces) {
-      const length = (this.lastData) ? data.length + 1 : data.length;
 
-      // The positions array is initialized in the geometry here, but positions
-      // are set withing projectGraphPositions. See plotData2D for more info.
-      const positions = new Float32Array(length * 3);
+  /**
+   * Plots a line given a set of data, adding it to the scene.
+   */
+  private plotLine(data: number[][], yColumn: number = 1,
+                   color: string = "#000", lineWidth: number = 1,
+                   lines: THREE.Line[]) {
+    if (data.length < 2) {
+      return;
+    }
 
-      // Raw data is stored inside the geometry for more efficient
-      // reprojection.
-      const dataPoints = new Float64Array(length * 3);
-      let offset = 0;
+    const dataLength = data.length;
 
-      // Add the last point of data if maxima exists to avoid gaps.
-      if (this.lastData) {
-        dataPoints[offset] = this.lastData[0];
-        dataPoints[offset + 1] = this.lastData[i + 1];
-        offset += 3;
+    // The positions array is initialized in the geometry here, but positions
+    // are set withing projectGraphPositions. See plotData2D for more info.
+    const positions = new Float32Array(dataLength * 3);
+
+    // Raw data is stored inside the geometry for more efficient
+    // reprojection.
+    const dataPoints = new Float64Array(dataLength * 3);
+
+    let offset = 0;
+    for (let row of data) {
+      dataPoints[offset] = row[0];
+      dataPoints[offset + 1] = row[yColumn];
+      offset += 3;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 3));
+
+    const material = new THREE.LineBasicMaterial({
+      color: color,
+      linewidth: lineWidth
+    });
+
+    const line = new THREE.Line(geometry, material);
+    lines.push(line);
+  }
+
+  /**
+   * Generate the geometries and materials for a 1D plot.
+   */
+  private plotData1D(data: number[][]): void {
+    this.dataLimits1D(data);
+
+    if (this.lastData) {
+      data.splice(0, 1, this.lastData);
+    }
+
+    const ob = this.getSceneObject();
+
+    // Reset fit lines by removing them from the scene. They are fit to the
+    // total data, so they are not incrementally built like the data lines.
+    for (const line of this.linesFitParabolas) {
+      ob.remove(line);
+    }
+    for (const line of this.linesFitExponentials) {
+      ob.remove(line);
+    }
+    this.linesFitParabolas = [];
+    this.linesFitExponentials = [];
+
+    const lines = [];
+    for (const i of this.displayTraces) {
+      this.plotLine(data, i+1,
+                    COLOR_LIST[i % COLOR_LIST.length],
+                    PLOT_LINE_WIDTH,
+                    lines);
+
+      const {coefficients: coPar, data: fitData} = fitParabola(this.data, i+1);
+      this.plotLine(fitData, 1,
+                    COLOR_LIST[i % COLOR_LIST.length],
+                    PLOT_FIT_LINE_WIDTH,
+                    this.linesFitParabolas);
+
+      const {coefficients: coExp, data: fitDataExp} = fitExponential(this.data, i+1);
+      this.plotLine(fitDataExp, 1,
+                    COLOR_LIST[i % COLOR_LIST.length],
+                    PLOT_FIT_LINE_WIDTH,
+                    this.linesFitExponentials);
+    }
+
+    for (const line of lines) {
+      ob.add(line);
+    }
+
+    if (this.fitParabola) {
+      for (const line of this.linesFitParabolas) {
+        ob.add(line);
       }
+    }
 
-      for (let row of data) {
-        dataPoints[offset] = row[0];
-        dataPoints[offset + 1] = row[i + 1];
-        offset += 3;
-      }
-
-      if (dataPoints.length > 1) {
-        const geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 3));
-
-        const material = new THREE.LineBasicMaterial({
-          color: COLOR_LIST[i % COLOR_LIST.length],
-          linewidth: PLOT_LINE_WIDTH
-        });
-        const line = new THREE.Line(geometry, material);
+    if (this.fitExponential) {
+      for (const line of this.linesFitExponentials) {
         ob.add(line);
       }
     }
@@ -759,13 +834,7 @@ export class Plot extends polymer.Base {
       mesh = new THREE.Mesh(geometry, material);
     }
 
-    if (this.sceneObjects.length == 0) {
-      const ob = new THREE.Object3D();
-      this.sceneObjects.push(ob);
-      this.scene.add(ob);
-    }
-
-    const ob = this.sceneObjects[0];
+    const ob = this.getSceneObject();
     ob.add(mesh);
   }
 
@@ -987,6 +1056,7 @@ export class Plot extends polymer.Base {
         if (this.numIndeps == 2) {
           child.geometry.getAttribute('color').needsUpdate = true;
         }
+
       }
     }
   }
@@ -1291,6 +1361,16 @@ export class Plot extends polymer.Base {
    */
   drawMode2DSelectorVargrid(): void {
     this.drawMode2D = 'vargrid';
+  }
+
+
+  fitFunctionSelectorOpen(): void {
+    this.$.fitFunctionSelector.open();
+  }
+
+
+  fitFunctionSelectorSubmit(): void {
+    this.redrawScene();
   }
 
 

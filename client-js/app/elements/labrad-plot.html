@@ -60,16 +60,34 @@
     <div id="zoomRectangle"></div>
     <div id="pos">Current Position: <span>{{currPos}}</span></div>
     <div id="buttons">
-      <paper-icon-button icon="tab-unselected" id="rect" on-click="mouseModeSelectorZoomRect" title="drag to zoom"></paper-icon-button>
-      <paper-icon-button icon="open-with" id="pan" on-click="mouseModeSelectorPan" title="drag to pan"></paper-icon-button>
-      <paper-icon-button icon="home" id="home" on-click="resetZoomControl" title="zoom out"></paper-icon-button>
-      <paper-icon-button icon="list" id="select" on-click="traceSelectorOpen" title="select trace"></paper-icon-button>
+      <paper-icon-button icon="tab-unselected" id="rect" on-click="mouseModeSelectorZoomRect" title="Drag to Zoom"></paper-icon-button>
+      <paper-icon-button icon="open-with" id="pan" on-click="mouseModeSelectorPan" title="Drag to Pan"></paper-icon-button>
+      <paper-icon-button icon="home" id="home" on-click="resetZoomControl" title="Zoom Out"></paper-icon-button>
+      <paper-icon-button icon="list" id="select" on-click="traceSelectorOpen" title="Select Trace"></paper-icon-button>
+      <template is="dom-if" if="{{is1D}}">
+        <paper-icon-button icon="places:fitness-center" id="fitFunction"
+          on-click="fitFunctionSelectorOpen" title="Select Fit Function"></paper-icon-button>
+      </template>
       <div id="modes2d">
-        <paper-icon-button icon="av:stop" id="dots" on-click="drawMode2DSelectorDots" title="draw with dots"></paper-icon-button>
-        <paper-icon-button icon="dashboard" id="rectfill" on-click="drawMode2DSelectorRectfill" title="draw with rect fill"></paper-icon-button>
-        <paper-icon-button icon="view-list" id="vargrid" on-click="drawMode2DSelectorVargrid" title="draw with vargrid"></paper-icon-button>
+        <paper-icon-button icon="av:stop" id="dots" on-click="drawMode2DSelectorDots" title="Draw with Dots"></paper-icon-button>
+        <paper-icon-button icon="dashboard" id="rectfill" on-click="drawMode2DSelectorRectfill" title="Draw with Rect Fill"></paper-icon-button>
+        <paper-icon-button icon="view-list" id="vargrid" on-click="drawMode2DSelectorVargrid" title="Draw with Vargrid"></paper-icon-button>
       </div>
     </div>
+
+    <paper-dialog id="fitFunctionSelector">
+      <h1>Display Fit Functions</h1>
+      <form is="iron-form" id="fitFunctionForm">
+        <paper-checkbox checked="{{fitParabola}}" name="fitFunction"
+          fit-name="fit-parabola">Parabola</paper-checkbox>
+        <paper-checkbox checked="{{fitExponential}}" name="fitFunction"
+          fit-name="fit-exponential">Exponential</paper-checkbox>
+      </form>
+      <div class='buttons'>
+        <paper-button dialog-confirm on-click="fitFunctionSelectorSubmit">OK</paper-button>
+        <paper-button dialog-dismiss>Cancel</paper-button>
+      </div>
+    </paper-dialog>
 
     <paper-dialog id="traceSelector">
       <h1>Select Traces</h1>
