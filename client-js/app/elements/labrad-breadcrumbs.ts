@@ -1,8 +1,14 @@
+export interface BreadcrumbItem {
+  name: string;
+  isLink: boolean;
+  url?: string;
+}
+
 @component('labrad-breadcrumbs')
 export class LabradBreadcrumbs extends polymer.Base {
   @property({type: Array, notify: true})
-  breadcrumbs: {name: string; isLink: boolean; url?: string}[];
+  breadcrumbs: BreadcrumbItem[];
 
   @property({type: Array, notify: true})
-  extras: {name: string; isLink: boolean; url?: string}[];
+  extras: BreadcrumbItem[];
 }

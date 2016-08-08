@@ -1,11 +1,13 @@
+import {BreadcrumbItem} from '../elements/labrad-breadcrumbs';
+
 /**
  * State needed to render the ui for an activity in our app.
  */
 export interface ActivityState {
   elem: HTMLElement;
   route: string
-  breadcrumbs?: {name: string; isLink: boolean; url?: string}[];
-  breadcrumbExtras?: {name: string; isLink: boolean; url?: string}[];
+  breadcrumbs?: BreadcrumbItem[];
+  breadcrumbExtras?: BreadcrumbItem[];
 }
 
 /**

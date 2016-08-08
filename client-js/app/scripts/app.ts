@@ -1,10 +1,12 @@
 /// <reference path="../../typings/tsd.d.ts" />
 
 import page from "page";
+import "whatwg-fetch";
 
 import {Activity} from "./activity";
 import * as activities from "./activities";
-import * as manager from "./manager";
+import {Credential, Password, OAuthToken, loadCredential, saveCredential, clearCredential} from "./credentials";
+import {ManagerApi, ManagerServiceJsonRpc} from "./manager";
 import * as registry from "./registry";
 import * as datavault from "./datavault";
 import * as nodeApi from "./node";
@@ -12,6 +14,7 @@ import {Places} from "./places";
 import * as promises from "./promises";
 import * as rpc from "./rpc";
 import {obligate} from "./obligation";
+import {encodeQueryString, decodeQueryString} from "./util";
 
 import {AppLink} from "../elements/app-link";
 import {LabradApp} from "../elements/labrad-app";
@@ -27,19 +30,10 @@ import {Plot} from "../elements/labrad-plot";
 import {SelectableTable} from "../elements/selectable-table";
 
 
-/**
- * Object containing login credentials.
- */
-interface Creds {
-  username: string;
-  password: string;
-}
-
-
 interface Services {
   places?: Places;
   socket: rpc.JsonRpcSocket;
-  mgr: manager.ManagerApi;
+  mgr: ManagerApi;
   reg: registry.RegistryApi;
   dv: datavault.DataVaultApi;
   node: nodeApi.NodeApi;
@@ -283,23 +277,39 @@ window.addEventListener('WebComponentsReady', () => {
       mkDvRoutes(i);
     }
   }
+
+  // Create route for OAuth login callback.
+  page(prefix + '/oauth2callback', (ctx, next) => {
+    finishOAuthLogin(ctx.querystring);
+  });
+
+  // Create the rest of the application routes.
   createRoutes(false);
   createRoutes(true);
 
   /**
    * Launch a dialog box to let the user log in to labrad.
    */
-  function loginWithDialog(mgr: manager.ManagerApi, manager: string): Promise<void> {
-    var {obligation, promise} = obligate<void>();
+  async function loginWithDialog(mgr: ManagerApi, manager: string): Promise<void> {
+    const {obligation, promise} = obligate<void>();
     async function doLogin() {
-      var username = '',
-          password = app.$.passwordInput.value,
-          rememberPassword = app.$.rememberPassword.checked;
+      const username = app.$.usernameInput.value,
+            password = app.$.passwordInput.value,
+            rememberPassword = app.$.rememberPassword.checked;
       try {
-        var result = await mgr.login({username: username, password: password, host: manager});
-        var creds = {username: username, password: password};
-        var storage = rememberPassword ? window.localStorage : window.sessionStorage;
-        saveCreds(manager, storage, creds);
+        const result = await mgr.login({
+          username: username,
+          password: password,
+          manager: manager
+        });
+        const credential: Password = {
+          kind: 'username+password',
+          username: username,
+          password: password
+        };
+        const storage = rememberPassword ? window.localStorage
+                                         : window.sessionStorage;
+        saveCredential(manager, storage, credential);
         app.$.loginDialog.close();
         obligation.resolve();
       } catch (error) {
@@ -307,50 +317,87 @@ window.addEventListener('WebComponentsReady', () => {
         setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
       }
     }
+
+    const authMethods = await mgr.authMethods({manager: manager});
     app.host = manager;
+    app.allowUsernameLogin = authMethods.indexOf('username+password') >= 0;
+    app.allowOAuthLogin = authMethods.indexOf('oauth_token') >= 0;
     app.$.loginButton.addEventListener('click', (event) => doLogin());
     app.$.loginForm.addEventListener('submit', (event) => {
       event.preventDefault();
       event.stopPropagation();
       doLogin();
     });
+    if (app.allowOAuthLogin) {
+      app.$.oauthButton.addEventListener('click', (event) => {
+        startOAuthLogin(mgr, manager)
+      });
+    }
     app.$.loginDialog.open();
     setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
     return promise;
   }
 
-  /**
-   * Load credentials from the given Storage object (session or local).
-   *
-   * If valid credentials are not found, return null.
-   */
-  function loadCreds(manager: string, storage: Storage): Creds {
-    var key = 'labrad-credentials';
-    if (manager) {
-      key += '.' + manager;
-    }
+  async function startOAuthLogin(mgr: ManagerApi, manager: string) {
+    const rememberMe = app.$.rememberPassword.checked;
     try {
-      var creds = JSON.parse(storage.getItem(key));
-      if (creds.hasOwnProperty('username') &&
-          creds.hasOwnProperty('password')) {
-        return {
-          username: creds.username,
-          password: creds.password
-        };
-      }
-    } catch (e) {}
-    return null;
+      const {clientId, clientSecret} = await mgr.oauthInfo({ manager: manager });
+      const redirectUri = `${location.protocol}//${location.host}${prefix}/oauth2callback`;
+      const params = {
+        'response_type': 'code',
+        'client_id': clientId,
+        'redirect_uri': redirectUri,
+        'scope': 'openid email profile',
+        'state': JSON.stringify({
+          path: location.pathname + location.search + location.hash,
+          manager: manager,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          remember_me: rememberMe
+        })
+      };
+      const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth'
+      const url = `${baseUrl}?${encodeQueryString(params)}`;
+      window.location.href = url;
+    } catch (error) {
+      app.loginError = error.message || error;
+      setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
+    }
   }
 
-  /**
-   * Save credentials to the given Storage object, to be loaded by loadCreds.
-   */
-  function saveCreds(manager: string, storage: Storage, creds: Creds) {
-    var key = 'labrad-credentials';
-    if (manager) {
-      key += '.' + manager;
+  async function finishOAuthLogin(queryString: string) {
+    const params = decodeQueryString(queryString);
+    const state = JSON.parse(params['state']);
+
+    // Exchange the access token for an ID token.
+    const requestParams = {
+      code: params['code'],
+      client_id: state['client_id'],
+      client_secret: state['client_secret'],
+      redirect_uri: state['redirect_uri'],
+      grant_type: 'authorization_code'
     }
-    storage.setItem(key, JSON.stringify(creds));
+    const response = await fetch('https://www.googleapis.com/oauth2/v4/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: encodeQueryString(requestParams)
+    });
+    const responseParams = await response.json();
+    const storage = state['remember_me'] ? window.localStorage
+                                         : window.sessionStorage;
+    saveCredential(state['manager'], storage, {
+      kind: 'oauth_token',
+      clientId: state['client_id'],
+      clientSecret: state['client_secret'],
+      accessToken: responseParams['access_token'],
+      expiresAt: responseParams['expires_in'] + new Date().getTime(),
+      idToken: responseParams['id_token'],
+      refreshToken: responseParams['refresh_token']
+    });
+    page.redirect(state['path']);
   }
 
   function isPasswordError(error): boolean {
@@ -364,28 +411,35 @@ window.addEventListener('WebComponentsReady', () => {
    * If the login fails due to an invalid password, we clear the credentials
    * from this storage object.
    */
-  async function attemptLogin(mgr: manager.ManagerApi, manager: string, storage: Storage): Promise<void> {
-    var key = 'labrad-credentials';
-    if (manager) {
-      key += '.' + manager;
-    }
-    var creds = loadCreds(manager, storage);
-    if (creds === null) {
+  async function attemptLogin(mgr: ManagerApi, manager: string, storage: Storage): Promise<void> {
+    var credential = loadCredential(manager, storage);
+    if (credential === null) {
       throw new Error('no credentials');
-    } else {
-      try {
-        await mgr.login({
-          username: creds.username,
-          password: creds.password,
-          host: manager
-        });
-      } catch (error) {
-        if (isPasswordError(error)) {
-          // if we had credentials, clear them out
-          storage.removeItem(key);
-        }
-        throw error;
+    }
+    try {
+      // TODO(maffoo): TS2 compiler understands .kind; can then remove casts.
+      switch (credential.kind) {
+        case 'oauth_token':
+          await mgr.oauthLogin({
+            idToken: (credential as OAuthToken).idToken,
+            manager: manager
+          });
+          break;
+
+        case 'username+password':
+          await mgr.login({
+            username: (credential as Password).username,
+            password: (credential as Password).password,
+            manager: manager
+          });
+          break;
       }
+    } catch (error) {
+      if (isPasswordError(error)) {
+        // If we had credentials, clear them out.
+        clearCredential(manager, storage);
+      }
+      throw error;
     }
   }
 
@@ -436,7 +490,7 @@ window.addEventListener('WebComponentsReady', () => {
       });
     }
 
-    var mgr = new manager.ManagerServiceJsonRpc(socket);
+    var mgr = new ManagerServiceJsonRpc(socket);
     if (topLevel) {
       mgr.version().then((version) => {
         app.serverVersion = version;

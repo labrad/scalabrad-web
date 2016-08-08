@@ -34,13 +34,21 @@ export interface ServerInfo {
   settings: SettingInfo[];
 }
 
+export interface OAuthInfo {
+  clientId: string;
+  clientSecret: string;
+}
+
 export interface LabradConnectMessage { host: string; }
 export interface LabradDisconnectMessage { host: string; }
 export interface ServerConnectMessage { name: string; }
 export interface ServerDisconnectMessage { name: string; }
 
 export interface ManagerApi {
-  login(params: {username: string; password: string, host: string}): Promise<void>;
+  authMethods(params: {manager: string}): Promise<string[]>;
+  login(params: {username: string; password: string; manager: string}): Promise<void>;
+  oauthInfo(params: {manager: string}): Promise<OAuthInfo>;
+  oauthLogin(params: {idToken: string; manager: string}): Promise<void>;
   ping(): Promise<void>;
   version(): Promise<string>;
   connections(): Promise<ConnectionInfo[]>;
@@ -68,8 +76,20 @@ export class ManagerServiceJsonRpc extends rpc.RpcService implements ManagerApi 
     this.connect("org.labrad.serverDisconnected", this.serverDisconnected);
   }
 
-  login(params: {username: string; password: string; host: string}): Promise<void> {
+  authMethods(params: {manager: string}): Promise<string[]> {
+    return this.call<string[]>("authMethods", params);
+  }
+
+  login(params: {username: string; password: string; manager: string}): Promise<void> {
     return this.call<void>("login", params);
+  }
+
+  oauthInfo(params: {manager: string}): Promise<OAuthInfo> {
+    return this.call<OAuthInfo>("oauthInfo", params);
+  }
+
+  oauthLogin(params: {idToken: string; manager: string}): Promise<void> {
+    return this.call<void>("oauthLogin", params);
   }
 
   ping(): Promise<void> {
