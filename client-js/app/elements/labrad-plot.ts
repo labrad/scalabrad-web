@@ -67,6 +67,7 @@ const COLOR_BAR_WIDGET_SIZE = (
    COLOR_BAR_OUTER_WIDTH + COLOR_BAR_AXIS_WIDTH
 );
 
+type RectangleBound = {xMin: number, xMax: number, yMin: number, yMax: number};
 
 @component('labrad-plot')
 export class Plot extends polymer.Base {
@@ -1144,7 +1145,7 @@ export class Plot extends polymer.Base {
   /**
    * Zoom into a selected rectangular region on the graph.
    */
-  private drawRectangle(callback: Function): void {
+  private drawRectangle(rect: HTMLElement): Promise<RectangleBound> {
     // Only trigger zoom rectangle on left click
     if (d3.event.button !== MOUSE_MAIN_BUTTON) {
       return;
@@ -1152,31 +1153,47 @@ export class Plot extends polymer.Base {
 
     const [originX, originY] = this.mousePositionClipped(0);
 
-    const rect = this.$.zoomRectangle;
+    const promise = new Promise<RectangleBound>((resolve, reject) => {
+      d3.select(window)
+        .on('mousemove', () => {
+          const [x, y] = this.mousePositionClipped(-2 * PLOT_ZOOM_RECTANGLE_BORDER);
+          const posX = Math.min(originX, x) + this.margin.left;
+          const posY = Math.min(originY, y) + this.margin.top;
+          const width = Math.abs(x - originX);
+          const height = Math.abs(y - originY);
+          rect.style.left = `${posX}px`;
+          rect.style.top = `${posY}px`;
+          rect.style.width = `${width}px`;
+          rect.style.height = `${height}px`;
+          rect.style.display = 'block';
+        })
+        .on('mouseup', () => {
+          const [x, y] = this.mousePositionClipped(0);
+          d3.select(window)
+            .on('mousemove', null)
+            .on('mouseup', null);
 
-    d3.select(window)
-      .on('mousemove', () => {
-        const [x, y] = this.mousePositionClipped(-2 * PLOT_ZOOM_RECTANGLE_BORDER);
-        const posX = Math.min(originX, x) + this.margin.left;
-        const posY = Math.min(originY, y) + this.margin.top;
-        const width = Math.abs(x - originX);
-        const height = Math.abs(y - originY);
-        rect.style.left = `${posX}px`;
-        rect.style.top = `${posY}px`;
-        rect.style.width = `${width}px`;
-        rect.style.height = `${height}px`;
-        rect.style.display = 'block';
-      })
-      .on('mouseup', () => {
-        const [x, y] = this.mousePositionClipped(0);
-        d3.select(window)
-          .on('mousemove', null)
-          .on('mouseup', null);
+          if (x === originX || y === originY) {
+            return;
+          }
 
-        callback(rect, x, y, originX, originY);
-      }, true);
-    d3.event.preventDefault();
-    d3.event.stopPropagation();
+          // Convert box limits from screen to data coordinates and make sure
+          // they are in the right order, regardless of which way the user
+          // dragged the box.
+          const xScale = this.xScale,
+                yScale = this.yScale,
+                xMin = Math.min(xScale.invert(originX), xScale.invert(x)),
+                xMax = Math.max(xScale.invert(originX), xScale.invert(x)),
+                yMin = Math.min(yScale.invert(originY), yScale.invert(y)),
+                yMax = Math.max(yScale.invert(originY), yScale.invert(y));
+
+          resolve({xMin: xMin, xMax: xMax, yMin: yMin, yMax: yMax});
+        }, true);
+      d3.event.preventDefault();
+      d3.event.stopPropagation();
+    });
+
+    return promise;
   }
 
 
@@ -1184,25 +1201,12 @@ export class Plot extends polymer.Base {
    * Hooks the mouse to draw a rectangle for setting the zoom bounds.
    * Sets a callback to set the zoom bounds and zoom on mouse up.
    */
-  private drawZoomRectangle() {
-    this.drawRectangle((rect, x, y, originX, originY) => {
-      rect.style.display = 'none';
-
-      if (x !== originX && y !== originY) {
-        // Convert box limits from screen to data coordinates and make sure
-        // they are in the right order, regardless of which way the user
-        // dragged the box.
-        const xScale = this.xScale,
-              yScale = this.yScale,
-              xMin = Math.min(xScale.invert(originX), xScale.invert(x)),
-              xMax = Math.max(xScale.invert(originX), xScale.invert(x)),
-              yMin = Math.min(yScale.invert(originY), yScale.invert(y)),
-              yMax = Math.max(yScale.invert(originY), yScale.invert(y));
-        this.zoom.x(xScale.domain([xMin, xMax]))
-                 .y(yScale.domain([yMin, yMax]));
-      }
-      this.handleZoom();
-    });
+  private async drawZoomRectangle() {
+    const {xMin, xMax, yMin, yMax} = await this.drawRectangle(this.$.zoomRectangle);
+    this.$.zoomRectangle.style.display = 'none';
+    this.zoom.x(this.xScale.domain([xMin, xMax]))
+             .y(this.yScale.domain([yMin, yMax]));
+    this.handleZoom();
   }
 
 
