@@ -123,8 +123,8 @@
       <div id="container">
         <paper-header-panel id="left-column">
           <div class="paper-header" id="buttons">
-            <paper-icon-button icon="stars" id="star" on-click="starClicked" title="show starred items"></paper-icon-button>
-            <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="show trashed items"></paper-icon-button>
+            <paper-icon-button icon="star" id="star" on-click="starClicked" title="Show Only Starred Items"></paper-icon-button>
+            <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="Show Trashed Items"></paper-icon-button>
           </div>
           <div id="listing">
             <iron-list items="{{filteredListItems}}" as="item" class='fit'
@@ -154,7 +154,7 @@
                   </div>
                   <div class="label-wide">
                     <template is="dom-if" if="[[item.starred]]">
-                      <iron-icon icon="stars" class="star"></iron-icon>
+                      <iron-icon icon="star" class="star"></iron-icon>
                     </template>
                     <template is="dom-if" if="[[item.trashed]]">
                       <iron-icon icon="delete" class="trash"></iron-icon>
