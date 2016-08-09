@@ -4,16 +4,16 @@ import {Places} from '../scripts/places';
 @component('labrad-registry')
 export class LabradRegistry extends polymer.Base {
 
-  @property({type: Array, notify: true})
+  @property({type: Array, notify: true, value: () => []})
   dirs: {name: string; url: string}[];
 
-  @property({type: Array, notify: true})
+  @property({type: Array, notify: true, value: () => []})
   keys: {name: string; value: string}[];
 
-  @property({type: Array, notify: true})
+  @property({type: Array, notify: true, value: () => []})
   path: string[];
 
-  @property({type: Array, notify: true})
+  @property({type: Number, notify: true})
   selectedIdx: number;
 
   @property({type: Object})
@@ -33,6 +33,7 @@ export class LabradRegistry extends polymer.Base {
 
   regex: RegExp; //regular expression for string comparison
 
+  target = document.body;
 
   attached() {
     this.bindIronAutogrowTextAreaResizeEvents(this.$.newKeyDialog,
@@ -42,14 +43,76 @@ export class LabradRegistry extends polymer.Base {
                                               this.$.editValueInput);
   }
 
+
+  getDefaultSelectedItem(): number {
+    return this.path.length > 0 ? 1 : 0;
+  }
+
+
+  cursorMove(e) {
+    const offset = this.path.length > 0 ? 1 : 0;
+    const length = this.keys.length + this.dirs.length + offset;
+
+    switch (e.detail.combo) {
+      case 'up':
+        if (this.selectedIdx === null || this.selectedIdx === 0) {
+          this.set('selectedIdx', null);
+        } else {
+          this.set('selectedIdx', this.selectedIdx - 1);
+        }
+        break;
+
+      case 'down':
+        if (this.selectedIdx === null) {
+          this.set('selectedIdx', 0);
+        } else if (this.selectedIdx < length - 1) {
+          this.set('selectedIdx', this.selectedIdx + 1);
+        }
+        break;
+
+      default:
+        // Nothing to do.
+        break;
+    }
+  }
+
+
+  cursorTraverse(e) {
+    if (this.selectedIdx === null) {
+      return;
+    }
+
+    const item = this.$.combinedList.selectedItem;
+    const link = item.querySelector('a');
+
+    // If we have a link, we want to traverse down.
+    if (link) {
+      this.fire('app-link-click', {path: link.href});
+    }
+  }
+
+
+  cursorBack(e) {
+    if (this.path.length === 0) {
+      return;
+    }
+
+    const parentPath = this.path.slice(0, -1);
+    const parentUrl = this.places.registryUrl(parentPath);
+    this.fire('app-link-click', {path: parentUrl});
+  }
+
+
   /**
-   * on a path change, we deselect everything, empty filterText
+   * On path change, select the 0th element and clear the filter.
    */
   @observe('path')
   pathChanged(newPath: string[], oldPath: string[]) {
-    this.selectedIdx = null;
-    this.filterText = '';
+    const offset = newPath.length > 0 ? 1 : 0;
+    this.set('selectedIdx', this.getDefaultSelectedItem());
+    this.set('filterText', '');
   }
+
 
   /**
    * triggers re-render of dir, key lists when filterText is changed
@@ -92,10 +155,10 @@ export class LabradRegistry extends polymer.Base {
   @computed()
   selected(selectedIdx: number): boolean {
     if (selectedIdx !== null) {
-        return true;
-      } else {
-        return false;
-      }
+      return true;
+    } else {
+      return false;
+    }
   }
 
   @property({computed: '_computeSelectedType(selectedIdx)'})
@@ -120,9 +183,6 @@ export class LabradRegistry extends polymer.Base {
     return dirNames.concat(keyNames)[selectedIdx - offset];
   }
 
-  incrementSelector() {
-    //TODO increment selected key on tab
-  }
 
   async repopulateList(): Promise<void> {
     var resp = await this.socket.dir({path: this.path});
@@ -137,7 +197,7 @@ export class LabradRegistry extends polymer.Base {
     }
 
     this.$.pendingDialog.close()
-    this.$.combinedList.selected = null;
+    this.$.combinedList.selected = this.getDefaultSelectedItem();
     this.kick++;
   }
 
