@@ -33,7 +33,7 @@ export class LabradRegistry extends polymer.Base {
 
   regex: RegExp; //regular expression for string comparison
 
-  target = document.body;
+  target: HTMLElement = document.body;
 
   attached() {
     this.bindIronAutogrowTextAreaResizeEvents(this.$.newKeyDialog,
