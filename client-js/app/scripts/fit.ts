@@ -23,7 +23,7 @@ type FittedExponent = {
 export function fitParabola(data: number[][],
                             xMin: number,
                             xMax: number,
-                            samples: number = 1000) {
+                            samples: number = 1000): FittedParabola {
   if (samples < 1) {
     samples = 1;
   }
@@ -132,7 +132,7 @@ export function fitParabola(data: number[][],
 export function fitExponential(data: number[][],
                                xMin: number,
                                xMax: number,
-                               samples: number = 1000) {
+                               samples: number = 1000): FittedExponent {
   if (samples < 1) {
     samples = 1;
   }
@@ -161,11 +161,11 @@ export function fitExponential(data: number[][],
 
   let [A, B] = [NaN, NaN];
   const fittedExponential = [];
-  const denominator = (sumY * sumX2Y - Math.pow(sumXY, 2));
+  const determinant = (sumY * sumX2Y - Math.pow(sumXY, 2));
 
-  if (denominator) {
-    const a = (sumX2Y * sumYLogY - sumXY * sumXYLogY) / denominator;
-    const b = (sumY * sumXYLogY - sumXY * sumYLogY) / denominator;
+  if (determinant) {
+    const a = (sumX2Y * sumYLogY - sumXY * sumXYLogY) / determinant;
+    const b = (sumY * sumXYLogY - sumXY * sumYLogY) / determinant;
 
     A = Math.pow(Math.E, a);
     B = b;
