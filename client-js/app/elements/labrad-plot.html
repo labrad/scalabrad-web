@@ -104,7 +104,6 @@
       background-color: rgba(250, 250, 250, 0.6);
       border: 2px dashed rgb(32, 171, 251);
     }
-    .fit
   </style>
   <template>
     <div id="controls">
@@ -115,24 +114,24 @@
       <div id="fitCoefficients">
         <div>
         <template is="dom-repeat" items="{{fitParabolaCoefficients}}" as="coEff">
-          <div class='fitData'>
-            <div class='label'>
+          <div class="fitData">
+            <div class="label">
             <strong>
               {{coEff.label}}
               <template is="dom-if" if="{{coEff.legend}}">({{coEff.legend}})</template>
               [{{coEff.unit}}]
             </strong>
             </div>
-            <div class='data'>
+            <div class="data">
               <p>{{coEff.A}}x<sup>2</sup> + {{coEff.B}}x + {{coEff.C}}</p>
               <p>
-              <template is="dom-if" if="{{coEff.turningPoint}}">
+              <template is="dom-if" if="{{coEff.extremum}}">
                 <span class="t1">
                   <template is="dom-if"
-                            if="{{coEff.turningPoint.isMin}}">Min</template>
+                            if="{{coEff.extremum.isMin}}">Min</template>
                   <template is="dom-if"
-                            if="{{coEff.turningPoint.isMax}}">Max</template>
-                  = ({{coEff.turningPoint.x}}, {{coEff.turningPoint.y}})
+                            if="{{coEff.extremum.isMax}}">Max</template>
+                  = ({{coEff.extremum.x}}, {{coEff.extremum.y}})
                 </span>
               </template>
               </p>
@@ -141,15 +140,15 @@
         </template>
 
         <template is="dom-repeat" items="{{fitExponentialCoefficients}}" as="coEff">
-          <div class='fitData'>
-            <div class='label'>
+          <div class="fitData">
+            <div class="label">
             <strong>
               {{coEff.label}}
               <template is="dom-if" if="{{coEff.legend}}">({{coEff.legend}})</template>
               [{{coEff.unit}}]
             </strong>
             </div>
-            <div class='data'>
+            <div class="data">
               <p>{{coEff.A}}e<sup>{{coEff.B}}x</sup></p>
               <p>
               <template is="dom-if" if="{{coEff.T1}}">

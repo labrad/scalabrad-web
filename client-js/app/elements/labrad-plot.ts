@@ -703,7 +703,7 @@ export class Plot extends polymer.Base {
    * Creates a line given a set of data.
    */
   private createLine(data: number[][], yColumn: number = 1,
-                   color: string = "#000", lineWidth: number = 1): THREE.Line {
+                     color: string = "#000", lineWidth: number = 1): THREE.Line {
     if (data.length < 2) {
       return null;
     }
@@ -791,13 +791,12 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Calculates the turning point of a parabola given the coefficients A, B and
+   * Calculates the extremum of a parabola given the coefficients A, B and
    * C from an equation of the form Ax^2 + Bx + C.
    */
-  private getTurningPoint(A: number, B: number, C: number) {
+  private getExtremum(A: number, B: number, C: number) {
     const x: number = (A) ? -B / (2 * A) : 0;
     const y: number = A * Math.pow(x, 2) + B * x + C
-    console.log(x, y, A, B, C);
     return {
       x: x.toFixed(6),
       y: y.toFixed(6),
@@ -867,7 +866,7 @@ export class Plot extends polymer.Base {
           A: A.toFixed(6),
           B: B.toFixed(6),
           C: C.toFixed(6),
-          turningPoint: this.getTurningPoint(A, B, C),
+          extremum: this.getExtremum(A, B, C),
           label: trace.label,
           legend: trace.legend,
           unit: trace.unit
