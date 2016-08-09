@@ -6,7 +6,7 @@
     "iron-elements": "PolymerElements/iron-elements#1.x",
     "neon-elements": "PolymerElements/neon-elements#1.x",
     "paper-elements": "PolymerElements/paper-elements#1.x",
-    "polymer": "Polymer/polymer#1.5.x",
+    "polymer": "Polymer/polymer#1.6.x",
     "polymer-ts": "nippur72/PolymerTS#0.1.x"
   },
   "devDependencies": {
