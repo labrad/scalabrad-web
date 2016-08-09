@@ -153,11 +153,7 @@ export class LabradRegistry extends polymer.Base {
 
   @computed()
   selected(selectedIdx: number): boolean {
-    if (selectedIdx !== null) {
-      return true;
-    } else {
-      return false;
-    }
+    return (selectedIdx !== null);
   }
 
   @property({computed: '_computeSelectedType(selectedIdx)'})
