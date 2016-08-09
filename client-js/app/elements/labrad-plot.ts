@@ -704,9 +704,9 @@ export class Plot extends polymer.Base {
    */
   private plotLine(data: number[][], yColumn: number = 1,
                    color: string = "#000", lineWidth: number = 1,
-                   lines: THREE.Line[]) {
+                   lines: THREE.Line[]): THREE.Line {
     if (data.length < 2) {
-      return;
+      return null;
     }
 
     const dataLength = data.length;
@@ -737,6 +737,8 @@ export class Plot extends polymer.Base {
 
     const line = new THREE.Line(geometry, material);
     lines.push(line);
+
+    return line;
   }
 
   /**
@@ -789,6 +791,19 @@ export class Plot extends polymer.Base {
   }
 
 
+  private getTurningPoint(A: number, B: number, C: number) {
+    const x: number = (A) ? -B / (2 * A) : 0;
+    const y: number = A * Math.pow(x, 2) + B * x + C
+    console.log(x, y, A, B, C);
+    return {
+      x: x.toFixed(6),
+      y: y.toFixed(6),
+      isMin: (A > 0),
+      isMax: (A < 0),
+    }
+  }
+
+
   /**
    * Generate the geometries and materials for a 1D plot.
    */
@@ -811,6 +826,8 @@ export class Plot extends polymer.Base {
     }
     this.linesFitParabolas = [];
     this.linesFitExponentials = [];
+    this.set('fitParabolaCoefficients', []);
+    this.set('fitExponentialCoefficients', []);
 
     const dataInFitBounds = this.traceDataWithinFitBounds(this.data);
 
@@ -819,65 +836,69 @@ export class Plot extends polymer.Base {
 
     const lines = [];
     for (const i of this.displayTraces) {
-      this.plotLine(data, i+1,
-                    COLOR_LIST[i % COLOR_LIST.length],
-                    PLOT_LINE_WIDTH,
-                    lines);
+      const color = COLOR_LIST[i % COLOR_LIST.length];
 
+      // Plot the regular data line.
+      this.plotLine(data, i+1, color, PLOT_LINE_WIDTH, lines);
+
+      const fitData = dataInFitBounds[i];
+      const xMin = this.dataLimits.xMin;
+      const xMax = this.dataLimits.xMax;
       const trace = this.deps[i];
-      const {coefficients: coPar, data: fitData} = fitParabola(dataInFitBounds[i],
-                                                               this.dataLimits.xMin,
-                                                               this.dataLimits.xMax);
-      if (!isNaN(coPar.A) && !isNaN(coPar.B) && !isNaN(coPar.C)) {
-        coefficientsPar.push({
-          A: coPar.A.toFixed(6),
-          B: coPar.B.toFixed(6),
-          C: coPar.C.toFixed(6),
+      const fitLineWidth = PLOT_FIT_LINE_WIDTH;
+      let A, B, C;
+
+      // Render any fitted Parabolas
+      if (this.fitMode === FIT_OPTION_PARABOLA) {
+        const {coefficients: coEff, data: fit} = fitParabola(fitData, xMin, xMax);
+        A = coEff.A;
+        B = coEff.B;
+        C = coEff.C;
+
+        if (isNaN(A) || isNaN(B) || isNaN(C)) {
+          continue;
+        }
+
+        this.push('fitParabolaCoefficients', {
+          A: A.toFixed(6),
+          B: B.toFixed(6),
+          C: C.toFixed(6),
+          turningPoint: this.getTurningPoint(A, B, C),
           label: trace.label,
           legend: trace.legend,
           unit: trace.unit
         });
+
+        const line = this.plotLine(fit, 1, color, fitLineWidth, this.linesFitParabolas);
+        if (line) ob.add(line);
       }
-      this.plotLine(fitData, 1,
-                    COLOR_LIST[i % COLOR_LIST.length],
-                    PLOT_FIT_LINE_WIDTH,
-                    this.linesFitParabolas);
 
-      const {coefficients: coExp, data: fitDataExp} = fitExponential(dataInFitBounds[i],
-                                                                     this.dataLimits.xMin,
-                                                                     this.dataLimits.xMax);
+      // Render any fitted Exponentials
+      else if (this.fitMode === FIT_OPTION_EXPONENTIAL) {
+        const {coefficients: coEff, data: fit} = fitExponential(fitData, xMin, xMax);
+        A = coEff.A;
+        B = coEff.B;
 
-      if (!isNaN(coExp.A) && !isNaN(coExp.B)) {
-        coefficientsExp.push({
-          A: coExp.A.toFixed(6),
-          B: coExp.B.toFixed(6),
+        if (isNaN(A) || isNaN(B)) {
+          continue;
+        }
+
+        this.push('fitExponentialCoefficients', {
+          A: A.toFixed(6),
+          B: B.toFixed(6),
+          T1: (B) ? (-1 / B).toFixed(6) : 0,
           label: trace.label,
           legend: trace.legend,
           unit: trace.unit
         });
+
+        const line = this.plotLine(fit, 1, color, fitLineWidth, this.linesFitExponentials);
+        if (line) ob.add(line);
       }
-      this.plotLine(fitDataExp, 1,
-                    COLOR_LIST[i % COLOR_LIST.length],
-                    PLOT_FIT_LINE_WIDTH,
-                    this.linesFitExponentials);
     }
 
     for (const line of lines) {
       ob.add(line);
-    }
-
-    this.set('fitParabolaCoefficients', []);
-    this.set('fitExponentialCoefficients', []);
-    if (this.fitMode === FIT_OPTION_PARABOLA) {
-      for (const line of this.linesFitParabolas) {
-        ob.add(line);
-      }
-      this.set('fitParabolaCoefficients', coefficientsPar);
-    } else if (this.fitMode === FIT_OPTION_EXPONENTIAL) {
-      for (const line of this.linesFitExponentials) {
-        ob.add(line);
-      }
-      this.set('fitExponentialCoefficients', coefficientsExp);
     }
   }
 
