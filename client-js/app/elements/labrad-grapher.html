@@ -119,6 +119,12 @@
     }
   </style>
   <template>
+    <iron-a11y-keys target="[[target]]" keys="up down"
+                    on-keys-pressed="cursorMove"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="right enter"
+                    on-keys-pressed="cursorTraverse"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="left backspace"
+                    on-keys-pressed="cursorBack"></iron-a11y-keys>
     <div id="outer">
       <div id="container">
         <paper-header-panel id="left-column">
@@ -127,9 +133,11 @@
             <paper-icon-button icon="delete" id="trash" on-click="trashClicked" title="Show Trashed Items"></paper-icon-button>
           </div>
           <div id="listing">
-            <iron-list items="{{filteredListItems}}" as="item" class='fit'
-                                             selected-item="{{selected}}"
-                                             selection-enabled>
+            <iron-list items="{{filteredListItems}}"
+                       id="combinedList"
+                       as="item" class='fit'
+                       selected-item="{{selected}}"
+                       selection-enabled>
               <template>
                 <div class$='row [[computeSelectedClass(selected)]]'>
                   <div class="item">

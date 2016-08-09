@@ -55,6 +55,8 @@
     }
   </style>
   <template>
+    <iron-a11y-keys target="[[target]]" keys="left backspace"
+                    on-keys-pressed="cursorBack"></iron-a11y-keys>
     <div id="plot"></div>
     <div id="canvas"></div>
     <div id="zoomRectangle"></div>
