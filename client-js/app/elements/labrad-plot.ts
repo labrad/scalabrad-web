@@ -153,6 +153,10 @@ export class Plot extends polymer.Base {
   private is2D: boolean;
   private displaySurface: number = 2;
 
+  private fitMode: number = FIT_OPTION_NONE;
+
+  private fitParabolaCoefficients: {A: number, B: number, C: number}[] = [];
+  private fitExponentialCoefficients: {A: number, B: number}[] = [];
 
   /**
    * A matrix for the use in transforming geometries.
