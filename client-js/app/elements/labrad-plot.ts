@@ -2,6 +2,7 @@ import 'd3';
 import THREE from 'three';
 import {viridisData} from '../scripts/colormaps';
 import * as datavault from '../scripts/datavault';
+import {fitParabola, fitExponential} from '../scripts/fit';
 import {Lifetime} from '../scripts/lifetime';
 
 
@@ -12,11 +13,14 @@ const PLOT_MIN_WIDTH = 400;
 const PLOT_MIN_HEIGHT = 400;
 const PLOT_LEFT_MARGIN = 120;
 const PLOT_RIGHT_MARGIN = 10;
-const PLOT_TOP_MARGIN = 50;
+const PLOT_TOP_OFFSET = 50;
+const PLOT_TOP_MARGIN = 10;
 const PLOT_BOTTOM_MARGIN = 50;
 const PLOT_LINE_WIDTH = 1.5;
+const PLOT_FIT_LINE_WIDTH = 3.0;
 const PLOT_POINT_SIZE = 6;
 const PLOT_ZOOM_RECTANGLE_BORDER = 2;
+const PLOT_FIT_RECTANGLE_BORDER = 1;
 
 
 /**
@@ -68,6 +72,10 @@ const COLOR_BAR_WIDGET_SIZE = (
 );
 
 type RectangleBound = {xMin: number, xMax: number, yMin: number, yMax: number};
+
+const FIT_OPTION_NONE = 0;
+const FIT_OPTION_PARABOLA = 1;
+const FIT_OPTION_EXPONENTIAL = 2;
 
 @component('labrad-plot')
 export class Plot extends polymer.Base {
@@ -134,6 +142,13 @@ export class Plot extends polymer.Base {
     left: PLOT_LEFT_MARGIN
   };
 
+  private fitBounds = {
+    xMin: 0,
+    xMax: 0,
+    yMin: 0,
+    yMax: 0
+  };
+
   // Hack to enforce user defined display of traces.
   private userTraces: boolean = false;
 
@@ -154,6 +169,10 @@ export class Plot extends polymer.Base {
   private displaySurface: number = 2;
 
   private fitMode: number = FIT_OPTION_NONE;
+
+  private lines: THREE.Line[] = [];
+  private linesFitParabolas: THREE.Line[] = [];
+  private linesFitExponentials: THREE.Line[] = [];
 
   private fitParabolaCoefficients: {A: number, B: number, C: number}[] = [];
   private fitExponentialCoefficients: {A: number, B: number}[] = [];
@@ -370,6 +389,12 @@ export class Plot extends polymer.Base {
       this.scene.remove(obj);
     }
     this.sceneObjects = [];
+
+    if (this.is1D) {
+      this.lines = [];
+      this.linesFitParabolas = [];
+      this.linesFitExponentials = [];
+    }
 
     this.lastData = null;
 
@@ -660,56 +685,185 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Generate the geometries and materials for a 1D plot.
+   * Helper method to get the scene object, or create it if it doesn't already
+   * exist.
    */
-  private plotData1D(data: number[][]): void {
-    this.dataLimits1D(data);
-
-    if (this.sceneObjects.length == 0) {
+  private getSceneObject() {
+    if (this.sceneObjects.length === 0) {
       const ob = new THREE.Object3D();
       this.sceneObjects.push(ob);
       this.scene.add(ob);
     }
 
-    const ob = this.sceneObjects[0];
+    return this.sceneObjects[0];
+  }
 
-    for (let i of this.displayTraces) {
-      const length = (this.lastData) ? data.length + 1 : data.length;
 
-      // The positions array is initialized in the geometry here, but positions
-      // are set withing projectGraphPositions. See plotData2D for more info.
-      const positions = new Float32Array(length * 3);
+  /**
+   * Plots a line given a set of data, adding it to the scene.
+   */
+  private plotLine(data: number[][], yColumn: number = 1,
+                   color: string = "#000", lineWidth: number = 1,
+                   lines: THREE.Line[]) {
+    if (data.length < 2) {
+      return;
+    }
 
-      // Raw data is stored inside the geometry for more efficient
-      // reprojection.
-      const dataPoints = new Float64Array(length * 3);
-      let offset = 0;
+    const dataLength = data.length;
 
-      // Add the last point of data if maxima exists to avoid gaps.
-      if (this.lastData) {
-        dataPoints[offset] = this.lastData[0];
-        dataPoints[offset + 1] = this.lastData[i + 1];
-        offset += 3;
+    // The positions array is initialized in the geometry here, but positions
+    // are set withing projectGraphPositions. See plotData2D for more info.
+    const positions = new Float32Array(dataLength * 3);
+
+    // Raw data is stored inside the geometry for more efficient
+    // reprojection.
+    const dataPoints = new Float64Array(dataLength * 3);
+
+    let offset = 0;
+    for (let row of data) {
+      dataPoints[offset] = row[0];
+      dataPoints[offset + 1] = row[yColumn];
+      offset += 3;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 3));
+
+    const material = new THREE.LineBasicMaterial({
+      color: color,
+      linewidth: lineWidth
+    });
+
+    const line = new THREE.Line(geometry, material);
+    lines.push(line);
+  }
+
+  /**
+   * Returns a dictionary where each trace (one-indexed) has been filtered to
+   * just include points that are within the currently selected fit area.
+   */
+  private traceDataWithinFitBounds(data: number[][]): number[][][] {
+    const dataInFitBounds = [];
+
+    if (!data) {
+      return dataInFitBounds;
+    }
+
+    const d = data[0];
+    for (let i = 0; i < d.length; ++i) {
+      dataInFitBounds.push([]);
+    }
+
+    for (const d of this.data) {
+      const x = d[0];
+      if (x < this.fitBounds.xMin || x > this.fitBounds.xMax) {
+        continue;
       }
 
-      for (let row of data) {
-        dataPoints[offset] = row[0];
-        dataPoints[offset + 1] = row[i + 1];
-        offset += 3;
+      const datum = [x]
+      for (let i = 1; i < d.length; ++i) {
+        const y = d[i];
+        if (y < this.fitBounds.yMin || y > this.fitBounds.yMax) {
+          continue;
+        }
+
+        dataInFitBounds[i - 1].push([x, y]);
       }
+    }
+    return dataInFitBounds;
+  }
 
-      if (dataPoints.length > 1) {
-        const geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.addAttribute('data', new THREE.BufferAttribute(dataPoints, 3));
 
-        const material = new THREE.LineBasicMaterial({
-          color: COLOR_LIST[i % COLOR_LIST.length],
-          linewidth: PLOT_LINE_WIDTH
+  /**
+   * Generate the geometries and materials for a 1D plot.
+   */
+  private plotData1D(data: number[][]): void {
+    this.dataLimits1D(data);
+
+    if (this.lastData) {
+      data.splice(0, 1, this.lastData);
+    }
+
+    const ob = this.getSceneObject();
+
+    // Reset fit lines by removing them from the scene. They are fit to the
+    // total data, so they are not incrementally built like the data lines.
+    for (const line of this.linesFitParabolas) {
+      ob.remove(line);
+    }
+    for (const line of this.linesFitExponentials) {
+      ob.remove(line);
+    }
+    this.linesFitParabolas = [];
+    this.linesFitExponentials = [];
+
+    const dataInFitBounds = this.traceDataWithinFitBounds(this.data);
+
+    const coefficientsPar = [];
+    const coefficientsExp = [];
+
+    const lines = [];
+    for (const i of this.displayTraces) {
+      this.plotLine(data, i+1,
+                    COLOR_LIST[i % COLOR_LIST.length],
+                    PLOT_LINE_WIDTH,
+                    lines);
+
+      const trace = this.deps[i];
+      const {coefficients: coPar, data: fitData} = fitParabola(dataInFitBounds[i],
+                                                               this.dataLimits.xMin,
+                                                               this.dataLimits.xMax);
+      if (!isNaN(coPar.A) && !isNaN(coPar.B) && !isNaN(coPar.C)) {
+        coefficientsPar.push({
+          A: coPar.A.toFixed(6),
+          B: coPar.B.toFixed(6),
+          C: coPar.C.toFixed(6),
+          label: trace.label,
+          legend: trace.legend,
+          unit: trace.unit
         });
-        const line = new THREE.Line(geometry, material);
+      }
+      this.plotLine(fitData, 1,
+                    COLOR_LIST[i % COLOR_LIST.length],
+                    PLOT_FIT_LINE_WIDTH,
+                    this.linesFitParabolas);
+
+      const {coefficients: coExp, data: fitDataExp} = fitExponential(dataInFitBounds[i],
+                                                                     this.dataLimits.xMin,
+                                                                     this.dataLimits.xMax);
+
+      if (!isNaN(coExp.A) && !isNaN(coExp.B)) {
+        coefficientsExp.push({
+          A: coExp.A.toFixed(6),
+          B: coExp.B.toFixed(6),
+          label: trace.label,
+          legend: trace.legend,
+          unit: trace.unit
+        });
+      }
+      this.plotLine(fitDataExp, 1,
+                    COLOR_LIST[i % COLOR_LIST.length],
+                    PLOT_FIT_LINE_WIDTH,
+                    this.linesFitExponentials);
+    }
+
+    for (const line of lines) {
+      ob.add(line);
+    }
+
+    this.set('fitParabolaCoefficients', []);
+    this.set('fitExponentialCoefficients', []);
+    if (this.fitMode === FIT_OPTION_PARABOLA) {
+      for (const line of this.linesFitParabolas) {
         ob.add(line);
       }
+      this.set('fitParabolaCoefficients', coefficientsPar);
+    } else if (this.fitMode === FIT_OPTION_EXPONENTIAL) {
+      for (const line of this.linesFitExponentials) {
+        ob.add(line);
+      }
+      this.set('fitExponentialCoefficients', coefficientsExp);
     }
   }
 
@@ -765,13 +919,7 @@ export class Plot extends polymer.Base {
       mesh = new THREE.Mesh(geometry, material);
     }
 
-    if (this.sceneObjects.length == 0) {
-      const ob = new THREE.Object3D();
-      this.sceneObjects.push(ob);
-      this.scene.add(ob);
-    }
-
-    const ob = this.sceneObjects[0];
+    const ob = this.getSceneObject();
     ob.add(mesh);
   }
 
@@ -1078,13 +1226,49 @@ export class Plot extends polymer.Base {
     this.graphUpdateRequired = true;
     this.svg.select('.x.axis').call(this.xAxis);
     this.svg.select('.y.axis').call(this.yAxis);
+    this.updateFitRectangle();
+  }
+
+
+  /**
+   * Updates the Fit Rectangle to be the correct size and position based on the
+   * current zoom level of the plot.
+   */
+  private updateFitRectangle() {
+    const fit = this.fitBounds;
+
+    if (fit.xMin === 0 && fit.xMax === 0) {
+      return;
+    }
+
+    const [limXMin, limXMax] = this.xScale.domain();
+    const [limYMin, limYMax] = this.yScale.domain();
+
+    // If the rectangle moves out of bounds, hide it.
+    if (fit.xMin > limXMax || fit.xMax < limXMin ||
+        fit.yMax < limYMin || fit.yMin > limYMax) {
+      this.$.fitRectangle.style.display = 'none';
+      return;
+    }
+
+    const borderSize = PLOT_FIT_RECTANGLE_BORDER * 2;
+    const xMin = this.xScale(Math.max(fit.xMin, limXMin));
+    const xMax = this.xScale(Math.min(fit.xMax, limXMax)) - borderSize;
+    const yMin = this.yScale(Math.max(fit.yMin, limYMin)) - borderSize;
+    const yMax = this.yScale(Math.min(fit.yMax, limYMax));
+
+    this.$.fitRectangle.style.top = `${yMax + this.margin.top}px`;
+    this.$.fitRectangle.style.left = `${xMin + this.margin.left}px`;
+    this.$.fitRectangle.style.width = `${xMax - xMin}px`;
+    this.$.fitRectangle.style.height = `${yMin - yMax}px`;
+    this.$.fitRectangle.style.display = 'block';
   }
 
 
   private updateColorBarScale() {
     this.updateColorBarScaleRequired = false;
 
-    if (this.numIndeps == 2) {
+    if (this.numIndeps === 2) {
       this.zScale.domain([this.dataLimits.zMin, this.dataLimits.zMax]);
       this.zAxis.scale(this.zScale);
       this.svg.select('.z.axis').call(this.zAxis);
@@ -1141,7 +1325,7 @@ export class Plot extends polymer.Base {
     const [x, y] = d3.mouse(this);
     return [
       clip(x - this.margin.left, 0, this.width + offset),
-      clip(y - this.margin.top, 0, this.height + offset)
+      clip(y - this.margin.top - PLOT_TOP_OFFSET, 0, this.height + offset)
     ];
   }
 
@@ -1207,11 +1391,36 @@ export class Plot extends polymer.Base {
    * Sets a callback to set the zoom bounds and zoom on mouse up.
    */
   private async drawZoomRectangle() {
-    const {xMin, xMax, yMin, yMax} = await this.drawRectangle(this.$.zoomRectangle);
-    this.$.zoomRectangle.style.display = 'none';
-    this.zoom.x(this.xScale.domain([xMin, xMax]))
-             .y(this.yScale.domain([yMin, yMax]));
+    const rect = this.$.zoomRectangle;
+    try {
+      const {xMin, xMax, yMin, yMax} = await this.drawRectangle(rect);
+      this.zoom.x(this.xScale.domain([xMin, xMax]))
+               .y(this.yScale.domain([yMin, yMax]));
+    } catch (e) {
+      rect.style.display = 'none';
+      return;
+    }
+
+    rect.style.display = 'none';
     this.handleZoom();
+  }
+
+
+  /**
+   * Hooks the mouse to draw a rectangle for bounding the fit on the data.
+   * Sets a callback to fit the appropriate function on mouse up.
+   */
+  private async drawFitRectangle() {
+    const rect = this.$.fitRectangle;
+    try {
+      this.fitBounds = await this.drawRectangle(rect);
+    } catch (e) {
+      this.fitBounds = {xMin: 0, xMax: 0, yMin: 0, yMax: 0};
+      rect.style.display = 'none';
+      return;
+    }
+
+    this.redrawScene();
   }
 
 
@@ -1233,6 +1442,12 @@ export class Plot extends polymer.Base {
       case 'zoomRect':
         canvas.on('.zoom', null)
         canvas.on('mousedown', () => this.drawZoomRectangle());
+        this.$.canvas.style.cursor = 'crosshair';
+        break;
+
+      case 'fitRect':
+        canvas.on('.zoom', null)
+        canvas.on('mousedown', () => this.drawFitRectangle());
         this.$.canvas.style.cursor = 'crosshair';
         break;
 
@@ -1297,6 +1512,14 @@ export class Plot extends polymer.Base {
 
 
   /**
+   * Sets the control mode to fit rectangle.
+   */
+  mouseModeSelectorFitRect(): void {
+    this.mouseMode = 'fitRect';
+  }
+
+
+  /**
    * Sets the 2D draw mode to dots.
    */
   drawMode2DSelectorDots(): void {
@@ -1317,6 +1540,14 @@ export class Plot extends polymer.Base {
    */
   drawMode2DSelectorVargrid(): void {
     this.drawMode2D = 'vargrid';
+  }
+
+
+  /**
+   * Open the dialog to allow the selection of fitting functions.
+   */
+  fitFunctionSelectorOpen(): void {
+    this.$.fitFunctionSelector.open();
   }
 
 
@@ -1414,11 +1645,24 @@ export class Plot extends polymer.Base {
       case 'pan':
         this.$.pan.style.color = 'black';
         this.$.rect.style.color = '#AAAAAA';
+        // 2D plots do not have fit functionality.
+        if (this.$.fitRect) {
+          this.$.fitRect.style.color = '#AAAAAA';
+        }
         break;
 
       case 'zoomRect':
         this.$.pan.style.color = '#AAAAAA';
         this.$.rect.style.color = 'black';
+        if (this.$.fitRect) {
+          this.$.fitRect.style.color = '#AAAAAA';
+        }
+        break;
+
+      case 'fitRect':
+        this.$.pan.style.color = '#AAAAAA';
+        this.$.rect.style.color = '#AAAAAA';
+        this.$.fitRect.style.color = 'black';
         break;
 
       default:
@@ -1457,6 +1701,22 @@ export class Plot extends polymer.Base {
 
     // Points and square differences require a complete recreation of the data.
     if (this.isRendering) {
+      this.redrawScene();
+    }
+  }
+
+
+  @observe('fitMode')
+  private observeFitMode() {
+    if (this.isRendering) {
+      // Hide the fit rectangle if no fit option is selected, otherwise show it
+      // as long as a fit box has been drawn.
+      if (this.fitMode === FIT_OPTION_NONE) {
+        this.$.fitRectangle.style.display = 'none';
+      } else if (this.fitBounds.xMin !== 0 || this.fitBounds.xMax !== 0) {
+        this.$.fitRectangle.style.display = 'block';
+      }
+
       this.redrawScene();
     }
   }
