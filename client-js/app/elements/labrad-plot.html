@@ -1,3 +1,5 @@
+<link rel="import" href="../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../bower_components/paper-radio-group/paper-radio-group.html">
 <link rel="import" href="../bower_components/paper-radio-button/paper-radio-button.html">
@@ -7,6 +9,58 @@
     :host {
       height: 100%;
       display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    #controls {
+      display: flex;
+      flex-direction: row;
+      position: relative;
+      height: 50px;
+    }
+    #pos {
+      padding-left: 40px;
+      padding-top: 20px;
+      font-family: monospace;
+      flex: 1;
+    }
+    #fitCoefficients {
+      flex: 2;
+      text-align: center;
+      overflow-y: auto;
+      height: 60px;
+    }
+
+    #fitCoefficients .fitData {
+      display: flex;
+      text-align: left;
+      margin: 0;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .fitData .label {
+      line-height: 60px;
+      margin-right: 15px;
+    }
+    .fitData .data {
+      flex: 1;
+      margin: 10px 0;
+    }
+
+    .fitData .data p {
+      margin: 0;
+      padding: 1px 0;
+    }
+
+    #fitModeSelector {
+      text-align: right;
+      padding-left: 10px;
+      padding-right: 50px;
+    }
+    #plotContainer {
+      display: flex;
+      flex-grow: 3;
       flex-direction: row;
       position: relative;
     }
@@ -15,12 +69,6 @@
       flex-grow: 1;
       width: 400px;
       min-height: 400px;
-    }
-    #pos {
-      position: absolute;
-      top: 20px;
-      left: 40px;
-      font-family: monospace;
     }
     #buttons {
       display: flex;
@@ -45,29 +93,102 @@
       top: 0;
       left: 0;
     }
-    #zoomRectangle {
-      background-color: #eee;
-      opacity: 0.5;
-      cursor: crosshair;
-      position: absolute;
-      border: 2px solid #f00;
+    #zoomRectangle, #fitRectangle {
+      background-color: rgba(220, 220, 220, 0.6);
+      border: 2px solid rgb(255, 10, 73);
       display: none;
+      pointer-events: none;
+      position: absolute;
+    }
+    #fitRectangle {
+      background-color: rgba(250, 250, 250, 0.6);
+      border: 2px dashed rgb(32, 171, 251);
     }
   </style>
   <template>
-    <div id="plot"></div>
-    <div id="canvas"></div>
-    <div id="zoomRectangle"></div>
-    <div id="pos">Current Position: <span>{{currPos}}</span></div>
-    <div id="buttons">
-      <paper-icon-button icon="tab-unselected" id="rect" on-click="mouseModeSelectorZoomRect" title="drag to zoom"></paper-icon-button>
-      <paper-icon-button icon="open-with" id="pan" on-click="mouseModeSelectorPan" title="drag to pan"></paper-icon-button>
-      <paper-icon-button icon="home" id="home" on-click="resetZoomControl" title="zoom out"></paper-icon-button>
-      <paper-icon-button icon="list" id="select" on-click="traceSelectorOpen" title="select trace"></paper-icon-button>
-      <div id="modes2d">
-        <paper-icon-button icon="av:stop" id="dots" on-click="drawMode2DSelectorDots" title="draw with dots"></paper-icon-button>
-        <paper-icon-button icon="dashboard" id="rectfill" on-click="drawMode2DSelectorRectfill" title="draw with rect fill"></paper-icon-button>
-        <paper-icon-button icon="view-list" id="vargrid" on-click="drawMode2DSelectorVargrid" title="draw with vargrid"></paper-icon-button>
+    <div id="controls">
+      <div id="pos">
+        Current Position: <span>{{currPos}}</span>
+      </div>
+
+      <div id="fitCoefficients">
+        <div>
+        <template is="dom-repeat" items="{{fitParabolaCoefficients}}" as="coEff">
+          <div class="fitData">
+            <div class="label">
+            <strong>
+              {{coEff.label}}
+              <template is="dom-if" if="{{coEff.legend}}">({{coEff.legend}})</template>
+              [{{coEff.unit}}]
+            </strong>
+            </div>
+            <div class="data">
+              <p>{{coEff.A}}x<sup>2</sup> + {{coEff.B}}x + {{coEff.C}}</p>
+              <p>
+              <template is="dom-if" if="{{coEff.extremum}}">
+                <span class="t1">
+                  <template is="dom-if"
+                            if="{{coEff.extremum.isMin}}">Min</template>
+                  <template is="dom-if"
+                            if="{{coEff.extremum.isMax}}">Max</template>
+                  = ({{coEff.extremum.x}}, {{coEff.extremum.y}})
+                </span>
+              </template>
+              </p>
+            </div>
+          </div>
+        </template>
+
+        <template is="dom-repeat" items="{{fitExponentialCoefficients}}" as="coEff">
+          <div class="fitData">
+            <div class="label">
+            <strong>
+              {{coEff.label}}
+              <template is="dom-if" if="{{coEff.legend}}">({{coEff.legend}})</template>
+              [{{coEff.unit}}]
+            </strong>
+            </div>
+            <div class="data">
+              <p>{{coEff.A}}e<sup>{{coEff.B}}x</sup></p>
+              <p>
+              <template is="dom-if" if="{{coEff.T1}}">
+                <span class="t1">T1 = {{coEff.T1}}</span>
+              </template>
+              </p>
+            </div>
+          </div>
+        </template>
+        </div>
+      </div>
+
+      <div id="fitModeSelector">
+        <paper-dropdown-menu label="Fit Mode">
+            <paper-listbox class="dropdown-content" selected="{{fitMode}}">
+            <paper-item>None</paper-item>
+            <paper-item>Parabola</paper-item>
+            <paper-item>Exponential</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+      </div>
+    </div>
+
+    <div id="plotContainer">
+      <div id="plot"></div>
+      <div id="canvas"></div>
+      <div id="zoomRectangle"></div>
+      <div id="fitRectangle"></div>
+
+      <div id="buttons">
+        <paper-icon-button icon="tab-unselected" id="rect" on-click="mouseModeSelectorZoomRect" title="Drag to Zoom"></paper-icon-button>
+        <paper-icon-button icon="open-with" id="pan" on-click="mouseModeSelectorPan" title="Drag to Pan"></paper-icon-button>
+        <paper-icon-button icon="places:fitness-center" id="fitRect" on-click="mouseModeSelectorFitRect" title="Drag to Fit"></paper-icon-button>
+        <paper-icon-button icon="home" id="home" on-click="resetZoomControl" title="Zoom Out"></paper-icon-button>
+        <paper-icon-button icon="list" id="select" on-click="traceSelectorOpen" title="Select Trace"></paper-icon-button>
+        <div id="modes2d">
+          <paper-icon-button icon="av:stop" id="dots" on-click="drawMode2DSelectorDots" title="Draw with Dots"></paper-icon-button>
+          <paper-icon-button icon="dashboard" id="rectfill" on-click="drawMode2DSelectorRectfill" title="Draw with Rect Fill"></paper-icon-button>
+          <paper-icon-button icon="view-list" id="vargrid" on-click="drawMode2DSelectorVargrid" title="Draw with Vargrid"></paper-icon-button>
+        </div>
       </div>
     </div>
 
