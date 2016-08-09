@@ -143,10 +143,10 @@ export class Plot extends polymer.Base {
   };
 
   private fitBounds = {
-    xMin: 0,
-    xMax: 0,
-    yMin: 0,
-    yMax: 0
+    xMin: NaN,
+    xMax: NaN,
+    yMin: NaN,
+    yMax: NaN
   };
 
   // Hack to enforce user defined display of traces.
@@ -740,8 +740,19 @@ export class Plot extends polymer.Base {
   }
 
   /**
-   * Returns a dictionary where each trace (one-indexed) has been filtered to
-   * just include points that are within the currently selected fit area.
+   * Returns an array filtering the data for each trace to only the points
+   * within the current fit bounds. The array splits the data so that each
+   * trace has its own array of data points, where each point is a single x/y
+   * pair.
+   *
+   * Example:
+   *
+   * traceData = traceDataWithinFitBounds(data);
+   * for (const points of traceData[tradeId]) {
+   *   for (const point of points) {
+   *     const [x, y] = pointId;
+   *   }
+   * }
    */
   private traceDataWithinFitBounds(data: number[][]): number[][][] {
     const dataInFitBounds = [];
@@ -751,8 +762,12 @@ export class Plot extends polymer.Base {
     }
 
     const d = data[0];
-    for (let i = 0; i < d.length; ++i) {
+    for (let i = 0; i < d.length - 1; ++i) {
       dataInFitBounds.push([]);
+    }
+
+    if (isNaN(this.fitBounds.xMin)) {
+      return dataInFitBounds;
     }
 
     for (const d of this.data) {
@@ -761,7 +776,6 @@ export class Plot extends polymer.Base {
         continue;
       }
 
-      const datum = [x]
       for (let i = 1; i < d.length; ++i) {
         const y = d[i];
         if (y < this.fitBounds.yMin || y > this.fitBounds.yMax) {
@@ -1237,7 +1251,7 @@ export class Plot extends polymer.Base {
   private updateFitRectangle() {
     const fit = this.fitBounds;
 
-    if (fit.xMin === 0 && fit.xMax === 0) {
+    if (isNaN(fit.xMin)) {
       return;
     }
 
@@ -1415,7 +1429,7 @@ export class Plot extends polymer.Base {
     try {
       this.fitBounds = await this.drawRectangle(rect);
     } catch (e) {
-      this.fitBounds = {xMin: 0, xMax: 0, yMin: 0, yMax: 0};
+      this.fitBounds = {xMin: NaN, xMax: NaN, yMin: NaN, yMax: NaN};
       rect.style.display = 'none';
       return;
     }
@@ -1713,7 +1727,7 @@ export class Plot extends polymer.Base {
       // as long as a fit box has been drawn.
       if (this.fitMode === FIT_OPTION_NONE) {
         this.$.fitRectangle.style.display = 'none';
-      } else if (this.fitBounds.xMin !== 0 || this.fitBounds.xMax !== 0) {
+      } else if (!isNaN(this.fitBounds.xMin)) {
         this.$.fitRectangle.style.display = 'block';
       }
 
