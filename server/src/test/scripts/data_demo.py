@@ -25,6 +25,37 @@ def demo(func):
     demos.append(func)
     return func
 
+@demo
+def demo_1d_exponential(dv):
+    dv.new('demo_1d_exponential', ['x [ms]'], ['y [V]'])
+    add_params(dv)
+
+    # Generate points between -5 and 5 in 0.1 increments
+    for i in range(-50, 50):
+        x = 0.1 * i
+        y = math.e**(-x) + random.random()*10
+        dv.add([x, y])
+        time.sleep(0.002)
+
+@demo
+def demo_1d_parabola(dv):
+    dv.new('demo_1d_parabola', ['x [ms]'], ['y [V]'])
+    add_params(dv)
+    for i in xrange(-1000, 1000):
+        x = i
+        y = i**2 + i + random.random()*5000
+        dv.add([x, y])
+        time.sleep(0.002)
+
+@demo
+def demo_1d_parabola_2(dv):
+    dv.new('demo_1d_parabola_2', ['x [ms]'], ['y [V]'])
+    add_params(dv)
+    for i in xrange(-100, 100):
+        x = i
+        y = 10 * i**2 + i + random.random()*5000 + 500
+        dv.add([x, y])
+        time.sleep(0.002)
 
 @demo
 def demo_1d_simple(dv):
