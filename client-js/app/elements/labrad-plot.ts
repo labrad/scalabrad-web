@@ -700,11 +700,10 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Plots a line given a set of data, adding it to the scene.
+   * Creates a line given a set of data.
    */
-  private plotLine(data: number[][], yColumn: number = 1,
-                   color: string = "#000", lineWidth: number = 1,
-                   lines: THREE.Line[]): THREE.Line {
+  private createLine(data: number[][], yColumn: number = 1,
+                   color: string = "#000", lineWidth: number = 1): THREE.Line {
     if (data.length < 2) {
       return null;
     }
@@ -736,10 +735,10 @@ export class Plot extends polymer.Base {
     });
 
     const line = new THREE.Line(geometry, material);
-    lines.push(line);
 
     return line;
   }
+
 
   /**
    * Returns an array filtering the data for each trace to only the points
@@ -791,6 +790,10 @@ export class Plot extends polymer.Base {
   }
 
 
+  /**
+   * Calculates the turning point of a parabola given the coefficients A, B and
+   * C from an equation of the form Ax^2 + Bx + C.
+   */
   private getTurningPoint(A: number, B: number, C: number) {
     const x: number = (A) ? -B / (2 * A) : 0;
     const y: number = A * Math.pow(x, 2) + B * x + C
@@ -839,7 +842,8 @@ export class Plot extends polymer.Base {
       const color = COLOR_LIST[i % COLOR_LIST.length];
 
       // Plot the regular data line.
-      this.plotLine(data, i+1, color, PLOT_LINE_WIDTH, lines);
+      const line = this.createLine(data, i+1, color, PLOT_LINE_WIDTH);
+      lines.push(line);
 
       const fitData = dataInFitBounds[i];
       const xMin = this.dataLimits.xMin;
@@ -869,8 +873,11 @@ export class Plot extends polymer.Base {
           unit: trace.unit
         });
 
-        const line = this.plotLine(fit, 1, color, fitLineWidth, this.linesFitParabolas);
-        if (line) ob.add(line);
+        const fitLine = this.createLine(fit, 1, color, fitLineWidth);
+        if (fitLine) {
+          this.linesFitParabolas.push(fitLine);
+          ob.add(fitLine);
+        }
       }
 
       // Render any fitted Exponentials
@@ -892,8 +899,11 @@ export class Plot extends polymer.Base {
           unit: trace.unit
         });
 
-        const line = this.plotLine(fit, 1, color, fitLineWidth, this.linesFitExponentials);
-        if (line) ob.add(line);
+        const fitLine = this.createLine(fit, 1, color, fitLineWidth);
+        if (fitLine) {
+          ob.add(fitLine);
+          this.linesFitExponentials.push(fitLine);
+        }
       }
     }
 
