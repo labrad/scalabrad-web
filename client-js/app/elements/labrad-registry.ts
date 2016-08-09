@@ -108,7 +108,6 @@ export class LabradRegistry extends polymer.Base {
    */
   @observe('path')
   pathChanged(newPath: string[], oldPath: string[]) {
-    const offset = newPath.length > 0 ? 1 : 0;
     this.set('selectedIdx', this.getDefaultSelectedItem());
     this.set('filterText', '');
   }
