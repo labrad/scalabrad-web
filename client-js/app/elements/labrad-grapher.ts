@@ -85,22 +85,25 @@ export class LabradGrapher extends polymer.Base {
 
 
   cursorMove(e) {
-    const offset = this.path.length > 0 ? 1 : 0;
-    const length = this.filteredListItems.length + offset;
+    const length = this.filteredListItems.length;
     const selectedIndex = this.getSelectedIndex();
+    const list = this.$.combinedList;
 
     switch (e.detail.combo) {
       case 'up':
         if (selectedIndex !== null && selectedIndex !== 0) {
-          this.$.combinedList.selectItem(selectedIndex - 1);
+          list.selectItem(selectedIndex - 1);
+          list.scrollToIndex(selectedIndex - 1);
         }
         break;
 
       case 'down':
         if (selectedIndex === null) {
-          this.$.combinedList.selectItem(0);
+          list.selectItem(0);
+          list.scrollToIndex(0);
         } else if (selectedIndex < length - 1) {
-          this.$.combinedList.selectItem(selectedIndex + 1);
+          list.selectItem(selectedIndex + 1);
+          list.scrollToIndex(selectedIndex + 1);
         }
         break;
 
