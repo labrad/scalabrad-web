@@ -104,7 +104,7 @@ export class LabradRegistry extends polymer.Base {
 
 
   /**
-   * On path change, select the 0th element and clear the filter.
+   * On path change, select the default element and clear the filter.
    */
   @observe('path')
   pathChanged(newPath: string[], oldPath: string[]) {
