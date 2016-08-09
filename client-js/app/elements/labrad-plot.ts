@@ -1174,6 +1174,7 @@ export class Plot extends polymer.Base {
             .on('mouseup', null);
 
           if (x === originX || y === originY) {
+            reject();
             return;
           }
 
