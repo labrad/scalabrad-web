@@ -435,7 +435,7 @@ export class Plot extends polymer.Base {
     const p = this;
 
     // Make room for the color bar if necessary.
-    if (p.numIndeps == 2) {
+    if (p.numIndeps === 2) {
       p.margin.right = PLOT_RIGHT_MARGIN + COLOR_BAR_WIDGET_SIZE;
     }
 
@@ -506,8 +506,8 @@ export class Plot extends polymer.Base {
             .style('text-anchor', 'middle')
             .text(p.yLabel);
 
-    // Color Bar Axis
-    if (p.numIndeps == 2) {
+    // Color Bar Axis.
+    if (p.numIndeps === 2) {
       p.zAxis = d3.svg.axis();
       p.zAxis.orient('right')
              .ticks(COLOR_BAR_NUM_TICKS)
@@ -523,7 +523,7 @@ export class Plot extends polymer.Base {
         })
       }
 
-      // The Color Bar Gradient
+      // The Color Bar Gradient.
       p.svg.append('defs')
              .append("linearGradient")
              .attr("id", "ColorBarGradient")
@@ -543,7 +543,7 @@ export class Plot extends polymer.Base {
       // for the overall app to make Polymer paths work.
       const gradientFill = `url('${location.href}#ColorBarGradient')`;
 
-      // Color Bar Rectangle
+      // Color Bar Rectangle.
       p.svg.append('rect')
              .attr('id', 'color-bar')
              .attr('fill', gradientFill)
@@ -584,7 +584,7 @@ export class Plot extends polymer.Base {
     const plotWidth = Math.max(plotBounds.width, PLOT_MIN_WIDTH);
     const plotHeight = Math.max(plotBounds.height, PLOT_MIN_HEIGHT);
 
-    // The inner dimensions of the plot, sans margins
+    // The inner dimensions of the plot, sans margins.
     this.width = plotWidth - this.margin.left - this.margin.right;
     this.height = plotHeight - this.margin.top - this.margin.bottom;
 
@@ -625,7 +625,7 @@ export class Plot extends polymer.Base {
               .attr('x', -(this.height / 2))
               .attr('y', -this.margin.left);
 
-    if (this.numIndeps == 2) {
+    if (this.numIndeps === 2) {
       this.zAxis.scale(this.zScale);
 
       // Color Bar Rectangle.
@@ -700,13 +700,12 @@ export class Plot extends polymer.Base {
 
 
   /**
-   * Plots a line given a set of data, adding it to the scene.
+   * Creates a line given a set of data.
    */
-  private plotLine(data: number[][], yColumn: number = 1,
-                   color: string = "#000", lineWidth: number = 1,
-                   lines: THREE.Line[]) {
+  private createLine(data: number[][], yColumn: number = 1,
+                     color: string = "#000", lineWidth: number = 1): THREE.Line {
     if (data.length < 2) {
-      return;
+      return null;
     }
 
     const dataLength = data.length;
@@ -736,8 +735,10 @@ export class Plot extends polymer.Base {
     });
 
     const line = new THREE.Line(geometry, material);
-    lines.push(line);
+
+    return line;
   }
+
 
   /**
    * Returns an array filtering the data for each trace to only the points
@@ -790,6 +791,22 @@ export class Plot extends polymer.Base {
 
 
   /**
+   * Calculates the extremum of a parabola given the coefficients A, B and
+   * C from an equation of the form Ax^2 + Bx + C.
+   */
+  private getExtremum(A: number, B: number, C: number) {
+    const x: number = (A) ? -B / (2 * A) : 0;
+    const y: number = A * Math.pow(x, 2) + B * x + C
+    return {
+      x: x.toFixed(6),
+      y: y.toFixed(6),
+      isMin: (A > 0),
+      isMax: (A < 0),
+    }
+  }
+
+
+  /**
    * Generate the geometries and materials for a 1D plot.
    */
   private plotData1D(data: number[][]): void {
@@ -811,6 +828,8 @@ export class Plot extends polymer.Base {
     }
     this.linesFitParabolas = [];
     this.linesFitExponentials = [];
+    this.set('fitParabolaCoefficients', []);
+    this.set('fitExponentialCoefficients', []);
 
     const dataInFitBounds = this.traceDataWithinFitBounds(this.data);
 
@@ -819,65 +838,76 @@ export class Plot extends polymer.Base {
 
     const lines = [];
     for (const i of this.displayTraces) {
-      this.plotLine(data, i+1,
-                    COLOR_LIST[i % COLOR_LIST.length],
-                    PLOT_LINE_WIDTH,
-                    lines);
+      const color = COLOR_LIST[i % COLOR_LIST.length];
 
+      // Plot the regular data line.
+      const line = this.createLine(data, i+1, color, PLOT_LINE_WIDTH);
+      lines.push(line);
+
+      const fitData = dataInFitBounds[i];
+      const xMin = this.dataLimits.xMin;
+      const xMax = this.dataLimits.xMax;
       const trace = this.deps[i];
-      const {coefficients: coPar, data: fitData} = fitParabola(dataInFitBounds[i],
-                                                               this.dataLimits.xMin,
-                                                               this.dataLimits.xMax);
-      if (!isNaN(coPar.A) && !isNaN(coPar.B) && !isNaN(coPar.C)) {
-        coefficientsPar.push({
-          A: coPar.A.toFixed(6),
-          B: coPar.B.toFixed(6),
-          C: coPar.C.toFixed(6),
+      const fitLineWidth = PLOT_FIT_LINE_WIDTH;
+      let A, B, C;
+
+      // Render any fitted Parabolas
+      if (this.fitMode === FIT_OPTION_PARABOLA) {
+        const {coefficients: coEff, data: fit} = fitParabola(fitData, xMin, xMax);
+        A = coEff.A;
+        B = coEff.B;
+        C = coEff.C;
+
+        if (isNaN(A) || isNaN(B) || isNaN(C)) {
+          continue;
+        }
+
+        this.push('fitParabolaCoefficients', {
+          A: A.toFixed(6),
+          B: B.toFixed(6),
+          C: C.toFixed(6),
+          extremum: this.getExtremum(A, B, C),
           label: trace.label,
           legend: trace.legend,
           unit: trace.unit
         });
+
+        const fitLine = this.createLine(fit, 1, color, fitLineWidth);
+        if (fitLine) {
+          this.linesFitParabolas.push(fitLine);
+          ob.add(fitLine);
+        }
       }
-      this.plotLine(fitData, 1,
-                    COLOR_LIST[i % COLOR_LIST.length],
-                    PLOT_FIT_LINE_WIDTH,
-                    this.linesFitParabolas);
 
-      const {coefficients: coExp, data: fitDataExp} = fitExponential(dataInFitBounds[i],
-                                                                     this.dataLimits.xMin,
-                                                                     this.dataLimits.xMax);
+      // Render any fitted Exponentials
+      else if (this.fitMode === FIT_OPTION_EXPONENTIAL) {
+        const {coefficients: coEff, data: fit} = fitExponential(fitData, xMin, xMax);
+        A = coEff.A;
+        B = coEff.B;
 
-      if (!isNaN(coExp.A) && !isNaN(coExp.B)) {
-        coefficientsExp.push({
-          A: coExp.A.toFixed(6),
-          B: coExp.B.toFixed(6),
+        if (isNaN(A) || isNaN(B)) {
+          continue;
+        }
+
+        this.push('fitExponentialCoefficients', {
+          A: A.toFixed(6),
+          B: B.toFixed(6),
+          T1: (B) ? (-1 / B).toFixed(6) : 0,
           label: trace.label,
           legend: trace.legend,
           unit: trace.unit
         });
+
+        const fitLine = this.createLine(fit, 1, color, fitLineWidth);
+        if (fitLine) {
+          ob.add(fitLine);
+          this.linesFitExponentials.push(fitLine);
+        }
       }
-      this.plotLine(fitDataExp, 1,
-                    COLOR_LIST[i % COLOR_LIST.length],
-                    PLOT_FIT_LINE_WIDTH,
-                    this.linesFitExponentials);
     }
 
     for (const line of lines) {
       ob.add(line);
-    }
-
-    this.set('fitParabolaCoefficients', []);
-    this.set('fitExponentialCoefficients', []);
-    if (this.fitMode === FIT_OPTION_PARABOLA) {
-      for (const line of this.linesFitParabolas) {
-        ob.add(line);
-      }
-      this.set('fitParabolaCoefficients', coefficientsPar);
-    } else if (this.fitMode === FIT_OPTION_EXPONENTIAL) {
-      for (const line of this.linesFitExponentials) {
-        ob.add(line);
-      }
-      this.set('fitExponentialCoefficients', coefficientsExp);
     }
   }
 
@@ -888,7 +918,7 @@ export class Plot extends polymer.Base {
   private plotData2D(data: number[][]): void {
     this.dataLimits2D(data);
 
-    const numVertices = (this.drawMode2D == 'dots') ?
+    const numVertices = (this.drawMode2D === 'dots') ?
         1 : this.planeVertexCount;
 
     // Each vertex of a data point uses three Float32 to place it in 3D space.
@@ -921,7 +951,7 @@ export class Plot extends polymer.Base {
     geometry.addAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     let material, mesh;
-    if (this.drawMode2D == 'dots') {
+    if (this.drawMode2D === 'dots') {
       material = new THREE.PointsMaterial({
         sizeAttenuation: false,
         size: PLOT_POINT_SIZE,
@@ -1057,7 +1087,7 @@ export class Plot extends polymer.Base {
 
     // When plotting lines or single points, we only need one vertex to
     // represent the data.
-    const numVertices = (this.numIndeps == 1 || this.drawMode2D == 'dots') ?
+    const numVertices = (this.numIndeps === 1 || this.drawMode2D === 'dots') ?
         1 : this.planeVertexCount;
 
     // A reusable buffer for manipulating the coordinates of each point.
@@ -1080,7 +1110,9 @@ export class Plot extends polymer.Base {
     for (let obj of this.sceneObjects) {
       for (let child of obj.children) {
         const positions = child.geometry.getAttribute('position').array;
-        const colors = (this.numIndeps == 2) ? child.geometry.getAttribute('color').array : [];
+        const colorAttr = child.geometry.getAttribute('color');
+        const colors = (this.numIndeps === 2) ? colorAttr.array
+                                              : [];
         const data = child.geometry.getAttribute('data').array;
 
         for (let i = 0, len = data.length / 3; i < len; ++i) {
@@ -1101,7 +1133,7 @@ export class Plot extends polymer.Base {
           const xWorld = vector.x,
                 yWorld = vector.y;
 
-          if (this.numIndeps == 1 || this.drawMode2D == 'dots') {
+          if (this.numIndeps === 1 || this.drawMode2D === 'dots') {
             // When dealing with dots, simply copy the world coordinates
             // into the position array at the correct offset.
             positions[positionOffset] = xWorld;
@@ -1118,22 +1150,23 @@ export class Plot extends polymer.Base {
             const wWorld = wWorldEnd - xWorldZero,
                   hWorld = hWorldEnd - yWorldZero;
 
-            // Copy the plane vertex positions into the buffer for manipulation
+            // Copy the plane vertex positions into the buffer for
+            // manipulation.
             positionBuffer.set(this.planeVertexPositions);
 
-            // Scale the plane to world width and height
+            // Scale the plane to world width and height.
             this.transformMatrix.makeScale(wWorld, hWorld, 0);
             this.transformMatrix.applyToVector3Array(positionBuffer);
 
-            // Move plane to the appropriate position
+            // Move plane to the appropriate position.
             this.transformMatrix.makeTranslation(xWorld, yWorld, 0);
             this.transformMatrix.applyToVector3Array(positionBuffer);
 
-            // Copy the buffer into the buffer geometry at the correct offset
+            // Copy the buffer into the buffer geometry at the correct offset.
             positions.set(positionBuffer, positionOffset);
           }
 
-          if (this.numIndeps == 2) {
+          if (this.numIndeps === 2) {
             // Update the colors of each point to reflect the latest scaling of
             // the zAxis.
             const color = getColor(data[dataOffset + 2], zMin, zMax);
@@ -1152,9 +1185,10 @@ export class Plot extends polymer.Base {
         child.geometry.getAttribute('position').needsUpdate = true;
         child.geometry.computeBoundingSphere();
 
-        if (this.numIndeps == 2) {
+        if (this.numIndeps === 2) {
           child.geometry.getAttribute('color').needsUpdate = true;
         }
+
       }
     }
   }
@@ -1173,7 +1207,7 @@ export class Plot extends polymer.Base {
       outputObject: {x: number, y: number, w: number, h: number}): void {
     let xScreen, yScreen, wScreen, hScreen;
 
-    if (this.numIndeps == 2) {
+    if (this.numIndeps === 2) {
       switch (this.drawMode2D) {
         case 'dots':
           // Points have a fixed width relative to the screen regardless of zoom.
@@ -1201,7 +1235,7 @@ export class Plot extends polymer.Base {
       xScreen = this.xScale(x) + (wScreen / 2);
       yScreen = this.yScale(y) + (hScreen / 2);
 
-      if (this.drawMode2D == 'dots') {
+      if (this.drawMode2D === 'dots') {
         yScreen = this.yScale(y) - (hScreen / 2);
       }
     } else {
@@ -1348,7 +1382,7 @@ export class Plot extends polymer.Base {
    * Zoom into a selected rectangular region on the graph.
    */
   private drawRectangle(rect: HTMLElement): Promise<RectangleBound> {
-    // Only trigger zoom rectangle on left click
+    // Only trigger zoom rectangle on left click.
     if (d3.event.button !== MOUSE_MAIN_BUTTON) {
       return;
     }
@@ -1448,8 +1482,8 @@ export class Plot extends polymer.Base {
     const canvas = d3.select(this.renderer.domElement);
     switch (this.mouseMode) {
       case 'pan':
-        canvas.on('mousedown', null);
         canvas.call(this.zoom);
+        canvas.on('mousedown', null);
         this.$.canvas.style.cursor = 'all-scroll';
         break;
 

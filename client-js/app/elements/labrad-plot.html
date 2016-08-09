@@ -31,17 +31,28 @@
       height: 60px;
     }
 
-    #fitCoefficients div {
+    #fitCoefficients .fitData {
+      display: flex;
       text-align: left;
-      overflow-x: hidden;
-    }
-    #fitCoefficients p {
       margin: 0;
       font-family: monospace;
       font-size: 14px;
       white-space: nowrap;
-      line-height: 50px;
     }
+    .fitData .label {
+      line-height: 60px;
+      margin-right: 15px;
+    }
+    .fitData .data {
+      flex: 1;
+      margin: 10px 0;
+    }
+
+    .fitData .data p {
+      margin: 0;
+      padding: 1px 0;
+    }
+
     #fitModeSelector {
       text-align: right;
       padding-left: 10px;
@@ -103,17 +114,49 @@
       <div id="fitCoefficients">
         <div>
         <template is="dom-repeat" items="{{fitParabolaCoefficients}}" as="coEff">
-          <p>
-            <strong>{{coEff.label}} ({{coEff.legend}}) [{{coEff.unit}}]</strong>
-            {{coEff.A}}x<sup>2</sup> + {{coEff.B}}x + {{coEff.C}}
-          </p>
+          <div class="fitData">
+            <div class="label">
+            <strong>
+              {{coEff.label}}
+              <template is="dom-if" if="{{coEff.legend}}">({{coEff.legend}})</template>
+              [{{coEff.unit}}]
+            </strong>
+            </div>
+            <div class="data">
+              <p>{{coEff.A}}x<sup>2</sup> + {{coEff.B}}x + {{coEff.C}}</p>
+              <p>
+              <template is="dom-if" if="{{coEff.extremum}}">
+                <span class="t1">
+                  <template is="dom-if"
+                            if="{{coEff.extremum.isMin}}">Min</template>
+                  <template is="dom-if"
+                            if="{{coEff.extremum.isMax}}">Max</template>
+                  = ({{coEff.extremum.x}}, {{coEff.extremum.y}})
+                </span>
+              </template>
+              </p>
+            </div>
+          </div>
         </template>
 
         <template is="dom-repeat" items="{{fitExponentialCoefficients}}" as="coEff">
-          <p>
-            <strong>{{coEff.label}} ({{coEff.legend}}) [{{coEff.unit}}]</strong>
-            {{coEff.A}}e<sup>{{coEff.B}}x</sup>
-          </p>
+          <div class="fitData">
+            <div class="label">
+            <strong>
+              {{coEff.label}}
+              <template is="dom-if" if="{{coEff.legend}}">({{coEff.legend}})</template>
+              [{{coEff.unit}}]
+            </strong>
+            </div>
+            <div class="data">
+              <p>{{coEff.A}}e<sup>{{coEff.B}}x</sup></p>
+              <p>
+              <template is="dom-if" if="{{coEff.T1}}">
+                <span class="t1">T1 = {{coEff.T1}}</span>
+              </template>
+              </p>
+            </div>
+          </div>
         </template>
         </div>
       </div>
