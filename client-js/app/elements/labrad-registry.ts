@@ -87,7 +87,7 @@ export class LabradRegistry extends polymer.Base {
 
     // If we have a link, we want to traverse down.
     if (link) {
-      this.fire('app-link-click', {path: link.href});
+      this.fire('app-link-click', {path: link.path});
     }
   }
 
