@@ -71,7 +71,39 @@ const COLOR_BAR_WIDGET_SIZE = (
    COLOR_BAR_OUTER_WIDTH + COLOR_BAR_AXIS_WIDTH
 );
 
-type RectangleBound = {xMin: number, xMax: number, yMin: number, yMax: number};
+type RectangleBound = {
+  xMin: number,
+  xMax: number,
+  yMin: number,
+  yMax: number,
+};
+
+type Extremum = {
+  x: number,
+  y: number,
+  isMin: boolean,
+  isMax: boolean,
+};
+
+type ParabolaCoefficient = {
+  A: number,
+  B: number,
+  C: number,
+  extremum: Extremum,
+  label: string,
+  legend: string,
+  unit: string,
+};
+
+type ExponentialCoefficient = {
+  A: number,
+  B: number,
+  T1: number,
+  label: string,
+  legend: string,
+  unit: string,
+};
+
 
 const FIT_OPTION_NONE = 0;
 const FIT_OPTION_PARABOLA = 1;
@@ -174,8 +206,9 @@ export class Plot extends polymer.Base {
   private linesFitParabolas: THREE.Line[] = [];
   private linesFitExponentials: THREE.Line[] = [];
 
-  private fitParabolaCoefficients: {A: number, B: number, C: number}[] = [];
-  private fitExponentialCoefficients: {A: number, B: number}[] = [];
+  private fitParabolaCoefficients: ParabolaCoefficient[] = [];
+  private fitExponentialCoefficients: ExponentialCoefficient[] = [];
+
 
   /**
    * A matrix for the use in transforming geometries.
