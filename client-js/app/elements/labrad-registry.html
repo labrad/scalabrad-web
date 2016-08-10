@@ -1,12 +1,14 @@
 <link rel="import" href="../bower_components/paper-input/paper-textarea.html">
 <link rel="import" href="../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../bower_components/iron-list/iron-list.html">
 
 <!-- This is the component that simply renders the table of registry content -->
 <dom-module id="labrad-registry">
   <style>
     :host {
-      display: block;
-      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
     }
 
     #reg-menu {
@@ -25,7 +27,7 @@
       width: 100%;
     }
 
-    tbody tr:nth-child(1n).iron-selected {
+    .row:nth-child(1n).iron-selected {
       background-color: #CCCCCC;
     }
 
@@ -48,13 +50,13 @@
     td.dir.over {
       background-color: #93d4d4;
     }
-    tbody tr:nth-child(odd) {
+    .row:nth-child(odd) {
       background-color: #EEEEEE;
     }
-    tbody tr:nth-child(odd):hover {
+    .row:nth-child(odd):hover {
       background-color: #F6F699;
     }
-    tbody tr:nth-child(even):hover {
+    .row:nth-child(even):hover {
       background-color: #FFFFAA;
     }
 
@@ -153,8 +155,28 @@
     .label-wide .back-link:visited:hover {
       color: #3f51b5;
     }
+    #outer {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      width: 100%;
+    }
+    #reg-area, #listing, #combinedList {
+      flex: 1;
+      display: flex;
+      width: 100%;
+    }
+    .row {
+      width: 100%;
+    }
+    iron-list {
+      --iron-list-items-container: {
+        width: 100%;
+      };
+    }
   </style>
   <template>
+  <div id="outer">
     <div id="reg-area">
       <iron-a11y-keys target="[[target]]" keys="up down"
                       on-keys-pressed="cursorMove"></iron-a11y-keys>
@@ -162,24 +184,29 @@
                       on-keys-pressed="cursorTraverse"></iron-a11y-keys>
       <iron-a11y-keys target="[[target]]" keys="left backspace"
                       on-keys-pressed="cursorBack"></iron-a11y-keys>
-      <table>
-        <tbody is="selectable-table" id="combinedList" selected="{{selectedIdx}}">
-          <template id="fullList" is="dom-repeat" items="{{listItems}}" filter="filterFunc">
-            <tr name="{{item.name}}"
+
+      <div id="listing">
+        <iron-list items="[[listItems]]"
+                  id="combinedList"
+                  as="item"
+                  selected-item="{{selected}}"
+                  selection-enabled>
+          <template>
+            <div class$="row [[computeSelectedClass(selected)]]"
+                on-dblclick="editValueClicked"
+                name="{{item.name}}"
                 key-name="{{item.name}}"
-                is-key="{{item.isKey}}"
-                on-dblclick="editValueClicked">
+                is-key="{{item.isKey}}">
               <template is="dom-if" if="{{item.isParent}}">
-                <td class="label-wide" colspan="2">
+                <div class="label-wide">
                   <a class='back-link' is="app-link" path="{{item.url}}" href="{{item.url}}">
                     <iron-icon icon="arrow-back" item-icon></iron-icon>
                     <span>{{item.name}}</span>
                   </a>
-                </td>
+                </div>
               </template>
               <template is="dom-if" if="{{item.isDir}}">
-                <td class="dir label-wide"
-                    colspan="2"
+                <div class="dir label-wide"
                     name="{{item.name}}"
                     draggable="true"
                     on-dragover="onDirDragOver"
@@ -189,23 +216,23 @@
                     <iron-icon icon="folder" item-icon class="folder"></iron-icon>
                     <span>{{item.name}}</span>
                   </a>
-                </td>
+                </div>
               </template>
               <template is="dom-if" if="{{item.isKey}}">
-                <td class="key mono"
+                <div class="key mono"
                     name="{{item.name}}"
                     draggable="true">
                   <iron-icon icon="communication:vpn-key" item-icon class="key"></iron-icon>
                   <span>{{item.name}}</span>
-                </td>
-                <td class="value label-wide mono">
+                </div>
+                <div class="value label-wide mono">
                   <span>{{item.value}}</span>
-                </td>
+                </div>
               </template>
-            </tr>
+            </div>
           </template>
-        </tbody>
-      </table>
+        </iron-list>
+      </div>
     </div>
     <div id="reg-menu">
       <paper-toolbar>
@@ -217,15 +244,15 @@
           <iron-icon icon="folder-open"></iron-icon>
           new dir
         </paper-button>
-        <paper-button on-click="copyClicked" disabled="{{!selected}}">
+        <paper-button on-click="copyClicked" disabled="[[!selected]]">
           <iron-icon icon="content-copy"></iron-icon>
           copy
         </paper-button>
-        <paper-button on-click="renameClicked" disabled="{{!selected}}">
+        <paper-button on-click="renameClicked" disabled="[[!selected]]">
           <iron-icon icon="code"></iron-icon>
           rename
         </paper-button>
-        <paper-button on-click="deleteClicked" disabled="{{!selected}}">
+        <paper-button on-click="deleteClicked" disabled="[[!selected]]">
           <iron-icon icon="delete"></iron-icon>
           delete
         </paper-button>
@@ -251,7 +278,7 @@
     </paper-dialog>
 
     <paper-dialog id="editValueDialog" modal>
-      <h1>Edit <span>{{selectedItem}}</span></h1>
+      <h1>Edit <span>{{selected}}</span></h1>
       <form>
         <paper-textarea id="editValueInput" label="Value"></paper-textarea>
       </form>
@@ -285,7 +312,7 @@
     </paper-dialog>
 
     <paper-dialog id="copyDialog" modal>
-      <h1>Copy <span>{{selectedType}}</span> "<span>{{selectedItem}}</span>"?</h1>
+      <h1>Copy <span>{{selectedType}}</span> "<span>{{selected}}</span>"?</h1>
       <form>
         <paper-input id="copyNameInput" label="New Name" always-float-label></paper-input>
         <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
@@ -297,7 +324,7 @@
     </paper-dialog>
 
     <paper-dialog id="renameDialog" modal>
-      <h1>Rename <span>{{selectedType}}</span> "<span>{{selectedItem}}</span>"?</h1>
+      <h1>Rename <span>{{selectedType}}</span> "<span>{{selected}</span>"?</h1>
       <form>
         <paper-input id="renameInput" label="New Name" always-float-label></paper-input>
       </form>
@@ -308,7 +335,7 @@
     </paper-dialog>
 
     <paper-dialog id="deleteDialog" modal>
-      <h1>Delete <span>{{selectedType}}</span> "<span>{{selectedItem}}</span>"?</h1>
+      <h1>Delete <span>{{selectedType}}</span> "<span>{{selected}</span>"?</h1>
       <div class="buttons">
         <paper-button on-click="doDelete" dialog-confirm autofocus>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -321,6 +348,6 @@
 
     <paper-toast id="toastCopySuccess" text="Copy Successful!" duration=3000></paper-toast>
     <paper-toast id="toastMoveSuccess" text="Move Successful!" duration=3000></paper-toast>
-
+    </div>
   </template>
 </dom-module>
