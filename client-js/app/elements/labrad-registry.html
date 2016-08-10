@@ -60,7 +60,7 @@
     .row:nth-child(even):hover {
       background-color: #FFFFAA;
     }
-    .row.dir.over {
+    .row .dir.over {
       background-color: #93d4d4;
     }
     .row .dir {
@@ -160,6 +160,9 @@
       max-width: 90%;
       max-height: 90%;
     }
+    .label-wide {
+      width: 100%;
+    }
     .label-wide a {
       text-decoration: none;
     }
@@ -228,7 +231,7 @@
               </template>
               <template is="dom-if" if="{{item.isKey}}">
                 <div class="key mono"
-                    name="{{item.name}}"
+                      name="{{item.name}}"
                     draggable="true">
                   <iron-icon icon="communication:vpn-key" item-icon></iron-icon>
                   <span>{{item.name}}</span>

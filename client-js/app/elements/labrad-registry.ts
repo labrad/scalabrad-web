@@ -413,8 +413,11 @@ export class LabradRegistry extends polymer.Base {
   @listen('dragstart')
   startDrag(event) {
     // Detect start of drag event, grab info about target.
-    const data: any; //I tried enum, but kept getting errors...
-    data = {path: this.path, name: event.target.name, kind: event.target.className.split(' ')[0]};
+    const data = {
+      path: this.path,
+      name: event.target.name,
+      kind: event.target.className.split(' ')[0]
+    };
     event.dataTransfer.setData('text', JSON.stringify(data));
     event.dataTransfer.effectAllowed = 'copyMove';
   }
@@ -438,56 +441,44 @@ export class LabradRegistry extends polymer.Base {
    * Behaviour for dropping on folders.
    */
   dirDrop(event) {
-    event.stopPropagation();
-    const data = JSON.parse(event.dataTransfer.getData('text'));
-    this.$.dragDialog.dragData = data;
     const newPath: string[] = this.path.slice();
-    newPath.push(event.target.closest('td').name);
-    event.target.closest('td').classList.remove('over');
-    this.$.dragNameInput.value = data.name;
-    this.$.dragClass.textContent = data.kind;
-    this.$.originName.textContent = data.name;
-    this.$.originPath.textContent = JSON.stringify(data.path);
-    this.$.dragPathInput.value = this.pathToString(newPath);
-
-    if (event.ctrlKey || event.button == 2 ) {
-      //should I use switch and case here instead of ifs?
-      this.$.dragOp.innerText = 'Copy';
-      this.$.dragDialog.open();
-      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
-    } else {
-      this.$.dragOp.innerText = 'Move';
-      this.$.dragDialog.open();
-      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
-    }
-
+    newPath.push(event.target.closest('div').name);
+    this.performDrop(newPath, event);
   }
 
 
   /**
-   * handles folders dropped not into folders
+   * Handles folders dropped not into folders.
    */
   @listen('drop')
   handleDrop(event) {
+    this.performDrop(this.path, event);
+  }
+
+
+  performDrop(path: string[], event): void {
+    event.stopPropagation();
     event.preventDefault();
+
     const data = JSON.parse(event.dataTransfer.getData('text'));
     this.$.dragDialog.dragData = data;
-    event.target.closest('td').classList.remove('over');
+    event.target.closest('div').classList.remove('over');
+
     this.$.dragNameInput.value = data.name;
     this.$.dragClass.textContent = data.kind;
     this.$.originName.textContent = data.name;
     this.$.originPath.textContent = JSON.stringify(data.path);
-    this.$.dragPathInput.value = this.pathToString(this.path);
+    this.$.dragPathInput.value = this.pathToString(path);
 
-    if (event.ctrlKey) {
+    if (event.ctrlKey || event.button == 2) {
       this.$.dragOp.innerText = 'Copy';
-      this.$.dragDialog.open();
-      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
-    } else if(JSON.stringify(this.path) != JSON.stringify(data.path)) {
+    } else if (JSON.stringify(path) != JSON.stringify(data.path)) {
       this.$.dragOp.innerText = 'Move';
-      this.$.dragDialog.open();
-      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
+    } else {
+      return;
     }
+
+    this.$.dragDialog.open();
   }
 
 
@@ -558,10 +549,15 @@ export class LabradRegistry extends polymer.Base {
     const dialog = this.$.editValueDialog,
           editValueElem = this.$.editValueInput,
           name = event.currentTarget.keyName,
-          isKey = event.currentTarget.isKey,
-          value: string = null,
-          found = false;
-    if (!isKey) return;
+          isKey = event.currentTarget.isKey;
+
+    if (!isKey) {
+      return;
+    }
+
+    let value: string = null,
+        found = false;
+
     for (let item of this.keys) {
       if (item.name == name) {
         value = item.value;
@@ -569,9 +565,11 @@ export class LabradRegistry extends polymer.Base {
         break;
       }
     }
+
     if (!found) {
       return;
     }
+
     editValueElem.value = value;
     dialog.keyName = name;
     dialog.open();
@@ -674,7 +672,7 @@ export class LabradRegistry extends polymer.Base {
    * Execute the drag operation.
    */
   async doDragOp() {
-    const newName =  this.$.dragNameInput.value;
+    const newName = this.$.dragNameInput.value;
     const newPath = JSON.parse(this.$.dragPathInput.value);
     const oldPath = JSON.parse(this.$.originPath.textContent);
     const oldName = this.$.originName.textContent;
@@ -685,11 +683,11 @@ export class LabradRegistry extends polymer.Base {
         this.$.pendingOp.innerText = 'Copying...';
         switch (this.$.dragDialog.dragData['kind']) {
           case 'dir':
-            const resp = await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
+            await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
             break;
 
           case 'key':
-            const resp = await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
+            await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
             break;
         }
       } catch (error) {
@@ -704,11 +702,11 @@ export class LabradRegistry extends polymer.Base {
         this.$.pendingOp.innerText = 'Moving...';
         switch (this.$.dragDialog.dragData['kind']) {
           case 'dir':
-            const resp = await this.socket.moveDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
+            await this.socket.moveDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
             break;
 
           case 'key':
-            const resp = await this.socket.move({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
+            await this.socket.move({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
             break;
         }
       } catch (error) {
