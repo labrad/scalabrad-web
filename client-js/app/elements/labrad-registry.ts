@@ -160,23 +160,23 @@ export class LabradRegistry extends polymer.Base {
     switch (dialog.id) {
       case 'newKeyDialog':
         this.doNewKey();
-        break
+        break;
 
       case 'newFolderDialog':
         this.doNewFolder();
-        break
+        break;
 
       case 'editValueDialog':
         this.doEditValue();
-        break
+        break;
 
       case 'renameDialog':
         this.doRename();
-        break
+        break;
 
       case 'copyDialog':
         this.doCopy();
-        break
+        break;
 
       default:
         // Nothing to do.
