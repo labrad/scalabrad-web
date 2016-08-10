@@ -156,17 +156,24 @@
   </style>
   <template>
     <div id="reg-area">
+      <!-- Cursor Controls -->
       <iron-a11y-keys target="[[target]]" keys="up down"
                       on-keys-pressed="cursorMove"></iron-a11y-keys>
       <iron-a11y-keys target="[[target]]" keys="right enter"
                       on-keys-pressed="cursorTraverse"></iron-a11y-keys>
       <iron-a11y-keys target="[[target]]" keys="left backspace"
                       on-keys-pressed="cursorBack"></iron-a11y-keys>
+      <!-- Dialog Controls -->
+      <iron-a11y-keys target="[[target]]" keys="esc"
+                      on-keys-pressed="dialogCancel"></iron-a11y-keys>
+      <iron-a11y-keys target="[[target]]" keys="shift+enter"
+                      on-keys-pressed="dialogSubmit"></iron-a11y-keys>
       <table>
         <tbody is="selectable-table" id="combinedList" selected="{{selectedIdx}}">
           <template id="fullList" is="dom-repeat" items="{{listItems}}" filter="filterFunc">
             <tr name="{{item.name}}"
                 key-name="{{item.name}}"
+                key-value="{{item.value}}"
                 is-key="{{item.isKey}}"
                 on-dblclick="editValueClicked">
               <template is="dom-if" if="{{item.isParent}}">
@@ -253,10 +260,10 @@
     <paper-dialog id="editValueDialog" modal>
       <h1>Edit <span>{{selectedItem}}</span></h1>
       <form>
-        <paper-textarea id="editValueInput" label="Value"></paper-textarea>
+        <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
       </form>
       <div class="buttons">
-        <paper-button on-click="doEditValue" dialog-confirm autofocus>OK</paper-button>
+        <paper-button on-click="doEditValue" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>

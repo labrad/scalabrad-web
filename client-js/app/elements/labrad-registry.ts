@@ -44,21 +44,30 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
-  getListOffset(): number {
+  private getListOffset(): number {
     return this.path.length > 0 ? 1 : 0;
   }
 
 
-  getDefaultSelectedItem(): number {
+  private getDefaultSelectedItem(): number {
     return this.getListOffset();
   }
 
+  private hasDialogOpen() {
+    return (this.$.editValueDialog.opened);
+  }
 
-  cursorMove(e) {
+  cursorMove(event) {
+    if (this.hasDialogOpen()) {
+      return;
+    }
+
+    event.detail.keyboardEvent.preventDefault();
+
     const offset = this.getListOffset();
     const length = this.keys.length + this.dirs.length + offset;
 
-    switch (e.detail.combo) {
+    switch (event.detail.combo) {
       case 'up':
         if (this.selectedIdx === null || this.selectedIdx === 0) {
           this.set('selectedIdx', 0);
@@ -82,8 +91,8 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
-  cursorTraverse(e) {
-    if (this.selectedIdx === null) {
+  cursorTraverse(event) {
+    if (this.selectedIdx === null || this.hasDialogOpen()) {
       return;
     }
 
@@ -93,18 +102,39 @@ export class LabradRegistry extends polymer.Base {
     // If we have a link, we want to traverse down.
     if (link) {
       this.fire('app-link-click', {path: link.path});
+    } else {
+      this.editValueSelected();
     }
   }
 
 
-  cursorBack(e) {
-    if (this.path.length === 0) {
+  cursorBack(event) {
+    if (this.path.length === 0 || this.hasDialogOpen()) {
       return;
     }
 
     const parentPath = this.path.slice(0, -1);
     const parentUrl = this.places.registryUrl(parentPath);
     this.fire('app-link-click', {path: parentUrl});
+  }
+
+
+  dialogSubmit(event) {
+    if (!this.hasDialogOpen()) {
+      return;
+    }
+    event.detail.keyboardEvent.preventDefault();
+    this.doEditValue();
+    this.$.editValueDialog.close();
+  }
+
+
+  dialogCancel(event) {
+    if (!this.hasDialogOpen()) {
+      return;
+    }
+    event.detail.keyboardEvent.preventDefault();
+    this.$.editValueDialog.close();
   }
 
 
@@ -378,6 +408,23 @@ export class LabradRegistry extends polymer.Base {
     }
   }
 
+  private editValueSelected() {
+    const item = this.$.combinedList.selectedItem;
+    const dialog = this.$.editValueDialog;
+    const editValueElem = this.$.editValueInput;
+
+    editValueElem.value = item.keyValue;
+    dialog.keyName = item.keyName;
+    this.openEditDialog();
+  }
+
+
+  private openEditDialog() {
+    this.$.editValueDialog.open();
+    this.async(() => { this.$.editValueInput.focus(); });
+  }
+
+
   /**
    * Launch the value edit dialog.
    */
@@ -401,8 +448,9 @@ export class LabradRegistry extends polymer.Base {
     }
     editValueElem.value = value;
     dialog.keyName = name;
-    dialog.open();
+    this.openEditDialog();
   }
+
 
   /**
    * Submit the edited value to the server.
