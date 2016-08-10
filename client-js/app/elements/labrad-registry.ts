@@ -516,7 +516,6 @@ export class LabradRegistry extends polymer.Base {
         newFolderElem = this.$.newFolderInput;
     newFolderElem.value = '';
     dialog.open();
-    window.setTimeout(() => newFolderElem.$.input.focus(), 0);
   }
 
   /**
@@ -549,7 +548,6 @@ export class LabradRegistry extends polymer.Base {
     copyNameElem.value = this.selectedItem;
     copyPathElem.value = this.pathToString(this.path);
     dialog.open();
-    window.setTimeout(() => copyNameElem.$.input.focus(), 0);
   }
 
   /**
@@ -637,7 +635,6 @@ export class LabradRegistry extends polymer.Base {
 
     renameElem.value = name;
     dialog.open();
-    window.setTimeout(() => renameElem.$.input.focus(), 0);
   }
 
   /**
