@@ -415,13 +415,7 @@ export class LabradRegistry extends polymer.Base {
 
     editValueElem.value = item.keyValue;
     dialog.keyName = item.keyName;
-    this.openEditDialog();
-  }
-
-
-  private openEditDialog() {
-    this.$.editValueDialog.open();
-    this.async(() => { this.$.editValueInput.focus(); });
+    dialog.open();
   }
 
 
@@ -448,7 +442,7 @@ export class LabradRegistry extends polymer.Base {
     }
     editValueElem.value = value;
     dialog.keyName = name;
-    this.openEditDialog();
+    dialog.open();
   }
 
 
