@@ -73,7 +73,8 @@ export class LabradRegistry extends polymer.Base {
 
 
   private getDefaultSelectedItem(): number {
-    return this.getListOffset();
+    const offset = this.getListOffset();
+    return (this.filteredListItems.length > 1) ? offset : 0;
   }
 
 
@@ -191,6 +192,14 @@ export class LabradRegistry extends polymer.Base {
       return;
     }
 
+    // New keys have a textbox, so we only want to submit on Shift+Enter,
+    // not on a solo enter keypress.
+    if (event.detail.combo !== "shift+enter") {
+      if (dialog.id == 'newKeyDialog' || dialog.id === 'editValueDialog') {
+        return;
+      }
+    }
+
     event.detail.keyboardEvent.preventDefault();
 
     switch (dialog.id) {
@@ -198,12 +207,12 @@ export class LabradRegistry extends polymer.Base {
         this.doNewKey();
         break;
 
-      case 'newFolderDialog':
-        this.doNewFolder();
-        break;
-
       case 'editValueDialog':
         this.doEditValue();
+        break;
+
+      case 'newFolderDialog':
+        this.doNewFolder();
         break;
 
       case 'renameDialog':

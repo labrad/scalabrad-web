@@ -181,7 +181,7 @@
       <!-- Dialog Controls -->
       <iron-a11y-keys target="[[target]]" keys="esc"
                       on-keys-pressed="dialogCancel"></iron-a11y-keys>
-      <iron-a11y-keys target="[[target]]" keys="shift+enter"
+      <iron-a11y-keys target="[[target]]" keys="shift+enter enter"
                       on-keys-pressed="dialogSubmit"></iron-a11y-keys>
       <!-- Cursor Controls -->
       <iron-a11y-keys target="[[target]]" keys="up down"
@@ -277,10 +277,8 @@
 
     <paper-dialog id="newKeyDialog" modal>
       <h1>Create New Key</h1>
-      <form>
-        <paper-input id="newKeyInput" label="Key" autofocus></paper-input>
-        <paper-textarea id="newValueInput" label="Value"></paper-textarea>
-      </form>
+      <paper-input id="newKeyInput" label="Key" autofocus></paper-input>
+      <paper-textarea id="newValueInput" label="Value"></paper-textarea>
       <div class="buttons">
         <paper-button on-tap="doNewKey" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -289,9 +287,7 @@
 
     <paper-dialog id="editValueDialog" modal>
       <h1>Edit <span>{{selected.name}}</span></h1>
-      <form>
-        <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
-      </form>
+      <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
       <div class="buttons">
         <paper-button on-tap="doEditValue" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -300,9 +296,7 @@
 
     <paper-dialog id="newFolderDialog" modal>
       <h1>Create New Folder</h1>
-      <form>
-        <paper-input id="newFolderInput" label="Name" autofocus></paper-input>
-      </form>
+      <paper-input id="newFolderInput" label="Name" autofocus></paper-input>
       <div class="buttons">
         <paper-button on-tap="doNewFolder" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -311,10 +305,8 @@
 
      <paper-dialog id="dragDialog" modal>
       <h1><span id="dragOp"></span> <span id="dragClass"></span> "<span id="originName"></span>" from <span id="originPath"></span></h1>
-      <form>
-        <paper-input id="dragNameInput" label="New Name" always-float-label></paper-input>
-        <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
-      </form>
+      <paper-input id="dragNameInput" label="New Name" always-float-label></paper-input>
+      <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
       <div class="buttons">
         <paper-button on-tap="doDragOp" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -323,10 +315,8 @@
 
     <paper-dialog id="copyDialog" modal>
       <h1>Copy <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
-      <form>
-        <paper-input id="copyNameInput" label="New Name" always-float-label autofocus></paper-input>
-        <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
-      </form>
+      <paper-input id="copyNameInput" label="New Name" always-float-label autofocus></paper-input>
+      <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
       <div class="buttons">
         <paper-button on-tap="doCopy" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -335,9 +325,7 @@
 
     <paper-dialog id="renameDialog" modal>
       <h1>Rename <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
-      <form>
-        <paper-input id="renameInput" label="New Name" always-float-label autofocus></paper-input>
-      </form>
+      <paper-input id="renameInput" label="New Name" always-float-label autofocus></paper-input>
       <div class="buttons">
         <paper-button on-tap="doRename" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
