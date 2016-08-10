@@ -35,6 +35,17 @@ export class LabradRegistry extends polymer.Base {
 
   target: HTMLElement = document.body;
 
+  private dialogs: string[] = [
+    'newKeyDialog',
+    'editValueDialog',
+    'newFolderDialog',
+    'dragDialog',
+    'copyDialog',
+    'renameDialog',
+    'deleteDialog'
+    'pendingDialog',
+  ];
+
   attached() {
     this.bindIronAutogrowTextAreaResizeEvents(this.$.newKeyDialog,
                                               this.$.newValueInput);
@@ -53,12 +64,19 @@ export class LabradRegistry extends polymer.Base {
     return this.getListOffset();
   }
 
-  private hasDialogOpen() {
-    return (this.$.editValueDialog.opened);
+
+  private getOpenDialog(): HTMLElement {
+    for (const dialog of this.dialogs) {
+      if (this.$[dialog].opened) {
+        return this.$[dialog];
+      }
+    }
+    return null;
   }
 
+
   cursorMove(event) {
-    if (this.hasDialogOpen()) {
+    if (this.getOpenDialog()) {
       return;
     }
 
@@ -92,7 +110,7 @@ export class LabradRegistry extends polymer.Base {
 
 
   cursorTraverse(event) {
-    if (this.selectedIdx === null || this.hasDialogOpen()) {
+    if (this.selectedIdx === null || this.getOpenDialog()) {
       return;
     }
 
@@ -109,7 +127,7 @@ export class LabradRegistry extends polymer.Base {
 
 
   cursorBack(event) {
-    if (this.path.length === 0 || this.hasDialogOpen()) {
+    if (this.path.length === 0 || this.getOpenDialog()) {
       return;
     }
 
@@ -120,7 +138,7 @@ export class LabradRegistry extends polymer.Base {
 
 
   dialogSubmit(event) {
-    if (!this.hasDialogOpen()) {
+    if (!this.getOpenDialog()) {
       return;
     }
     event.detail.keyboardEvent.preventDefault();
@@ -130,7 +148,7 @@ export class LabradRegistry extends polymer.Base {
 
 
   dialogCancel(event) {
-    if (!this.hasDialogOpen()) {
+    if (!this.getOpenDialog()) {
       return;
     }
     event.detail.keyboardEvent.preventDefault();
@@ -407,6 +425,7 @@ export class LabradRegistry extends polymer.Base {
       this.handleError('Cannot create key with empty name');
     }
   }
+
 
   private editValueSelected() {
     const item = this.$.combinedList.selectedItem;
