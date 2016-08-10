@@ -282,7 +282,7 @@
         <paper-textarea id="newValueInput" label="Value"></paper-textarea>
       </form>
       <div class="buttons">
-        <paper-button on-click="doNewKey" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doNewKey" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -293,7 +293,7 @@
         <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
       </form>
       <div class="buttons">
-        <paper-button on-click="doEditValue" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doEditValue" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -304,7 +304,7 @@
         <paper-input id="newFolderInput" label="Name" autofocus></paper-input>
       </form>
       <div class="buttons">
-        <paper-button on-click="doNewFolder" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doNewFolder" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -316,7 +316,7 @@
         <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
       </form>
       <div class="buttons">
-        <paper-button on-click="doDragOp" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doDragOp" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -328,7 +328,7 @@
         <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
       </form>
       <div class="buttons">
-        <paper-button on-click="doCopy" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doCopy" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -339,7 +339,7 @@
         <paper-input id="renameInput" label="New Name" always-float-label autofocus></paper-input>
       </form>
       <div class="buttons">
-        <paper-button on-click="doRename" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doRename" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -347,7 +347,7 @@
     <paper-dialog id="deleteDialog" modal>
       <h1>Delete <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
       <div class="buttons">
-        <paper-button on-click="doDelete" dialog-confirm autofocus>OK</paper-button>
+        <paper-button on-tap="doDelete" dialog-confirm autofocus>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
