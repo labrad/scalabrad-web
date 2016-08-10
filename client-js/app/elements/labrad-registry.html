@@ -156,6 +156,12 @@
   </style>
   <template>
     <div id="reg-area">
+      <iron-a11y-keys target="[[target]]" keys="up down"
+                      on-keys-pressed="cursorMove"></iron-a11y-keys>
+      <iron-a11y-keys target="[[target]]" keys="right enter"
+                      on-keys-pressed="cursorTraverse"></iron-a11y-keys>
+      <iron-a11y-keys target="[[target]]" keys="left backspace"
+                      on-keys-pressed="cursorBack"></iron-a11y-keys>
       <table>
         <tbody is="selectable-table" id="combinedList" selected="{{selectedIdx}}">
           <template id="fullList" is="dom-repeat" items="{{listItems}}" filter="filterFunc">
