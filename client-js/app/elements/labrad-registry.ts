@@ -40,9 +40,6 @@ export class LabradRegistry extends polymer.Base {
   @property({type: String, notify: true})
   notify: string;
 
-  @property({type: Number, value: 0})
-  kick: number;
-
   @property({type: String, notify: true, value: ''})
   filterText: string;
 
