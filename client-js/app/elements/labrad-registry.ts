@@ -463,6 +463,7 @@ export class LabradRegistry extends polymer.Base {
 
   }
 
+
   /**
    * handles folders dropped not into folders
    */
@@ -489,6 +490,7 @@ export class LabradRegistry extends polymer.Base {
     }
   }
 
+
   /**
    * Bind event listeners to resize dialog box appropriately when an
    * `iron-autogrow-textarea` is used.
@@ -504,6 +506,7 @@ export class LabradRegistry extends polymer.Base {
     });
   }
 
+
   /**
    * Launch new key dialog.
    */
@@ -515,6 +518,7 @@ export class LabradRegistry extends polymer.Base {
     newValueElem.value = '';
     dialog.open();
   }
+
 
   /**
    * Create new key.
@@ -587,6 +591,7 @@ export class LabradRegistry extends polymer.Base {
     }
   }
 
+
   /**
    * Launch new folder dialog.
    */
@@ -596,6 +601,7 @@ export class LabradRegistry extends polymer.Base {
     newFolderElem.value = '';
     dialog.open();
   }
+
 
   /**
    * Create new folder.
@@ -627,6 +633,7 @@ export class LabradRegistry extends polymer.Base {
     copyPathElem.value = this.pathToString(this.path);
     dialog.open();
   }
+
 
   /**
    * Copy the selected key or folder.
@@ -662,8 +669,9 @@ export class LabradRegistry extends polymer.Base {
     }
   }
 
+
   /**
-   * Execute the drag operation
+   * Execute the drag operation.
    */
   async doDragOp() {
     const newName =  this.$.dragNameInput.value;
@@ -690,8 +698,7 @@ export class LabradRegistry extends polymer.Base {
         this.$.pendingDialog.close();
         this.$.toastCopySuccess.show();
       }
-    }
-    else if (this.$.dragOp.innerText === 'Move') {
+    } else if (this.$.dragOp.innerText === 'Move') {
       try {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = 'Moving...';
@@ -719,11 +726,9 @@ export class LabradRegistry extends polymer.Base {
    */
   renameClicked() {
     const dialog = this.$.renameDialog,
-          renameElem = this.$.renameInput;
-
-    const item = this.$.combinedList.selectedItem;
-
-    renameElem.value = item.name;
+          renameElem = this.$.renameInput,
+          name = this.$.combinedList.selectedItem.name;
+    renameElem.value = name;
     dialog.open();
   }
 
@@ -733,31 +738,31 @@ export class LabradRegistry extends polymer.Base {
   async doRename() {
     // TODO(maffoo) Add pending modal dialog for renames since they are copy
     // commands and take a long time.
-    const newName = this.$.renameInput.value;
+    const newName = this.$.renameInput.value,
+          name = this.$.combinedList.selectedItem.name,
+          selectedType = this.getSelectedType();
 
-    const item = this.$.combinedList.selectedItem;
-    const name = item.name;
-
-    if (newName === null || newName === name) return;
-
-    const selectedType = this.getSelectedType();
-
-    if (newName) {
-      try {
-        if (selectedType === 'dir') {
-          await this.socket.renameDir({path: this.path, dir: name, newDir: newName});
-        }
-        else if (selectedType === 'key') {
-          await this.socket.rename({path: this.path, key: name, newKey: newName});
-        }
-      } catch (error) {
-        this.handleError(error);
-      }
+    if (newName === null || newName === name) {
+      return;
     }
-    else {
+
+    if (!newName) {
       this.handleError(`Cannot rename ${selectedType} to empty string`);
+      return;
+    }
+
+    try {
+      if (selectedType === 'dir') {
+        await this.socket.renameDir({path: this.path, dir: name, newDir: newName});
+      }
+      else if (selectedType === 'key') {
+        await this.socket.rename({path: this.path, key: name, newKey: newName});
+      }
+    } catch (error) {
+      this.handleError(error);
     }
   }
+
 
   /**
    * Launch the delete confirmation dialog.
@@ -765,6 +770,7 @@ export class LabradRegistry extends polymer.Base {
   deleteClicked() {
     this.$.deleteDialog.open();
   }
+
 
   /**
    * Delete the selected key or folder.
@@ -776,8 +782,7 @@ export class LabradRegistry extends polymer.Base {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = 'Deleting...';
         await this.socket.rmDir({path: this.path, dir: this.$.combinedList.selectedItem.name});
-      }
-      else if (selectedType === 'key') {
+      } else if (selectedType === 'key') {
         await this.socket.del({path: this.path, key: this.$.combinedList.selectedItem.name});
       }
     } catch (error) {
