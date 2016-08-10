@@ -50,7 +50,7 @@ export class LabradRegistry extends polymer.Base {
 
 
   getDefaultSelectedItem(): number {
-    return getListOffset();
+    return this.getListOffset();
   }
 
 
