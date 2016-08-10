@@ -288,7 +288,7 @@
     </paper-dialog>
 
     <paper-dialog id="editValueDialog" modal>
-      <h1>Edit <span>{{selected}}</span></h1>
+      .NAME<h1>Edit <span>{{selected.name}}</span></h1>
       <form>
         <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
       </form>
@@ -322,7 +322,7 @@
     </paper-dialog>
 
     <paper-dialog id="copyDialog" modal>
-      <h1>Copy <span>{{selectedType}}</span> "<span>{{selected}}</span>"?</h1>
+      <h1>Copy <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
       <form>
         <paper-input id="copyNameInput" label="New Name" always-float-label autofocus></paper-input>
         <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
@@ -334,7 +334,7 @@
     </paper-dialog>
 
     <paper-dialog id="renameDialog" modal>
-      <h1>Rename <span>{{selectedType}}</span> "<span>{{selected}</span>"?</h1>
+      <h1>Rename <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
       <form>
         <paper-input id="renameInput" label="New Name" always-float-label autofocus></paper-input>
       </form>
@@ -345,7 +345,7 @@
     </paper-dialog>
 
     <paper-dialog id="deleteDialog" modal>
-      <h1>Delete <span>{{selectedType}}</span> "<span>{{selected}</span>"?</h1>
+      <h1>Delete <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
       <div class="buttons">
         <paper-button on-click="doDelete" dialog-confirm autofocus>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>

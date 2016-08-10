@@ -514,8 +514,8 @@ export class LabradRegistry extends polymer.Base {
     const dialog = this.$.editValueDialog;
     const editValueElem = this.$.editValueInput;
 
-    editValueElem.value = item.keyValue;
-    dialog.keyName = item.keyName;
+    editValueElem.value = item.value;
+    dialog.keyName = item.name;
     dialog.open();
   }
 
