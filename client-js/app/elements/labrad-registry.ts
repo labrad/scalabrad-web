@@ -44,13 +44,18 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
-  getDefaultSelectedItem(): number {
+  getListOffset(): number {
     return this.path.length > 0 ? 1 : 0;
   }
 
 
+  getDefaultSelectedItem(): number {
+    return getListOffset();
+  }
+
+
   cursorMove(e) {
-    const offset = this.path.length > 0 ? 1 : 0;
+    const offset = this.getListOffset();
     const length = this.keys.length + this.dirs.length + offset;
 
     switch (e.detail.combo) {
@@ -163,7 +168,8 @@ export class LabradRegistry extends polymer.Base {
   selectedItem: string;
 
   _computeSelectedType(selectedIdx: number): string {
-    var offset = this.path.length > 0 ? 1 : 0; // account for parent '..' entry
+    // Account for parent '..' entry.
+    const offset = this.getListOffset();
     if (this.dirs && selectedIdx < this.dirs.length + offset) {
       return 'dir';
     } else {
@@ -172,9 +178,10 @@ export class LabradRegistry extends polymer.Base {
   }
 
   _computeSelectedItem(selectedIdx: number): string {
-    var offset = this.path.length > 0 ? 1 : 0; // account for parent '..' entry
-    var dirNames = (this.dirs || []).map(it => it.name);
-    var keyNames = (this.keys || []).map(it => it.name);
+    // Account for parent '..' entry.
+    const offset = this.getListOffset();
+    const dirNames = (this.dirs || []).map(it => it.name);
+    const keyNames = (this.keys || []).map(it => it.name);
     return dirNames.concat(keyNames)[selectedIdx - offset];
   }
 
