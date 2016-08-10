@@ -178,6 +178,11 @@
   <template>
   <div id="outer">
     <div id="reg-area">
+      <!-- Dialog Controls -->
+      <iron-a11y-keys target="[[target]]" keys="esc"
+                      on-keys-pressed="dialogCancel"></iron-a11y-keys>
+      <iron-a11y-keys target="[[target]]" keys="shift+enter"
+                      on-keys-pressed="dialogSubmit"></iron-a11y-keys>
       <!-- Cursor Controls -->
       <iron-a11y-keys target="[[target]]" keys="up down"
                       on-keys-pressed="cursorMove"></iron-a11y-keys>
@@ -185,16 +190,11 @@
                       on-keys-pressed="cursorTraverse"></iron-a11y-keys>
       <iron-a11y-keys target="[[target]]" keys="left backspace"
                       on-keys-pressed="cursorBack"></iron-a11y-keys>
-      <!-- Dialog Controls -->
-      <iron-a11y-keys target="[[target]]" keys="esc"
-                      on-keys-pressed="dialogCancel"></iron-a11y-keys>
-      <iron-a11y-keys target="[[target]]" keys="shift+enter"
-                      on-keys-pressed="dialogSubmit"></iron-a11y-keys>
       <!-- Search Controls -->
       <iron-a11y-keys target="[[target]]" keys="enter"
                       on-keys-pressed="searchSubmit"></iron-a11y-keys>
       <div id="listing">
-        <iron-list items="[[filteredListItems]]"
+        <iron-list items="{{filteredListItems}}"
                   id="combinedList"
                   as="item"
                   selected-item="{{selected}}"

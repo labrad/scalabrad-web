@@ -78,7 +78,7 @@ export class LabradRegistry extends polymer.Base {
 
 
   private getSelectedIndex(): number {
-    const index = this.listItems.indexOf(this.selected);
+    const index = this.filteredListItems.indexOf(this.selected);
     if (index === -1) {
       return null;
     }
@@ -242,10 +242,10 @@ export class LabradRegistry extends polymer.Base {
   }
 
   /**
-   * triggers re-render of dir, key lists when filterText is changed
+   * Filters the directory/key listing when filterText changes.
    */
   @observe('filterText')
-  reloadMenu() {
+  filterListing() {
     if (!this.listItems) {
       return;
     }
@@ -271,6 +271,9 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
+  /**
+   * This is called whenever a newItem is added, hooked in actitives.
+   */
   async repopulateList(): Promise<void> {
     const resp = await this.socket.dir({path: this.path});
 
@@ -321,8 +324,20 @@ export class LabradRegistry extends polymer.Base {
       });
     }
 
-    this.set('filteredListItems', this.listItems);
-    this.$.combinedList.selectItem(this.getDefaultSelectedItem());
+    if (this.getSelectedIndex()) {
+      const item = this.selected;
+      this.set('filteredListItems', this.listItems.filter(() => true));
+      const newIndex = this.filteredListItems.indexOf(item);
+      if (newIndex !== -1) {
+        this.$.combinedList.selectItem(newIndex);
+      } else {
+        this.$.combinedList.selectItem(this.getDefaultSelectedItem());
+      }
+    } else {
+      this.set('filteredListItems', this.listItems.filter(() => true));
+      this.$.combinedList.selectItem(this.getDefaultSelectedItem());
+    }
+
     this.$.pendingDialog.close()
   }
 
@@ -342,21 +357,6 @@ export class LabradRegistry extends polymer.Base {
     console.error(error);
   }
 
-
-  /**
-   * Update a key in response to change in the inline form submission.
-   */
-  @listen('iron-form-submit')
-  async updateKey(event) {
-    var selKey = event.detail.key;
-    var newVal = event.detail.value;
-    try {
-      await this.socket.set({path: this.path, key: selKey, value: newVal});
-      this.repopulateList();
-    } catch (error) {
-      this.handleError(error);
-    }
-  }
 
   /**
    * Drag and drop logic
@@ -498,7 +498,6 @@ export class LabradRegistry extends polymer.Base {
     if (newKey) {
       try {
         await this.socket.set({path: this.path, key: newKey, value: newVal});
-        this.repopulateList();
       } catch (error) {
         this.handleError(error);
       }
@@ -555,7 +554,6 @@ export class LabradRegistry extends polymer.Base {
         newVal = this.$.editValueInput.value;
     try {
       await this.socket.set({path: this.path, key: key, value: newVal});
-      this.repopulateList();
     } catch (error) {
       this.handleError(error);
     }
@@ -575,12 +573,11 @@ export class LabradRegistry extends polymer.Base {
    * Create new folder.
    */
   async doNewFolder() {
-    var newFolder = this.$.newFolderInput.value;
+    const newFolder = this.$.newFolderInput.value;
 
     if (newFolder) {
       try {
         await this.socket.mkDir({path: this.path, dir: newFolder})
-        this.repopulateList();
       } catch (error) {
         this.handleError(error);
       }
@@ -595,10 +592,10 @@ export class LabradRegistry extends polymer.Base {
    * Launch copy dialog.
    */
   copyClicked() {
-    var dialog = this.$.copyDialog,
-        copyNameElem = this.$.copyNameInput,
-        copyPathElem = this.$.copyPathInput;
-    copyNameElem.value = this.$.combinedList.selectedItem;
+    const dialog = this.$.copyDialog,
+          copyNameElem = this.$.copyNameInput,
+          copyPathElem = this.$.copyPathInput;
+    copyNameElem.value = this.$.combinedList.selectedItem.name;
     copyPathElem.value = this.pathToString(this.path);
     dialog.open();
   }
@@ -607,21 +604,31 @@ export class LabradRegistry extends polymer.Base {
    * Copy the selected key or folder.
    */
   async doCopy() {
-    var newName =  this.$.copyNameInput.value;
-    var newPath = JSON.parse(this.$.copyPathInput.value);
+    const newName = this.$.copyNameInput.value;
+    const newPath = JSON.parse(this.$.copyPathInput.value);
 
     const selectedType = this.getSelectedType();
+    const name = this.$.combinedList.selectedItem.name;
 
     try {
       if (selectedType === 'dir') {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = "Copying...";
-        await this.socket.copyDir({path: this.path, dir: this.$.combinedList.selectedItem, newPath: newPath, newDir: newName});
+        await this.socket.copyDir({
+          path: this.path,
+          dir: name,
+          newPath: newPath,
+          newDir: newName
+        });
       }
       else if (selectedType === 'key') {
-        await this.socket.copy({path: this.path, key: this.$.combinedList.selectedItem, newPath: newPath, newKey: newName});
+        await this.socket.copy({
+          path: this.path,
+          key: name,
+          newPath: newPath,
+          newKey: newName
+        });
       }
-      this.repopulateList();
     } catch (error) {
       this.handleError(error);
     }
@@ -683,12 +690,12 @@ export class LabradRegistry extends polymer.Base {
    * Launch rename dialog.
    */
   renameClicked() {
-    var dialog = this.$.renameDialog,
-        renameElem = this.$.renameInput;
+    const dialog = this.$.renameDialog,
+          renameElem = this.$.renameInput;
 
-    var name = this.$.combinedList.selectedItem;
+    const item = this.$.combinedList.selectedItem;
 
-    renameElem.value = name;
+    renameElem.value = item.name;
     dialog.open();
   }
 
@@ -696,10 +703,12 @@ export class LabradRegistry extends polymer.Base {
    * Rename the selected key or folder.
    */
   async doRename() {
-    //TODO add pending modal dialog for renames since they are copy commands and take a long time
-    var newName = this.$.renameInput.value;
+    // TODO(maffoo) Add pending modal dialog for renames since they are copy
+    // commands and take a long time.
+    const newName = this.$.renameInput.value;
 
-    var name = this.$.combinedList.selectedItem;
+    const item = this.$.combinedList.selectedItem;
+    const name = item.name;
 
     if (newName === null || newName === name) return;
 
@@ -713,7 +722,6 @@ export class LabradRegistry extends polymer.Base {
         else if (selectedType === 'key') {
           await this.socket.rename({path: this.path, key: name, newKey: newName});
         }
-        this.repopulateList();
       } catch (error) {
         this.handleError(error);
       }
@@ -739,12 +747,11 @@ export class LabradRegistry extends polymer.Base {
       if (selectedType === 'dir') {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = "Deleting...";
-        await this.socket.rmDir({path: this.path, dir: this.$.combinedList.selectedItem});
+        await this.socket.rmDir({path: this.path, dir: this.$.combinedList.selectedItem.name});
       }
       else if (selectedType === 'key') {
-        await this.socket.del({path: this.path, key: this.$.combinedList.selectedItem});
+        await this.socket.del({path: this.path, key: this.$.combinedList.selectedItem.name});
       }
-      this.repopulateList();
     } catch (error) {
       this.handleError(error);
     }
