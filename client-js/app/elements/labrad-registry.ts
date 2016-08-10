@@ -221,6 +221,8 @@ export class LabradRegistry extends polymer.Base {
    * that contain substring in filterText
    */
   filterFunc(item) {
+    const selectedIdx = (this.$.search.value) ? 0 : this.getDefaultSelectedItem();
+    this.set('selectedIdx', selectedIdx);
     return item.name.match(this.regex);
   }
 

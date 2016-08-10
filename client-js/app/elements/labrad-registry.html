@@ -97,15 +97,30 @@
       padding: 0px 10px;
       flex-grow: 1;
       text-align: right;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     #search-bar paper-input {
       font-family: var(--primary-font-family);
-      font-size: 15px;
       width: calc(100% - 50px);
       border: 0;
       border-radius: 2px;
       -webkit-appearance: none;
       display: inline-block;
+      text-align: left;
+      --paper-font-caption: {
+        display: none;
+      }
+      --layout-center: {
+        background-color: #fff;
+        align-items: center;
+      }
+      --paper-input-container-input: {
+        line-height: 24px;
+        padding: 10px;
+        width: calc(100% - 20px);
+      }
     }
     .mono {
       font-family: 'roboto mono', monospace;
@@ -240,8 +255,10 @@
           delete
         </paper-button>
         <div id="search-bar">
-          <iron-icon icon="search"></iron-icon>
-          <paper-input id="search" value="{{filterText::input}}" label="Search Registry"></paper-input>
+          <paper-input id="search" value="{{filterText::input}}"
+            noLabelFloat>
+            <iron-icon icon="search" prefix></iron-icon>
+          </paper-input>
         </div>
       </paper-toolbar>
     </div>
