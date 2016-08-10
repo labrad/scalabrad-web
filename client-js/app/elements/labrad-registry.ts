@@ -241,7 +241,7 @@ export class LabradRegistry extends polymer.Base {
   @property({computed: '_computeSelectedType(selectedIdx)'})
   selectedType: string;
 
-  @property({computed: '_computeSelectedItem(selectedIdx)'})
+  @property({computed: '_computeSelectedItem(selectedIdx, kick)'})
   selectedItem: string;
 
   _computeSelectedType(selectedIdx: number): string {
@@ -254,7 +254,7 @@ export class LabradRegistry extends polymer.Base {
     }
   }
 
-  _computeSelectedItem(selectedIdx: number): string {
+  _computeSelectedItem(selectedIdx: number, kick: number): string {
     // Account for parent '..' entry.
     const offset = this.getListOffset();
     const dirNames = (this.dirs || []).map(it => it.name);
