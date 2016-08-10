@@ -154,14 +154,20 @@ export class LabradRegistry extends polymer.Base {
     this.set('filterText', '');
   }
 
-
   /**
    * triggers re-render of dir, key lists when filterText is changed
    */
   @observe('filterText')
   reloadMenu() {
+    if (!this.listItems) {
+      return;
+    }
+
     this.regex = new RegExp(this.filterText, 'i');
-    //this.$.fullList.render();
+    this.set('filteredListItems', this.listItems.filter((item) => {
+      console.log(!!item.name.match(this.regex), item);
+      return (!!item.name.match(this.regex));
+    }));
   }
 
 
@@ -226,6 +232,7 @@ export class LabradRegistry extends polymer.Base {
       });
     }
 
+    this.set('filteredListItems', this.listItems);
     this.$.combinedList.selectItem(this.getDefaultSelectedItem());
     this.$.pendingDialog.close()
   }
