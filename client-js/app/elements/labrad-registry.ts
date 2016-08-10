@@ -45,12 +45,12 @@ export class LabradRegistry extends polymer.Base {
 
 
   getDefaultSelectedItem(): number {
-    return this.path ? 1 : 0;
+    return this.path.length > 0 ? 1 : 0;
   }
 
 
   cursorMove(e) {
-    const offset = this.path ? 1 : 0;
+    const offset = this.path.length > 0 ? 1 : 0;
     const length = this.keys.length + this.dirs.length + offset;
 
     switch (e.detail.combo) {
