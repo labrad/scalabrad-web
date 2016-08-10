@@ -241,11 +241,7 @@ export class LabradRegistry extends polymer.Base {
     this.set('filterText', '');
   }
 
-  /**
-   * Filters the directory/key listing when filterText changes.
-   */
-  @observe('filterText')
-  filterListing() {
+  applyFilterToListItems() {
     if (!this.listItems) {
       return;
     }
@@ -254,7 +250,16 @@ export class LabradRegistry extends polymer.Base {
     this.set('filteredListItems', this.listItems.filter((item) => {
       return (!!item.name.match(this.regex));
     }));
-    if (this.filteredListItems.length) {
+  }
+
+  /**
+   * Filters the directory/key listing when filterText changes.
+   */
+  @observe('filterText')
+  filterListing() {
+    this.applyFilterToListItems();
+
+    if (this.filteredListItems && this.filteredListItems.length) {
       this.$.combinedList.selectItem(0);
     }
   }
@@ -324,20 +329,27 @@ export class LabradRegistry extends polymer.Base {
       });
     }
 
-    if (this.getSelectedIndex()) {
-      const item = this.selected;
-      this.set('filteredListItems', this.listItems.filter(() => true));
-      const newIndex = this.filteredListItems.indexOf(item);
-      if (newIndex !== -1) {
-        this.$.combinedList.selectItem(newIndex);
-      } else {
-        this.$.combinedList.selectItem(this.getDefaultSelectedItem());
+    const selected = this.selected;
+    this.applyFilterToListItems();
+
+    let index = this.getDefaultSelectedItem();
+
+    // If there was a previously selected item, say we were editing one, then
+    // we want to reselect it after the list is repopulated. To do this we
+    // fuzzy match the objects by requiring either the name or the value to be
+    // the same. This handles both the case of renaming a dir/key or changing
+    // the value of it.
+    if (selected) {
+      for (let i = 0; i < this.filteredListItems.length; ++i) {
+        const item = this.filteredListItems[i];
+        if (item.name == selected.name || item.value == selected.value) {
+          index = i;
+          break;
+        }
       }
-    } else {
-      this.set('filteredListItems', this.listItems.filter(() => true));
-      this.$.combinedList.selectItem(this.getDefaultSelectedItem());
     }
 
+    this.$.combinedList.selectItem(index);
     this.$.pendingDialog.close()
   }
 
