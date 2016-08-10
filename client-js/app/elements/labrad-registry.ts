@@ -47,6 +47,17 @@ export class LabradRegistry extends polymer.Base {
 
   target: HTMLElement = document.body;
 
+  private dialogs: string[] = [
+    'newKeyDialog',
+    'editValueDialog',
+    'newFolderDialog',
+    'dragDialog',
+    'copyDialog',
+    'renameDialog',
+    'deleteDialog',
+    'pendingDialog',
+  ];
+
   attached() {
     this.bindIronAutogrowTextAreaResizeEvents(this.$.newKeyDialog,
                                               this.$.newValueInput);
@@ -88,12 +99,29 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
-  cursorMove(e) {
+  private getOpenDialog() {
+    for (const dialog of this.dialogs) {
+      if (this.$[dialog].opened) {
+        return this.$[dialog];
+      }
+    }
+    return null;
+  }
+
+
+  cursorMove(event) {
+    if (this.getOpenDialog()) {
+      return;
+    }
+
+    this.searchSubmit();
+    event.detail.keyboardEvent.preventDefault();
+
     const length = this.listItems.length;
     const selectedIndex = this.getSelectedIndex();
     const list = this.$.combinedList;
 
-    switch (e.detail.combo) {
+    switch (event.detail.combo) {
       case 'up':
         if (selectedIndex !== null && selectedIndex !== 0) {
           list.selectItem(selectedIndex - 1);
@@ -118,28 +146,90 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
-  cursorTraverse(e) {
-    if (this.getSelectedIndex() === null) {
+  cursorTraverse(event) {
+    if (this.getSelectedIndex() === null || this.getOpenDialog() || this.$.search.focused) {
       return;
     }
 
     const item = this.$.combinedList.selectedItem;
 
     // If we have an item, we want to traverse down.
+    if (!item) {
+      return;
+    }
+
+    // If we have a link, we want to traverse down.
     if (item.url) {
       this.fire('app-link-click', {path: item.url});
+    } else {
+      this.editValueSelected();
     }
   }
 
 
-  cursorBack(e) {
-    if (this.path.length === 0) {
+  cursorBack(event) {
+    if (this.path.length === 0 || this.getOpenDialog() || this.$.search.focused) {
       return;
     }
 
     const parentPath = this.path.slice(0, -1);
     const parentUrl = this.places.registryUrl(parentPath);
     this.fire('app-link-click', {path: parentUrl});
+  }
+
+
+  searchSubmit() {
+    if (this.$.search.focused) {
+      this.$.search.inputElement.blur();
+    }
+  }
+
+
+  dialogSubmit(event) {
+    const dialog = this.getOpenDialog();
+    if (!dialog) {
+      return;
+    }
+
+    event.detail.keyboardEvent.preventDefault();
+
+    switch (dialog.id) {
+      case 'newKeyDialog':
+        this.doNewKey();
+        break;
+
+      case 'newFolderDialog':
+        this.doNewFolder();
+        break;
+
+      case 'editValueDialog':
+        this.doEditValue();
+        break;
+
+      case 'renameDialog':
+        this.doRename();
+        break;
+
+      case 'copyDialog':
+        this.doCopy();
+        break;
+
+      default:
+        // Nothing to do.
+        break;
+    }
+
+    dialog.close();
+  }
+
+
+  dialogCancel(event) {
+    const dialog = this.getOpenDialog();
+    if (!dialog) {
+      return;
+    }
+    event.detail.keyboardEvent.preventDefault();
+    dialog.close();
   }
 
 
@@ -162,9 +252,11 @@ export class LabradRegistry extends polymer.Base {
 
     this.regex = new RegExp(this.filterText, 'i');
     this.set('filteredListItems', this.listItems.filter((item) => {
-      console.log(!!item.name.match(this.regex), item);
       return (!!item.name.match(this.regex));
     }));
+    if (this.filteredListItems.length) {
+      this.$.combinedList.selectItem(0);
+    }
   }
 
 
@@ -416,6 +508,18 @@ export class LabradRegistry extends polymer.Base {
     }
   }
 
+
+  private editValueSelected() {
+    const item = this.$.combinedList.selectedItem;
+    const dialog = this.$.editValueDialog;
+    const editValueElem = this.$.editValueInput;
+
+    editValueElem.value = item.keyValue;
+    dialog.keyName = item.keyName;
+    dialog.open();
+  }
+
+
   /**
    * Launch the value edit dialog.
    */
@@ -442,6 +546,7 @@ export class LabradRegistry extends polymer.Base {
     dialog.open();
   }
 
+
   /**
    * Submit the edited value to the server.
    */
@@ -464,7 +569,6 @@ export class LabradRegistry extends polymer.Base {
         newFolderElem = this.$.newFolderInput;
     newFolderElem.value = '';
     dialog.open();
-    window.setTimeout(() => newFolderElem.$.input.focus(), 0);
   }
 
   /**
@@ -497,7 +601,6 @@ export class LabradRegistry extends polymer.Base {
     copyNameElem.value = this.$.combinedList.selectedItem;
     copyPathElem.value = this.pathToString(this.path);
     dialog.open();
-    window.setTimeout(() => copyNameElem.$.input.focus(), 0);
   }
 
   /**
@@ -587,7 +690,6 @@ export class LabradRegistry extends polymer.Base {
 
     renameElem.value = name;
     dialog.open();
-    window.setTimeout(() => renameElem.$.input.focus(), 0);
   }
 
   /**

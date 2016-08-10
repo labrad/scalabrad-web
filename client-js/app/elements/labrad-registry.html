@@ -117,15 +117,30 @@
       padding: 0px 10px;
       flex-grow: 1;
       text-align: right;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    #search-bar input {
+    #search-bar paper-input {
       font-family: var(--primary-font-family);
-      font-size: 15px;
       width: calc(100% - 50px);
-      padding: 10px;
       border: 0;
       border-radius: 2px;
       -webkit-appearance: none;
+      display: inline-block;
+      text-align: left;
+      --paper-font-caption: {
+        display: none;
+      }
+      --layout-center: {
+        background-color: #fff;
+        align-items: center;
+      }
+      --paper-input-container-input: {
+        line-height: 24px;
+        padding: 10px;
+        width: calc(100% - 20px);
+      }
     }
     .mono {
       font-family: 'roboto mono', monospace;
@@ -163,13 +178,21 @@
   <template>
   <div id="outer">
     <div id="reg-area">
+      <!-- Cursor Controls -->
       <iron-a11y-keys target="[[target]]" keys="up down"
                       on-keys-pressed="cursorMove"></iron-a11y-keys>
       <iron-a11y-keys target="[[target]]" keys="right enter"
                       on-keys-pressed="cursorTraverse"></iron-a11y-keys>
       <iron-a11y-keys target="[[target]]" keys="left backspace"
                       on-keys-pressed="cursorBack"></iron-a11y-keys>
-
+      <!-- Dialog Controls -->
+      <iron-a11y-keys target="[[target]]" keys="esc"
+                      on-keys-pressed="dialogCancel"></iron-a11y-keys>
+      <iron-a11y-keys target="[[target]]" keys="shift+enter"
+                      on-keys-pressed="dialogSubmit"></iron-a11y-keys>
+      <!-- Search Controls -->
+      <iron-a11y-keys target="[[target]]" keys="enter"
+                      on-keys-pressed="searchSubmit"></iron-a11y-keys>
       <div id="listing">
         <iron-list items="[[filteredListItems]]"
                   id="combinedList"
@@ -242,8 +265,10 @@
           delete
         </paper-button>
         <div id="search-bar">
-          <iron-icon icon="search"></iron-icon>
-          <input type="search" id="search" value="{{filterText::input}}" placeholder="search registry">
+          <paper-input id="search" value="{{filterText::input}}"
+            noLabelFloat>
+            <iron-icon icon="search" prefix></iron-icon>
+          </paper-input>
         </div>
       </paper-toolbar>
     </div>
@@ -253,7 +278,7 @@
     <paper-dialog id="newKeyDialog" modal>
       <h1>Create New Key</h1>
       <form>
-        <paper-input id="newKeyInput" label="Key"></paper-input>
+        <paper-input id="newKeyInput" label="Key" autofocus></paper-input>
         <paper-textarea id="newValueInput" label="Value"></paper-textarea>
       </form>
       <div class="buttons">
@@ -265,10 +290,10 @@
     <paper-dialog id="editValueDialog" modal>
       <h1>Edit <span>{{selected}}</span></h1>
       <form>
-        <paper-textarea id="editValueInput" label="Value"></paper-textarea>
+        <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
       </form>
       <div class="buttons">
-        <paper-button on-click="doEditValue" dialog-confirm autofocus>OK</paper-button>
+        <paper-button on-click="doEditValue" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -276,10 +301,10 @@
     <paper-dialog id="newFolderDialog" modal>
       <h1>Create New Folder</h1>
       <form>
-        <paper-input id="newFolderInput" label="Name"></paper-input>
+        <paper-input id="newFolderInput" label="Name" autofocus></paper-input>
       </form>
       <div class="buttons">
-        <paper-button on-click="doNewFolder" dialog-confirm autofocus>OK</paper-button>
+        <paper-button on-click="doNewFolder" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -299,7 +324,7 @@
     <paper-dialog id="copyDialog" modal>
       <h1>Copy <span>{{selectedType}}</span> "<span>{{selected}}</span>"?</h1>
       <form>
-        <paper-input id="copyNameInput" label="New Name" always-float-label></paper-input>
+        <paper-input id="copyNameInput" label="New Name" always-float-label autofocus></paper-input>
         <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
       </form>
       <div class="buttons">
@@ -311,10 +336,10 @@
     <paper-dialog id="renameDialog" modal>
       <h1>Rename <span>{{selectedType}}</span> "<span>{{selected}</span>"?</h1>
       <form>
-        <paper-input id="renameInput" label="New Name" always-float-label></paper-input>
+        <paper-input id="renameInput" label="New Name" always-float-label autofocus></paper-input>
       </form>
       <div class="buttons">
-        <paper-button on-click="doRename" dialog-confirm autofocus>OK</paper-button>
+        <paper-button on-click="doRename" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
