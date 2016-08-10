@@ -56,7 +56,7 @@ export class LabradRegistry extends polymer.Base {
     switch (e.detail.combo) {
       case 'up':
         if (this.selectedIdx === null || this.selectedIdx === 0) {
-          this.set('selectedIdx', null);
+          this.set('selectedIdx', 0);
         } else {
           this.set('selectedIdx', this.selectedIdx - 1);
         }
