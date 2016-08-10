@@ -106,6 +106,8 @@
     }
   </style>
   <template>
+    <iron-a11y-keys target="[[target]]" keys="left backspace"
+                    on-keys-pressed="cursorBack"></iron-a11y-keys>
     <div id="controls">
       <div id="pos">
         Current Position: <span>{{currPos}}</span>

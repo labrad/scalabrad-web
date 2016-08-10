@@ -311,6 +311,7 @@ export class DatasetActivity implements Activity {
     var elem: HTMLElement = null;
     if (info.independents.length <= 2) {
       let plot = <Plot> Plot.create();
+      plot.backUrl = this.places.grapherUrl(this.path);
       plot.setAttribute('class', 'flex');
       plot.numIndeps = info.independents.length;
       plot.xLabel = datavault.makeAxisLabel(info.independents[0]);

@@ -49,6 +49,8 @@ export class LabradGrapher extends polymer.Base {
   @property({type: String})
   connectionError: string;
 
+  target: HTMLElement = document.body;
+
   private showStars: boolean = false;
   private showTrash: boolean = false;
 
@@ -63,7 +65,92 @@ export class LabradGrapher extends polymer.Base {
       this.dirs,
       this.datasets);
     this.applyFilterToListItems();
+
+    this.$.combinedList.selectItem(this.getDefaultSelectedItem());
   }
+
+
+  getDefaultSelectedItem(): number {
+    return this.path.length > 0 ? 1 : 0;
+  }
+
+
+  getSelectedIndex() {
+    const index = this.filteredListItems.indexOf(this.selected);
+    if (index === -1) {
+      return null;
+    }
+    return index;
+  }
+
+
+  scrollToIndex(index: number) {
+    const list = this.$.combinedList;
+    const first = list.firstVisibleIndex;
+    const last = list.lastVisibleIndex;
+
+    if (index < first) {
+      list.scrollToIndex(index);
+    } else if (index > last) {
+      list.scrollToIndex(index - (last - first));
+    }
+  }
+
+
+  cursorMove(e) {
+    const length = this.filteredListItems.length;
+    const selectedIndex = this.getSelectedIndex();
+    const list = this.$.combinedList;
+
+    switch (e.detail.combo) {
+      case 'up':
+        if (selectedIndex !== null && selectedIndex !== 0) {
+          list.selectItem(selectedIndex - 1);
+          this.scrollToIndex(selectedIndex - 1);
+        }
+        break;
+
+      case 'down':
+        if (selectedIndex === null) {
+          list.selectItem(0);
+          this.scrollToIndex(0);
+        } else if (selectedIndex < length - 1) {
+          list.selectItem(selectedIndex + 1);
+          this.scrollToIndex(selectedIndex + 1);
+        }
+        break;
+
+      default:
+        // Nothing to do.
+        break;
+    }
+  }
+
+
+  cursorTraverse(e) {
+    if (this.getSelectedIndex() === null) {
+      return;
+    }
+
+    const item = this.$.combinedList.selectedItem;
+
+    // If we have an item, we want to traverse down.
+    if (item) {
+      this.fire('app-link-click', {path: item.url});
+    }
+  }
+
+
+  cursorBack(e) {
+    if (this.path.length === 0) {
+      return;
+    }
+
+    const parentPath = this.path.slice(0, -1);
+    const parentUrl = this.places.grapherUrl(parentPath);
+    this.fire('app-link-click', {path: parentUrl});
+  }
+
 
   starClicked(): void {
     this.showStars = !this.showStars;
@@ -96,7 +183,7 @@ export class LabradGrapher extends polymer.Base {
   @listen("keypress")
   onKeyPress(event): void {
     if (!this.selected) return;
-    const selectedIndex = this.filteredListItems.indexOf(this.selected);
+    const selectedIndex = this.getSelectedIndex();
     const id = this.selected.id;
 
     if (!id) return;

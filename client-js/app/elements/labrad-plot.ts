@@ -111,7 +111,6 @@ const FIT_OPTION_EXPONENTIAL = 2;
 
 @component('labrad-plot')
 export class Plot extends polymer.Base {
-
   @property({type: String, value: ''})
   xLabel: string;
 
@@ -132,6 +131,9 @@ export class Plot extends polymer.Base {
 
   @property({type: Array})
   deps: {label: string, legend: string, unit: string}[];
+
+  @property({type: String})
+  backUrl: string;
 
   private lifetime = new Lifetime();
 
@@ -298,6 +300,17 @@ export class Plot extends polymer.Base {
 
   /** Store the canvas' bounding rectangle for performance. */
   private canvasBoundingRect = null;
+
+  target: HTMLElement = document.body;
+
+
+  /**
+   * Navigate back to the directory listing.
+   */
+  cursorBack(e) {
+    this.fire('app-link-click', {path: this.backUrl});
+  }
+
 
   /**
    * Add new data to the plot and re-zoom.
