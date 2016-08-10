@@ -194,7 +194,7 @@ export class LabradRegistry extends polymer.Base {
 
     // New keys have a textbox, so we only want to submit on Shift+Enter,
     // not on a solo enter keypress.
-    if (event.detail.combo !== "shift+enter") {
+    if (event.detail.combo !== 'shift+enter') {
       if (dialog.id == 'newKeyDialog' || dialog.id === 'editValueDialog') {
         return;
       }
@@ -369,7 +369,7 @@ export class LabradRegistry extends polymer.Base {
 
 
   computeSelectedClass(selected: ListItem): string {
-    return (selected) ? "iron-selected" : "";
+    return (selected) ? 'iron-selected' : '';
   }
 
 
@@ -380,61 +380,68 @@ export class LabradRegistry extends polymer.Base {
 
 
   /**
-   * Drag and drop logic
+   * Drag and drop logic.
    */
   @listen('dragenter')
   onDragEnter(event) {
-    event.preventDefault(); //I don't understand this.
+    event.preventDefault();
   }
+
 
   @listen('dragleave')
   onDragLeave(event) {
-    event.preventDefault(); //I don't understand this. But it needs to be here
+    event.preventDefault();
   }
 
+
   /**
-   * allows the ctrl key to be pressed to change cursor between copy/move
+   * Allows the ctrl key to be pressed to change cursor between copy/move.
    */
   @listen('dragover')
   onDragOver(event) {
-    event.preventDefault(); //I don't understand this. But needs to be here
+    event.preventDefault();
+
     if (event.ctrlKey) {
-      event.dataTransfer.dropEffect = "copy";
+      event.dataTransfer.dropEffect = 'copy';
     }
     else {
-      event.dataTransfer.dropEffect = "move";
+      event.dataTransfer.dropEffect = 'move';
     }
   }
 
+
   @listen('dragstart')
   startDrag(event) {
-    //detect start of drag event, grab info about target
-    var data: any; //I tried enum, but kept getting errors...
+    // Detect start of drag event, grab info about target.
+    const data: any; //I tried enum, but kept getting errors...
     data = {path: this.path, name: event.target.name, kind: event.target.className.split(' ')[0]};
     event.dataTransfer.setData('text', JSON.stringify(data));
     event.dataTransfer.effectAllowed = 'copyMove';
   }
 
+
   onDirDragOver(event) {
     event.currentTarget.classList.add('over');
   }
+
 
   onDirDragLeave(event) {
     event.currentTarget.classList.remove('over');
   }
 
+
   @listen('dragend')
-  endDrag(event) {
-  }
+  endDrag(event) {}
+
 
   /**
-   * behaviour for dropping on folders
+   * Behaviour for dropping on folders.
    */
   dirDrop(event) {
     event.stopPropagation();
-    var data = JSON.parse(event.dataTransfer.getData('text'));
+    const data = JSON.parse(event.dataTransfer.getData('text'));
     this.$.dragDialog.dragData = data;
-    var newPath: string[] = this.path.slice();
+    const newPath: string[] = this.path.slice();
     newPath.push(event.target.closest('td').name);
     event.target.closest('td').classList.remove('over');
     this.$.dragNameInput.value = data.name;
@@ -462,7 +469,7 @@ export class LabradRegistry extends polymer.Base {
   @listen('drop')
   handleDrop(event) {
     event.preventDefault();
-    var data = JSON.parse(event.dataTransfer.getData('text'));
+    const data = JSON.parse(event.dataTransfer.getData('text'));
     this.$.dragDialog.dragData = data;
     event.target.closest('td').classList.remove('over');
     this.$.dragNameInput.value = data.name;
@@ -493,7 +500,7 @@ export class LabradRegistry extends polymer.Base {
   bindIronAutogrowTextAreaResizeEvents(paperDialog: HTMLElement,
                                        ironAutogrowTextarea: HTMLElement) {
     ironAutogrowTextarea.addEventListener('bind-value-changed', () => {
-      Polymer.Base.fire("iron-resize", null, {node: ironAutogrowTextarea});
+      Polymer.Base.fire('iron-resize', null, {node: ironAutogrowTextarea});
     });
   }
 
@@ -501,9 +508,9 @@ export class LabradRegistry extends polymer.Base {
    * Launch new key dialog.
    */
   newKeyClicked(event) {
-    var dialog = this.$.newKeyDialog,
-        newKeyElem = this.$.newKeyInput,
-        newValueElem = this.$.newValueInput;
+    const dialog = this.$.newKeyDialog,
+          newKeyElem = this.$.newKeyInput,
+          newValueElem = this.$.newValueInput;
     newKeyElem.value = '';
     newValueElem.value = '';
     dialog.open();
@@ -513,8 +520,8 @@ export class LabradRegistry extends polymer.Base {
    * Create new key.
    */
   async doNewKey() {
-    var newKey = this.$.newKeyInput.value;
-    var newVal = this.$.newValueInput.value;
+    const newKey = this.$.newKeyInput.value;
+    const newVal = this.$.newValueInput.value;
 
     if (newKey) {
       try {
@@ -544,12 +551,12 @@ export class LabradRegistry extends polymer.Base {
    * Launch the value edit dialog.
    */
   editValueClicked(event) {
-    var dialog = this.$.editValueDialog,
-        editValueElem = this.$.editValueInput,
-        name = event.currentTarget.keyName,
-        isKey = event.currentTarget.isKey,
-        value: string = null,
-        found = false;
+    const dialog = this.$.editValueDialog,
+          editValueElem = this.$.editValueInput,
+          name = event.currentTarget.keyName,
+          isKey = event.currentTarget.isKey,
+          value: string = null,
+          found = false;
     if (!isKey) return;
     for (let item of this.keys) {
       if (item.name == name) {
@@ -571,8 +578,8 @@ export class LabradRegistry extends polymer.Base {
    * Submit the edited value to the server.
    */
   async doEditValue() {
-    var key = this.$.editValueDialog.keyName,
-        newVal = this.$.editValueInput.value;
+    const key = this.$.editValueDialog.keyName,
+          newVal = this.$.editValueInput.value;
     try {
       await this.socket.set({path: this.path, key: key, value: newVal});
     } catch (error) {
@@ -584,8 +591,8 @@ export class LabradRegistry extends polymer.Base {
    * Launch new folder dialog.
    */
   newFolderClicked() {
-    var dialog = this.$.newFolderDialog,
-        newFolderElem = this.$.newFolderInput;
+    const dialog = this.$.newFolderDialog,
+          newFolderElem = this.$.newFolderInput;
     newFolderElem.value = '';
     dialog.open();
   }
@@ -634,7 +641,7 @@ export class LabradRegistry extends polymer.Base {
     try {
       if (selectedType === 'dir') {
         this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = "Copying...";
+        this.$.pendingOp.innerText = 'Copying...';
         await this.socket.copyDir({
           path: this.path,
           dir: name,
@@ -659,22 +666,22 @@ export class LabradRegistry extends polymer.Base {
    * Execute the drag operation
    */
   async doDragOp() {
-    var newName =  this.$.dragNameInput.value;
-    var newPath = JSON.parse(this.$.dragPathInput.value);
-    var oldPath = JSON.parse(this.$.originPath.textContent);
-    var oldName = this.$.originName.textContent;
+    const newName =  this.$.dragNameInput.value;
+    const newPath = JSON.parse(this.$.dragPathInput.value);
+    const oldPath = JSON.parse(this.$.originPath.textContent);
+    const oldName = this.$.originName.textContent;
 
     if (this.$.dragOp.innerText === 'Copy') {
       try {
         this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = "Copying...";
+        this.$.pendingOp.innerText = 'Copying...';
         switch (this.$.dragDialog.dragData['kind']) {
-          case "dir":
-            var resp = await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
+          case 'dir':
+            const resp = await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
             break;
 
-          case "key":
-            var resp = await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
+          case 'key':
+            const resp = await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
             break;
         }
       } catch (error) {
@@ -687,14 +694,14 @@ export class LabradRegistry extends polymer.Base {
     else if (this.$.dragOp.innerText === 'Move') {
       try {
         this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = "Moving...";
+        this.$.pendingOp.innerText = 'Moving...';
         switch (this.$.dragDialog.dragData['kind']) {
-          case "dir":
-            var resp = await this.socket.moveDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
+          case 'dir':
+            const resp = await this.socket.moveDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
             break;
 
-          case "key":
-            var resp = await this.socket.move({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
+          case 'key':
+            const resp = await this.socket.move({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
             break;
         }
       } catch (error) {
@@ -767,7 +774,7 @@ export class LabradRegistry extends polymer.Base {
       const selectedType = this.getSelectedType();
       if (selectedType === 'dir') {
         this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = "Deleting...";
+        this.$.pendingOp.innerText = 'Deleting...';
         await this.socket.rmDir({path: this.path, dir: this.$.combinedList.selectedItem.name});
       }
       else if (selectedType === 'key') {
