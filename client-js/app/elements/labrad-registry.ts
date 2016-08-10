@@ -42,7 +42,7 @@ export class LabradRegistry extends polymer.Base {
     'dragDialog',
     'copyDialog',
     'renameDialog',
-    'deleteDialog'
+    'deleteDialog',
     'pendingDialog',
   ];
 
@@ -65,7 +65,7 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
-  private getOpenDialog(): HTMLElement {
+  private getOpenDialog() {
     for (const dialog of this.dialogs) {
       if (this.$[dialog].opened) {
         return this.$[dialog];
@@ -138,21 +138,50 @@ export class LabradRegistry extends polymer.Base {
 
 
   dialogSubmit(event) {
-    if (!this.getOpenDialog()) {
+    const dialog = this.getOpenDialog();
+    if (!dialog) {
       return;
     }
+
     event.detail.keyboardEvent.preventDefault();
-    this.doEditValue();
-    this.$.editValueDialog.close();
+
+    switch (dialog.id) {
+      case 'newKeyDialog':
+        this.doNewKey();
+        break
+
+      case 'newFolderDialog':
+        this.doNewFolder();
+        break
+
+      case 'editValueDialog':
+        this.doEditValue();
+        break
+
+      case 'renameDialog':
+        this.doRename();
+        break
+
+      case 'copyDialog':
+        this.doCopy();
+        break
+
+      default:
+        // Nothing to do.
+        break;
+    }
+
+    dialog.close();
   }
 
 
   dialogCancel(event) {
-    if (!this.getOpenDialog()) {
+    const dialog = this.getOpenDialog();
+    if (!dialog) {
       return;
     }
     event.detail.keyboardEvent.preventDefault();
-    this.$.editValueDialog.close();
+    dialog.close();
   }
 
 

@@ -248,7 +248,7 @@
     <paper-dialog id="newKeyDialog" modal>
       <h1>Create New Key</h1>
       <form>
-        <paper-input id="newKeyInput" label="Key"></paper-input>
+        <paper-input id="newKeyInput" label="Key" autofocus></paper-input>
         <paper-textarea id="newValueInput" label="Value"></paper-textarea>
       </form>
       <div class="buttons">
@@ -271,10 +271,10 @@
     <paper-dialog id="newFolderDialog" modal>
       <h1>Create New Folder</h1>
       <form>
-        <paper-input id="newFolderInput" label="Name"></paper-input>
+        <paper-input id="newFolderInput" label="Name" autofocus></paper-input>
       </form>
       <div class="buttons">
-        <paper-button on-click="doNewFolder" dialog-confirm autofocus>OK</paper-button>
+        <paper-button on-click="doNewFolder" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -294,7 +294,7 @@
     <paper-dialog id="copyDialog" modal>
       <h1>Copy <span>{{selectedType}}</span> "<span>{{selectedItem}}</span>"?</h1>
       <form>
-        <paper-input id="copyNameInput" label="New Name" always-float-label></paper-input>
+        <paper-input id="copyNameInput" label="New Name" always-float-label autofocus></paper-input>
         <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
       </form>
       <div class="buttons">
@@ -306,10 +306,10 @@
     <paper-dialog id="renameDialog" modal>
       <h1>Rename <span>{{selectedType}}</span> "<span>{{selectedItem}}</span>"?</h1>
       <form>
-        <paper-input id="renameInput" label="New Name" always-float-label></paper-input>
+        <paper-input id="renameInput" label="New Name" always-float-label autofocus></paper-input>
       </form>
       <div class="buttons">
-        <paper-button on-click="doRename" dialog-confirm autofocus>OK</paper-button>
+        <paper-button on-click="doRename" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
