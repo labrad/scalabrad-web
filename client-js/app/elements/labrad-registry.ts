@@ -80,6 +80,7 @@ export class LabradRegistry extends polymer.Base {
       return;
     }
 
+    this.searchSubmit();
     event.detail.keyboardEvent.preventDefault();
 
     const offset = this.getListOffset();
@@ -110,11 +111,15 @@ export class LabradRegistry extends polymer.Base {
 
 
   cursorTraverse(event) {
-    if (this.selectedIdx === null || this.getOpenDialog()) {
+    if (this.selectedIdx === null || this.getOpenDialog() || this.$.search.focused) {
       return;
     }
 
     const item = this.$.combinedList.selectedItem;
+    if (!item) {
+      return;
+    }
+
     const link = item.querySelector('a');
 
     // If we have a link, we want to traverse down.
@@ -127,13 +132,20 @@ export class LabradRegistry extends polymer.Base {
 
 
   cursorBack(event) {
-    if (this.path.length === 0 || this.getOpenDialog()) {
+    if (this.path.length === 0 || this.getOpenDialog() || this.$.search.focused) {
       return;
     }
 
     const parentPath = this.path.slice(0, -1);
     const parentUrl = this.places.registryUrl(parentPath);
     this.fire('app-link-click', {path: parentUrl});
+  }
+
+
+  searchSubmit() {
+    if (this.$.search.focused) {
+      this.$.search.inputElement.blur();
+    }
   }
 
 

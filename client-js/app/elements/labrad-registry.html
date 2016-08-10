@@ -98,14 +98,14 @@
       flex-grow: 1;
       text-align: right;
     }
-    #search-bar input {
+    #search-bar paper-input {
       font-family: var(--primary-font-family);
       font-size: 15px;
       width: calc(100% - 50px);
-      padding: 10px;
       border: 0;
       border-radius: 2px;
       -webkit-appearance: none;
+      display: inline-block;
     }
     .mono {
       font-family: 'roboto mono', monospace;
@@ -168,6 +168,9 @@
                       on-keys-pressed="dialogCancel"></iron-a11y-keys>
       <iron-a11y-keys target="[[target]]" keys="shift+enter"
                       on-keys-pressed="dialogSubmit"></iron-a11y-keys>
+      <!-- Search Controls -->
+      <iron-a11y-keys target="[[target]]" keys="enter"
+                      on-keys-pressed="searchSubmit"></iron-a11y-keys>
       <table>
         <tbody is="selectable-table" id="combinedList" selected="{{selectedIdx}}">
           <template id="fullList" is="dom-repeat" items="{{listItems}}" filter="filterFunc">
@@ -238,7 +241,7 @@
         </paper-button>
         <div id="search-bar">
           <iron-icon icon="search"></iron-icon>
-          <input type="search" id="search" value="{{filterText::input}}" placeholder="search registry">
+          <paper-input id="search" value="{{filterText::input}}" label="Search Registry"></paper-input>
         </div>
       </paper-toolbar>
     </div>
