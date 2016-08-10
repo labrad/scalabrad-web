@@ -27,28 +27,29 @@
       width: 100%;
     }
 
+    #outer {
+      flex-direction: column;
+      position: relative;
+    }
+    #outer, #reg-area, #listing, #combinedList {
+      flex: 1;
+      display: flex;
+      width: 100%;
+    }
+    iron-list {
+      --iron-list-items-container: {
+        width: 100%;
+      };
+    }
+
+    .row {
+      cursor: pointer;
+      display: flex;
+      flex-direction: row;
+      align-items: middle;
+    }
     .row:nth-child(1n).iron-selected {
       background-color: #CCCCCC;
-    }
-
-    .iron-selector {
-      width: 100%;
-      display: block;
-      border: 1px solid #ccc;
-      border-top: none;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    tbody {
-      display:table-header-group;
-    }
-
-    td.dir.over {
-      background-color: #93d4d4;
     }
     .row:nth-child(odd) {
       background-color: #EEEEEE;
@@ -59,19 +60,36 @@
     .row:nth-child(even):hover {
       background-color: #FFFFAA;
     }
-
-    .table-header {
-      @apply(--paper-font-body1);
-      color: var(--secondary-text-color);
-      *text-align: middle;
-      border-bottom: 1px solid;
-      border-bottom-color: #e5e5e5;
-      display:table-header-group;
-
+    .row.dir.over {
+      background-color: #93d4d4;
     }
-    .label-wide {
+    .row .dir {
+      white-space: nowrap;
+      -webkit-user-select: none;
+    }
+    .row .key {
+      width: 400px;
+      white-space: nowrap;
+      padding-right: 2em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .row .value {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 1em;
+      line-height: 30px;
+    }
+
+    .iron-selector {
       width: 100%;
+      display: block;
+      border: 1px solid #ccc;
+      border-top: none;
     }
+
     paper-toolbar {
       background-color: #EEEEEE;
       color: black;
@@ -113,28 +131,14 @@
       font-family: 'roboto mono', monospace;
       font-size: 15px;
     }
-    td.dir {
-      white-space: nowrap;
-      -webkit-user-select: none;
-    }
-    td.key {
-      white-space: nowrap;
-      padding-right: 2em;
-    }
-    td.value {
-      max-width: 100px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding-right: 1em;
-    }
+
     iron-icon {
       margin: 5px;
     }
     iron-icon.folder {
       color: #CFBA78;
     }
-    iron-icon.key {
+    .key iron-icon {
       color: #209131;
     }
     paper-dialog {
@@ -154,25 +158,6 @@
     .label-wide .back-link:hover,
     .label-wide .back-link:visited:hover {
       color: #3f51b5;
-    }
-    #outer {
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      width: 100%;
-    }
-    #reg-area, #listing, #combinedList {
-      flex: 1;
-      display: flex;
-      width: 100%;
-    }
-    .row {
-      width: 100%;
-    }
-    iron-list {
-      --iron-list-items-container: {
-        width: 100%;
-      };
     }
   </style>
   <template>
@@ -222,7 +207,7 @@
                 <div class="key mono"
                     name="{{item.name}}"
                     draggable="true">
-                  <iron-icon icon="communication:vpn-key" item-icon class="key"></iron-icon>
+                  <iron-icon icon="communication:vpn-key" item-icon></iron-icon>
                   <span>{{item.name}}</span>
                 </div>
                 <div class="value label-wide mono">
