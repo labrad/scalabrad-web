@@ -70,6 +70,10 @@ export class LabradRegistry extends polymer.Base {
 
     this.bindIronAutogrowTextAreaResizeEvents(this.$.editValueDialog,
                                               this.$.editValueInput);
+
+    for (const dialog of this.dialogs) {
+      this.$[dialog].addEventListener('iron-overlay-closed', this.resetError.bind(this));
+    }
   }
 
 
@@ -377,9 +381,15 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
+  private resetError() {
+    this.set('errorMessage', 'a');
+    this.set('errorTitle', 'a');
+  }
+
+
   handleError(errorMessage, element: HTMLElement, errorTitle:string = '') {
-    this.errorMessage = errorMessage;
-    this.errorTitle = errorTitle;
+    this.set('errorMessage', errorMessage);
+    this.set('errorTitle', errorTitle);
     if (element) {
       element.focus();
       Polymer.Base.fire('iron-resize', null, {node: element});
