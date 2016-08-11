@@ -413,33 +413,12 @@ export class LabradRegistry extends polymer.Base {
 
 
   /**
-   * Drag and drop logic.
-   */
-  @listen('dragenter')
-  onDragEnter(event) {
-    event.preventDefault();
-  }
-
-
-  @listen('dragleave')
-  onDragLeave(event) {
-    event.preventDefault();
-  }
-
-
-  /**
    * Allows the ctrl key to be pressed to change cursor between copy/move.
    */
   @listen('dragover')
   onDragOver(event) {
     event.preventDefault();
-
-    if (event.ctrlKey) {
-      event.dataTransfer.dropEffect = 'copy';
-    }
-    else {
-      event.dataTransfer.dropEffect = 'move';
-    }
+    event.dataTransfer.dropEffect = (event.ctrlKey) ? 'copy' : 'move';
   }
 
 
@@ -464,10 +443,6 @@ export class LabradRegistry extends polymer.Base {
   onDirDragLeave(event) {
     event.currentTarget.classList.remove('over');
   }
-
-
-  @listen('dragend')
-  endDrag(event) {}
 
 
   /**
