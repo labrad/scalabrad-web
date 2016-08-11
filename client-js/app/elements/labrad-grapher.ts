@@ -34,9 +34,6 @@ export class LabradGrapher extends polymer.Base {
   @property({type: Object, notify: true})
   selected: ListItem;
 
-  @property({type: Number, notify: true})
-  selectedIndex: number;
-
   @property({type: Object})
   selectedDatasetInfo: datavault.DatasetInfo = null;
 

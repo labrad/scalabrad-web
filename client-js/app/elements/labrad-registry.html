@@ -1,19 +1,14 @@
 <link rel="import" href="../bower_components/paper-input/paper-textarea.html">
 <link rel="import" href="../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../bower_components/iron-list/iron-list.html">
 
 <!-- This is the component that simply renders the table of registry content -->
 <dom-module id="labrad-registry">
   <style>
     :host {
-      display: block;
-      width: 100%;
-    }
-
-    #reg-menu {
-      position: fixed;
-      top: var(--maintoolbar-height);
-      width: 100%;
-      @apply(--shadow-elevation-2dp);
+      height: 100%;
+      overflow: hidden;
+      display: flex;
     }
 
     #reg-area {
@@ -25,8 +20,60 @@
       width: 100%;
     }
 
-    tbody tr:nth-child(1n).iron-selected {
+    #outer {
+      flex-direction: column;
+      position: relative;
+    }
+    #outer, #listing, #combinedList {
+      flex: 1;
+      display: flex;
+      width: 100%;
+    }
+    iron-list {
+      --iron-list-items-container: {
+        width: 100%;
+      };
+    }
+
+    .row {
+      cursor: pointer;
+      display: flex;
+      flex-direction: row;
+      align-items: middle;
+    }
+    .row:nth-child(1n).iron-selected {
       background-color: #CCCCCC;
+    }
+    .row:nth-child(odd) {
+      background-color: #EEEEEE;
+    }
+    .row:nth-child(odd):hover {
+      background-color: #F6F699;
+    }
+    .row:nth-child(even):hover {
+      background-color: #FFFFAA;
+    }
+    .row .dir.over {
+      background-color: #93d4d4;
+    }
+    .row .dir {
+      white-space: nowrap;
+      -webkit-user-select: none;
+    }
+    .row .key {
+      width: 16em;
+      white-space: nowrap;
+      padding-right: 2em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .row .value {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 1em;
+      line-height: 30px;
     }
 
     .iron-selector {
@@ -36,40 +83,6 @@
       border-top: none;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    tbody {
-      display:table-header-group;
-    }
-
-    td.dir.over {
-      background-color: #93d4d4;
-    }
-    tbody tr:nth-child(odd) {
-      background-color: #EEEEEE;
-    }
-    tbody tr:nth-child(odd):hover {
-      background-color: #F6F699;
-    }
-    tbody tr:nth-child(even):hover {
-      background-color: #FFFFAA;
-    }
-
-    .table-header {
-      @apply(--paper-font-body1);
-      color: var(--secondary-text-color);
-      *text-align: middle;
-      border-bottom: 1px solid;
-      border-bottom-color: #e5e5e5;
-      display:table-header-group;
-
-    }
-    .label-wide {
-      width: 100%;
-    }
     paper-toolbar {
       background-color: #EEEEEE;
       color: black;
@@ -86,6 +99,9 @@
     paper-dialog.size-position {
       width: 300px;
       height: 300px;
+    }
+    paper-button {
+      white-space: nowrap;
     }
     menu-button {
       color: #0F9D58;
@@ -126,33 +142,22 @@
       font-family: 'roboto mono', monospace;
       font-size: 15px;
     }
-    td.dir {
-      white-space: nowrap;
-      -webkit-user-select: none;
-    }
-    td.key {
-      white-space: nowrap;
-      padding-right: 2em;
-    }
-    td.value {
-      max-width: 100px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding-right: 1em;
-    }
+
     iron-icon {
       margin: 5px;
     }
     iron-icon.folder {
       color: #CFBA78;
     }
-    iron-icon.key {
+    .key iron-icon {
       color: #209131;
     }
     paper-dialog {
       max-width: 90%;
       max-height: 90%;
+    }
+    .label-wide {
+      width: 100%;
     }
     .label-wide a {
       text-decoration: none;
@@ -170,174 +175,170 @@
     }
   </style>
   <template>
-    <div id="reg-area">
-      <!-- Cursor Controls -->
-      <iron-a11y-keys target="[[target]]" keys="up down"
-                      on-keys-pressed="cursorMove"></iron-a11y-keys>
-      <iron-a11y-keys target="[[target]]" keys="right enter"
-                      on-keys-pressed="cursorTraverse"></iron-a11y-keys>
-      <iron-a11y-keys target="[[target]]" keys="left backspace"
-                      on-keys-pressed="cursorBack"></iron-a11y-keys>
-      <!-- Dialog Controls -->
-      <iron-a11y-keys target="[[target]]" keys="esc"
-                      on-keys-pressed="dialogCancel"></iron-a11y-keys>
-      <iron-a11y-keys target="[[target]]" keys="shift+enter"
-                      on-keys-pressed="dialogSubmit"></iron-a11y-keys>
-      <!-- Search Controls -->
-      <iron-a11y-keys target="[[target]]" keys="enter"
-                      on-keys-pressed="searchSubmit"></iron-a11y-keys>
-      <table>
-        <tbody is="selectable-table" id="combinedList" selected="{{selectedIdx}}">
-          <template id="fullList" is="dom-repeat" items="{{listItems}}" filter="filterFunc">
-            <tr name="{{item.name}}"
-                key-name="{{item.name}}"
-                key-value="{{item.value}}"
-                is-key="{{item.isKey}}"
-                on-dblclick="editValueClicked">
+  <div id="outer">
+    <!-- Dialog Controls -->
+    <iron-a11y-keys target="[[target]]" keys="esc"
+                    on-keys-pressed="dialogCancel"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="shift+enter enter"
+                    on-keys-pressed="dialogSubmit"></iron-a11y-keys>
+    <!-- Cursor Controls -->
+    <iron-a11y-keys target="[[target]]" keys="up down"
+                    on-keys-pressed="cursorMove"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="right enter"
+                    on-keys-pressed="cursorTraverse"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="left backspace"
+                    on-keys-pressed="cursorBack"></iron-a11y-keys>
+    <!-- Search Controls -->
+    <iron-a11y-keys target="[[target]]" keys="enter"
+                    on-keys-pressed="searchSubmit"></iron-a11y-keys>
+    <paper-header-panel id="left-column">
+      <div class="paper-header" id="buttons">
+        <paper-toolbar>
+          <paper-button on-click="newKeyClicked">
+            <iron-icon icon="create"></iron-icon>
+            New Key
+          </paper-button>
+          <paper-button on-click="newFolderClicked">
+            <iron-icon icon="folder-open"></iron-icon>
+            New Dir
+          </paper-button>
+          <paper-button on-click="copyClicked" disabled="[[!selected]]">
+            <iron-icon icon="content-copy"></iron-icon>
+            Copy
+          </paper-button>
+          <paper-button on-click="renameClicked" disabled="[[!selected]]">
+            <iron-icon icon="code"></iron-icon>
+            Rename
+          </paper-button>
+          <paper-button on-click="deleteClicked" disabled="[[!selected]]">
+            <iron-icon icon="delete"></iron-icon>
+            Delete
+          </paper-button>
+          <div id="search-bar">
+            <paper-input id="search" value="{{filterText::input}}"
+              noLabelFloat>
+              <iron-icon icon="search" prefix></iron-icon>
+            </paper-input>
+          </div>
+        </paper-toolbar>
+      </div>
+      <div id="listing">
+        <iron-list items="{{filteredListItems}}"
+                   id="combinedList"
+                   as="item"
+                   selected-item="{{selected}}"
+                   selection-enabled>
+          <template>
+            <div class$="row [[computeSelectedClass(selected)]]"
+                 on-dblclick="editValueClicked"
+                 name="{{item.name}}"
+                 key-name="{{item.name}}"
+                 is-key="{{item.isKey}}">
               <template is="dom-if" if="{{item.isParent}}">
-                <td class="label-wide" colspan="2">
+                <div class="label-wide">
                   <a class='back-link' is="app-link" path="{{item.url}}" href="{{item.url}}">
                     <iron-icon icon="arrow-back" item-icon></iron-icon>
                     <span>{{item.name}}</span>
                   </a>
-                </td>
+                </div>
               </template>
               <template is="dom-if" if="{{item.isDir}}">
-                <td class="dir label-wide"
-                    colspan="2"
-                    name="{{item.name}}"
-                    draggable="true"
-                    on-dragover="onDirDragOver"
-                    on-dragleave="onDirDragLeave"
-                    on-drop="dirDrop">
+                <div class="dir label-wide"
+                     name="{{item.name}}"
+                     draggable="true"
+                     on-dragover="onDirDragOver"
+                     on-dragleave="onDirDragLeave"
+                     on-drop="dirDrop">
                   <a is="app-link" path="{{item.url}}" href="{{item.url}}">
                     <iron-icon icon="folder" item-icon class="folder"></iron-icon>
                     <span>{{item.name}}</span>
                   </a>
-                </td>
+                </div>
               </template>
               <template is="dom-if" if="{{item.isKey}}">
-                <td class="key mono"
-                    name="{{item.name}}"
-                    draggable="true">
-                  <iron-icon icon="communication:vpn-key" item-icon class="key"></iron-icon>
-                  <span>{{item.name}}</span>
-                </td>
-                <td class="value label-wide mono">
+                <div class="key mono"
+                     name="{{item.name}}"
+                     draggable="true">
+                  <iron-icon icon="communication:vpn-key"item-icon></iron-icon>
+                  <span title="{{item.name}}">{{item.name}}</span>
+                </div>
+                <div class="value label-wide mono">
                   <span>{{item.value}}</span>
-                </td>
+                </div>
               </template>
-            </tr>
+            </div>
           </template>
-        </tbody>
-      </table>
-    </div>
-    <div id="reg-menu">
-      <paper-toolbar>
-        <paper-button on-click="newKeyClicked">
-          <iron-icon icon="create"></iron-icon>
-          new key
-        </paper-button>
-        <paper-button on-click="newFolderClicked">
-          <iron-icon icon="folder-open"></iron-icon>
-          new dir
-        </paper-button>
-        <paper-button on-click="copyClicked" disabled="{{!selected}}">
-          <iron-icon icon="content-copy"></iron-icon>
-          copy
-        </paper-button>
-        <paper-button on-click="renameClicked" disabled="{{!selected}}">
-          <iron-icon icon="code"></iron-icon>
-          rename
-        </paper-button>
-        <paper-button on-click="deleteClicked" disabled="{{!selected}}">
-          <iron-icon icon="delete"></iron-icon>
-          delete
-        </paper-button>
-        <div id="search-bar">
-          <paper-input id="search" value="{{filterText::input}}"
-            noLabelFloat>
-            <iron-icon icon="search" prefix></iron-icon>
-          </paper-input>
-        </div>
-      </paper-toolbar>
-    </div>
+        </iron-list>
+      </div>
 
     <!-- Dialogs for various registry operations -->
 
     <paper-dialog id="newKeyDialog" modal>
       <h1>Create New Key</h1>
-      <form>
-        <paper-input id="newKeyInput" label="Key" autofocus></paper-input>
-        <paper-textarea id="newValueInput" label="Value"></paper-textarea>
-      </form>
+      <paper-input id="newKeyInput" label="Key" autofocus></paper-input>
+      <paper-textarea id="newValueInput" label="Value"></paper-textarea>
       <div class="buttons">
-        <paper-button on-click="doNewKey" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doNewKey" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
 
     <paper-dialog id="editValueDialog" modal>
-      <h1>Edit <span>{{selectedItem}}</span></h1>
-      <form>
-        <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
-      </form>
+      <h1>Edit "<span>{{selected.name}}</span>"</h1>
+      <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
       <div class="buttons">
-        <paper-button on-click="doEditValue" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doEditValue" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
 
     <paper-dialog id="newFolderDialog" modal>
       <h1>Create New Folder</h1>
-      <form>
-        <paper-input id="newFolderInput" label="Name" autofocus></paper-input>
-      </form>
+      <paper-input id="newFolderInput" label="Name" autofocus></paper-input>
       <div class="buttons">
-        <paper-button on-click="doNewFolder" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doNewFolder" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
 
      <paper-dialog id="dragDialog" modal>
-      <h1><span id="dragOp"></span> <span id="dragClass"></span> "<span id="originName"></span>" from <span id="originPath"></span></h1>
-      <form>
-        <paper-input id="dragNameInput" label="New Name" always-float-label></paper-input>
-        <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
-      </form>
+      <h1>
+        <span id="dragOp"></span>
+        <span id="dragClass"></span>
+        "<span id="originName"></span>" from
+        <span id="originPath"></span>
+      </h1>
+      <paper-input id="dragNameInput" label="New Name" always-float-label></paper-input>
+      <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
       <div class="buttons">
-        <paper-button on-click="doDragOp" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doDragOp" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
 
     <paper-dialog id="copyDialog" modal>
-      <h1>Copy <span>{{selectedType}}</span> "<span>{{selectedItem}}</span>"?</h1>
-      <form>
-        <paper-input id="copyNameInput" label="New Name" always-float-label autofocus></paper-input>
-        <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
-      </form>
+      <h1>Copy <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
+      <paper-input id="copyNameInput" label="New Name" always-float-label autofocus></paper-input>
+      <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
       <div class="buttons">
-        <paper-button on-click="doCopy" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doCopy" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
 
     <paper-dialog id="renameDialog" modal>
-      <h1>Rename <span>{{selectedType}}</span> "<span>{{selectedItem}}</span>"?</h1>
-      <form>
-        <paper-input id="renameInput" label="New Name" always-float-label autofocus></paper-input>
-      </form>
+      <h1>Rename <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
+      <paper-input id="renameInput" label="New Name" always-float-label autofocus></paper-input>
       <div class="buttons">
-        <paper-button on-click="doRename" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doRename" dialog-confirm>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
 
     <paper-dialog id="deleteDialog" modal>
-      <h1>Delete <span>{{selectedType}}</span> "<span>{{selectedItem}}</span>"?</h1>
+      <h1>Delete <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
       <div class="buttons">
-        <paper-button on-click="doDelete" dialog-confirm autofocus>OK</paper-button>
+        <paper-button on-tap="doDelete" dialog-confirm autofocus>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -348,6 +349,6 @@
 
     <paper-toast id="toastCopySuccess" text="Copy Successful!" duration=3000></paper-toast>
     <paper-toast id="toastMoveSuccess" text="Move Successful!" duration=3000></paper-toast>
-
+    </div>
   </template>
 </dom-module>

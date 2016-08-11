@@ -1,6 +1,15 @@
 import {RegistryApi, RegistryListing} from '../scripts/registry';
 import {Places} from '../scripts/places';
 
+type ListItem = {
+  name: string,
+  isParent: boolean,
+  isDir: boolean,
+  isKey: boolean,
+  url?: string,
+  value?: string,
+};
+
 @component('labrad-registry')
 export class LabradRegistry extends polymer.Base {
 
@@ -13,8 +22,14 @@ export class LabradRegistry extends polymer.Base {
   @property({type: Array, notify: true, value: () => []})
   path: string[];
 
-  @property({type: Number, notify: true})
-  selectedIdx: number;
+  @property({type: Array, value: () => []})
+  filteredListItems: ListItem[];
+
+  @property({type: Array, value: () => []})
+  private listItems: ListItem[];
+
+  @property({type: Object, notify: true, value: () => {}})
+  selected: ListItem;
 
   @property({type: Object})
   socket: RegistryApi;
@@ -24,9 +39,6 @@ export class LabradRegistry extends polymer.Base {
 
   @property({type: String, notify: true})
   notify: string;
-
-  @property({type: Number, value: 0})
-  kick: number;
 
   @property({type: String, notify: true, value: ''})
   filterText: string;
@@ -61,7 +73,30 @@ export class LabradRegistry extends polymer.Base {
 
 
   private getDefaultSelectedItem(): number {
-    return this.getListOffset();
+    const offset = this.getListOffset();
+    return (this.filteredListItems.length > 1) ? offset : 0;
+  }
+
+
+  private getSelectedIndex(): number {
+    const index = this.filteredListItems.indexOf(this.selected);
+    if (index === -1) {
+      return null;
+    }
+    return index;
+  }
+
+
+  private scrollToIndex(index: number): void {
+    const list = this.$.combinedList;
+    const first = list.firstVisibleIndex;
+    const last = list.lastVisibleIndex;
+
+    if (index < first) {
+      list.scrollToIndex(index);
+    } else if (index > last) {
+      list.scrollToIndex(index - (last - first));
+    }
   }
 
 
@@ -75,6 +110,13 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
+  /**
+   * Move the cursor on the currently selected item to the next item in the
+   * list depending on if up or down is pressed. If nothing is selected then
+   * the first item in the list is selected when down is pressed.
+   *
+   * This action doesn't work if a dialog is open.
+   */
   cursorMove(event) {
     if (this.getOpenDialog()) {
       return;
@@ -83,23 +125,25 @@ export class LabradRegistry extends polymer.Base {
     this.searchSubmit();
     event.detail.keyboardEvent.preventDefault();
 
-    const offset = this.getListOffset();
-    const length = this.keys.length + this.dirs.length + offset;
+    const length = this.listItems.length;
+    const selectedIndex = this.getSelectedIndex();
+    const list = this.$.combinedList;
 
     switch (event.detail.combo) {
       case 'up':
-        if (this.selectedIdx === null || this.selectedIdx === 0) {
-          this.set('selectedIdx', 0);
-        } else {
-          this.set('selectedIdx', this.selectedIdx - 1);
+        if (selectedIndex !== null && selectedIndex !== 0) {
+          list.selectItem(selectedIndex - 1);
+          this.scrollToIndex(selectedIndex - 1);
         }
         break;
 
       case 'down':
-        if (this.selectedIdx === null) {
-          this.set('selectedIdx', 0);
-        } else if (this.selectedIdx < length - 1) {
-          this.set('selectedIdx', this.selectedIdx + 1);
+        if (selectedIndex === null) {
+          list.selectItem(0);
+          this.scrollToIndex(0);
+        } else if (selectedIndex < length - 1) {
+          list.selectItem(selectedIndex + 1);
+          this.scrollToIndex(selectedIndex + 1);
         }
         break;
 
@@ -110,27 +154,40 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
+  /**
+   * If we have a selected item, we want to follow it. In the case of a
+   * directory, this means going into it. In the case of a key, it means
+   * opening the edit box.
+   *
+   * This action doesn't work if a dialog window is open or if the search box
+   * is focused.
+   */
   cursorTraverse(event) {
-    if (this.selectedIdx === null || this.getOpenDialog() || this.$.search.focused) {
+    if (this.getSelectedIndex() === null || this.getOpenDialog() || this.$.search.focused) {
       return;
     }
 
-    const item = this.$.combinedList.selectedItem;
+    const item = this.selected;
     if (!item) {
       return;
     }
 
-    const link = item.querySelector('a');
-
     // If we have a link, we want to traverse down.
-    if (link) {
-      this.fire('app-link-click', {path: link.path});
+    if (item.url) {
+      this.fire('app-link-click', {path: item.url});
     } else {
       this.editValueSelected();
     }
   }
 
 
+  /**
+   * Traverse back up the directory tree if we aren't already at the registry
+   * root.
+   *
+   * This action doesn't work if there is an open dialog or the search box is
+   * focused.
+   */
   cursorBack(event) {
     if (this.path.length === 0 || this.getOpenDialog() || this.$.search.focused) {
       return;
@@ -155,6 +212,14 @@ export class LabradRegistry extends polymer.Base {
       return;
     }
 
+    // For dialogs with a textbox, so we only want to submit on Shift+Enter,
+    // not on a solo enter keypress.
+    if (dialog.id == 'newKeyDialog' || dialog.id === 'editValueDialog') {
+      if (event.detail.combo !== 'shift+enter') {
+        return;
+      }
+    }
+
     event.detail.keyboardEvent.preventDefault();
 
     switch (dialog.id) {
@@ -162,12 +227,12 @@ export class LabradRegistry extends polymer.Base {
         this.doNewKey();
         break;
 
-      case 'newFolderDialog':
-        this.doNewFolder();
-        break;
-
       case 'editValueDialog':
         this.doEditValue();
+        break;
+
+      case 'newFolderDialog':
+        this.doNewFolder();
         break;
 
       case 'renameDialog':
@@ -202,101 +267,144 @@ export class LabradRegistry extends polymer.Base {
    */
   @observe('path')
   pathChanged(newPath: string[], oldPath: string[]) {
-    this.set('selectedIdx', this.getDefaultSelectedItem());
     this.set('filterText', '');
   }
 
+  applyFilterToListItems() {
+    if (!this.listItems) {
+      return;
+    }
+
+    this.regex = new RegExp(this.filterText, 'i');
+    this.set('filteredListItems', this.listItems.filter((item) => {
+      return (!!item.name.match(this.regex));
+    }));
+  }
 
   /**
-   * triggers re-render of dir, key lists when filterText is changed
+   * Filters the directory/key listing when filterText changes.
    */
   @observe('filterText')
-  reloadMenu() {
-    this.regex = new RegExp(this.filterText, 'i');
-    this.$.fullList.render();
+  filterListing() {
+    this.applyFilterToListItems();
+
+    if (this.filteredListItems && this.filteredListItems.length) {
+      this.$.combinedList.selectItem(0);
+    }
   }
+
 
   /**
-   * called when dir, key lists are populated. Returns entries 
-   * that contain substring in filterText
+   * This is called whenever a newItem is added, hooked in actitives.
    */
-  filterFunc(item) {
-    const selectedIdx = (this.$.search.value) ? 0 : this.getDefaultSelectedItem();
-    this.set('selectedIdx', selectedIdx);
-    return item.name.match(this.regex);
-  }
-
-  @computed()
-  listItems(
-    path: string[],
-    dirs: {name: string; url: string}[],
-    keys: {name: string; value: string}[],
-    kick: number
-  ): {name: string; isParent: boolean; isDir: boolean; isKey: boolean; url?: string; value?: string}[] {
-    var items = [];
-    if (path.length > 0 && this.places) {
-      var url = this.places.registryUrl(path.slice(0, -1));
-      items.push({name: '..', isParent: true, isDir: false, isKey: false, url: url});
-    }
-    for (let dir of dirs) {
-      items.push({name: dir.name, isParent: false, isDir: true, isKey: false, url: dir.url});
-    }
-    for (let key of keys) {
-      items.push({name: key.name, isParent: false, isDir: false, isKey: true, value: key.value});
-    }
-    return items;
-  }
-
-  @computed()
-  selected(selectedIdx: number): boolean {
-    return (selectedIdx !== null);
-  }
-
-  @property({computed: '_computeSelectedType(selectedIdx)'})
-  selectedType: string;
-
-  @property({computed: '_computeSelectedItem(selectedIdx, kick)'})
-  selectedItem: string;
-
-  _computeSelectedType(selectedIdx: number): string {
-    // Account for parent '..' entry.
-    const offset = this.getListOffset();
-    if (this.dirs && selectedIdx < this.dirs.length + offset) {
-      return 'dir';
-    } else {
-      return 'key';
-    }
-  }
-
-  _computeSelectedItem(selectedIdx: number, kick: number): string {
-    // Account for parent '..' entry.
-    const offset = this.getListOffset();
-    const dirNames = (this.dirs || []).map(it => it.name);
-    const keyNames = (this.keys || []).map(it => it.name);
-    return dirNames.concat(keyNames)[selectedIdx - offset];
-  }
-
-
   async repopulateList(): Promise<void> {
-    var resp = await this.socket.dir({path: this.path});
+    const resp = await this.socket.dir({path: this.path});
+
     this.splice('dirs', 0, this.dirs.length);
     this.splice('keys', 0, this.keys.length);
+    this.splice('listItems', 0, this.listItems.length);
 
-    for (var i in resp.dirs) {
-      this.push('dirs', {name: resp.dirs[i], url: this.places.registryUrl(resp.path, resp.dirs[i])});
-    }
-    for (var j in resp.keys) {
-      this.push('keys', {name: resp.keys[j], value: resp.vals[j]});
+    if (this.path.length > 0 && this.places) {
+      const url = this.places.registryUrl(this.path.slice(0, -1));
+      this.push('listItems', {
+        name: '..',
+        isParent: true,
+        isDir: false,
+        isKey: false,
+        url: url
+      });
     }
 
+    for (const name of resp.dirs) {
+      const url = this.places.registryUrl(resp.path, name);
+      this.push('dirs', {
+        name: name,
+        url: url,
+      });
+      this.push('listItems', {
+        name: name,
+        isParent: false,
+        isDir: true,
+        isKey: false,
+        url: url
+      });
+    }
+
+    for (const j in resp.keys) {
+      const name = resp.keys[j];
+      const value = resp.vals[j];
+      this.push('keys', {
+        name: name,
+        value: value,
+      });
+
+      this.push('listItems', {
+        name: name,
+        isParent: false,
+        isDir: false,
+        isKey: true,
+        value: value
+      });
+    }
+
+    const selected = this.selected;
+    const selectedIndex = this.getSelectedIndex();
+    this.applyFilterToListItems();
+    const listLength = this.filteredListItems.length;
+
+    let index = this.getDefaultSelectedItem();
+
+    // If there was a previously selected key, say we were editing one, then
+    // we want to reselect it after the list is repopulated. To do this we
+    // fuzzy match the objects by requiring either the name or the value to be
+    // the same.
+    if (selected) {
+      index = -1;
+      for (let i = 0; i < listLength; ++i) {
+        const item = this.filteredListItems[i];
+        const namesMatch = (item.name === selected.name);
+        const valuesMatch = (item.value && (item.value === selected.value));
+        const dirsMatch = (item.isDir === selected.isDir);
+        const keysMatch = (item.isKey === selected.isKey);
+
+        if ((namesMatch || valuesMatch) && dirsMatch && keysMatch) {
+          index = i;
+          // If we've matched on name, we're confident to stop.
+          if (namesMatch) {
+            break;
+          }
+        }
+      }
+
+      if (index === -1) {
+        // We've deleted the last item in the list, place cursor at the end.
+        if (selectedIndex === listLength) {
+          index = listLength - 1;
+        }
+
+        // Place the cursor back where it was if that position is still valid.
+        // Note, selected index should never be greater than listLength since
+        // only one element can be deleted at a time.
+        else {
+          index = selectedIndex;
+        }
+      }
+    }
+
+    this.$.combinedList.selectItem(index);
     this.$.pendingDialog.close()
-    this.$.combinedList.selected = this.getDefaultSelectedItem();
-    this.kick++;
   }
+
 
   pathToString(path) {
     return JSON.stringify(path);
   }
+
+
+  computeSelectedClass(selected: ListItem): string {
+    return (selected) ? 'iron-selected' : '';
+  }
+
 
   handleError(error) {
     // We can add a more creative way of displaying errors here.
@@ -305,122 +413,82 @@ export class LabradRegistry extends polymer.Base {
 
 
   /**
-   * Update a key in response to change in the inline form submission.
-   */
-  @listen('iron-form-submit')
-  async updateKey(event) {
-    var selKey = event.detail.key;
-    var newVal = event.detail.value;
-    try {
-      await this.socket.set({path: this.path, key: selKey, value: newVal});
-      this.repopulateList();
-    } catch (error) {
-      this.handleError(error);
-    }
-  }
-
-  /**
-   * Drag and drop logic
-   */
-  @listen('dragenter')
-  onDragEnter(event) {
-    event.preventDefault(); //I don't understand this.
-  }
-
-  @listen('dragleave')
-  onDragLeave(event) {
-    event.preventDefault(); //I don't understand this. But it needs to be here
-  }
-
-  /**
-   * allows the ctrl key to be pressed to change cursor between copy/move
+   * Allows the ctrl key to be pressed to change cursor between copy/move.
    */
   @listen('dragover')
   onDragOver(event) {
-    event.preventDefault(); //I don't understand this. But needs to be here
-    if (event.ctrlKey) {
-      event.dataTransfer.dropEffect = "copy";
-    }
-    else {
-      event.dataTransfer.dropEffect = "move";
-    }
+    event.preventDefault();
+    event.dataTransfer.dropEffect = (event.ctrlKey) ? 'copy' : 'move';
   }
+
 
   @listen('dragstart')
   startDrag(event) {
-    //detect start of drag event, grab info about target
-    var data: any; //I tried enum, but kept getting errors...
-    data = {path: this.path, name: event.target.name, kind: event.target.className.split(' ')[0]};
+    // Detect start of drag event, grab info about target.
+    const data = {
+      path: this.path,
+      name: event.target.name,
+      kind: event.target.className.split(' ')[0]
+    };
     event.dataTransfer.setData('text', JSON.stringify(data));
     event.dataTransfer.effectAllowed = 'copyMove';
   }
+
 
   onDirDragOver(event) {
     event.currentTarget.classList.add('over');
   }
 
+
   onDirDragLeave(event) {
     event.currentTarget.classList.remove('over');
   }
 
-  @listen('dragend')
-  endDrag(event) {
-  }
 
   /**
-   * behaviour for dropping on folders
+   * Behaviour for dropping on folders.
    */
   dirDrop(event) {
-    event.stopPropagation();
-    var data = JSON.parse(event.dataTransfer.getData('text'));
-    this.$.dragDialog.dragData = data;
-    var newPath: string[] = this.path.slice();
-    newPath.push(event.target.closest('td').name);
-    event.target.closest('td').classList.remove('over');
-    this.$.dragNameInput.value = data.name;
-    this.$.dragClass.textContent = data.kind;
-    this.$.originName.textContent = data.name;
-    this.$.originPath.textContent = JSON.stringify(data.path);
-    this.$.dragPathInput.value = this.pathToString(newPath);
-
-    if (event.ctrlKey || event.button == 2 ) {
-      //should I use switch and case here instead of ifs?
-      this.$.dragOp.innerText = 'Copy';
-      this.$.dragDialog.open();
-      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
-    } else {
-      this.$.dragOp.innerText = 'Move';
-      this.$.dragDialog.open();
-      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
-    }
-
+    const newPath: string[] = this.path.slice();
+    newPath.push(event.target.closest('div').name);
+    this.performDrop(newPath, event);
   }
 
+
   /**
-   * handles folders dropped not into folders
+   * Handles folders dropped not into folders.
    */
   @listen('drop')
   handleDrop(event) {
+    this.performDrop(this.path, event);
+  }
+
+
+  performDrop(path: string[], event): void {
+    event.stopPropagation();
     event.preventDefault();
-    var data = JSON.parse(event.dataTransfer.getData('text'));
+
+    const data = JSON.parse(event.dataTransfer.getData('text'));
     this.$.dragDialog.dragData = data;
-    event.target.closest('td').classList.remove('over');
+    event.target.closest('div').classList.remove('over');
+
     this.$.dragNameInput.value = data.name;
     this.$.dragClass.textContent = data.kind;
     this.$.originName.textContent = data.name;
     this.$.originPath.textContent = JSON.stringify(data.path);
-    this.$.dragPathInput.value = this.pathToString(this.path);
+    this.$.dragPathInput.value = this.pathToString(path);
 
-    if (event.ctrlKey) {
+    if (event.ctrlKey || event.button == 2) {
       this.$.dragOp.innerText = 'Copy';
-      this.$.dragDialog.open();
-      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
-    } else if(JSON.stringify(this.path) != JSON.stringify(data.path)) {
+    } else if (JSON.stringify(path) != JSON.stringify(data.path)) {
       this.$.dragOp.innerText = 'Move';
-      this.$.dragDialog.open();
-      setTimeout(() => this.$.dragPathInput.$.input.focus(), 0);
+    } else {
+      return;
     }
+
+    this.$.dragDialog.open();
   }
+
 
   /**
    * Bind event listeners to resize dialog box appropriately when an
@@ -433,33 +501,34 @@ export class LabradRegistry extends polymer.Base {
   bindIronAutogrowTextAreaResizeEvents(paperDialog: HTMLElement,
                                        ironAutogrowTextarea: HTMLElement) {
     ironAutogrowTextarea.addEventListener('bind-value-changed', () => {
-      Polymer.Base.fire("iron-resize", null, {node: ironAutogrowTextarea});
+      Polymer.Base.fire('iron-resize', null, {node: ironAutogrowTextarea});
     });
   }
+
 
   /**
    * Launch new key dialog.
    */
   newKeyClicked(event) {
-    var dialog = this.$.newKeyDialog,
-        newKeyElem = this.$.newKeyInput,
-        newValueElem = this.$.newValueInput;
+    const dialog = this.$.newKeyDialog,
+          newKeyElem = this.$.newKeyInput,
+          newValueElem = this.$.newValueInput;
     newKeyElem.value = '';
     newValueElem.value = '';
     dialog.open();
   }
 
+
   /**
    * Create new key.
    */
   async doNewKey() {
-    var newKey = this.$.newKeyInput.value;
-    var newVal = this.$.newValueInput.value;
+    const newKey = this.$.newKeyInput.value;
+    const newVal = this.$.newValueInput.value;
 
     if (newKey) {
       try {
         await this.socket.set({path: this.path, key: newKey, value: newVal});
-        this.repopulateList();
       } catch (error) {
         this.handleError(error);
       }
@@ -471,12 +540,12 @@ export class LabradRegistry extends polymer.Base {
 
 
   private editValueSelected() {
-    const item = this.$.combinedList.selectedItem;
+    const item = this.selected;
     const dialog = this.$.editValueDialog;
     const editValueElem = this.$.editValueInput;
 
-    editValueElem.value = item.keyValue;
-    dialog.keyName = item.keyName;
+    editValueElem.value = item.value;
+    dialog.keyName = item.name;
     dialog.open();
   }
 
@@ -485,13 +554,18 @@ export class LabradRegistry extends polymer.Base {
    * Launch the value edit dialog.
    */
   editValueClicked(event) {
-    var dialog = this.$.editValueDialog,
-        editValueElem = this.$.editValueInput,
-        name = event.currentTarget.keyName,
-        isKey = event.currentTarget.isKey,
-        value: string = null,
+    const dialog = this.$.editValueDialog,
+          editValueElem = this.$.editValueInput,
+          name = event.currentTarget.keyName,
+          isKey = event.currentTarget.isKey;
+
+    if (!isKey) {
+      return;
+    }
+
+    let value: string = null,
         found = false;
-    if (!isKey) return;
+
     for (let item of this.keys) {
       if (item.name == name) {
         value = item.value;
@@ -499,9 +573,11 @@ export class LabradRegistry extends polymer.Base {
         break;
       }
     }
+
     if (!found) {
       return;
     }
+
     editValueElem.value = value;
     dialog.keyName = name;
     dialog.open();
@@ -512,36 +588,36 @@ export class LabradRegistry extends polymer.Base {
    * Submit the edited value to the server.
    */
   async doEditValue() {
-    var key = this.$.editValueDialog.keyName,
-        newVal = this.$.editValueInput.value;
+    const key = this.$.editValueDialog.keyName,
+          newVal = this.$.editValueInput.value;
     try {
       await this.socket.set({path: this.path, key: key, value: newVal});
-      this.repopulateList();
     } catch (error) {
       this.handleError(error);
     }
   }
 
+
   /**
    * Launch new folder dialog.
    */
   newFolderClicked() {
-    var dialog = this.$.newFolderDialog,
-        newFolderElem = this.$.newFolderInput;
+    const dialog = this.$.newFolderDialog,
+          newFolderElem = this.$.newFolderInput;
     newFolderElem.value = '';
     dialog.open();
   }
+
 
   /**
    * Create new folder.
    */
   async doNewFolder() {
-    var newFolder = this.$.newFolderInput.value;
+    const newFolder = this.$.newFolderInput.value;
 
     if (newFolder) {
       try {
         await this.socket.mkDir({path: this.path, dir: newFolder})
-        this.repopulateList();
       } catch (error) {
         this.handleError(error);
       }
@@ -556,56 +632,67 @@ export class LabradRegistry extends polymer.Base {
    * Launch copy dialog.
    */
   copyClicked() {
-    var dialog = this.$.copyDialog,
-        copyNameElem = this.$.copyNameInput,
-        copyPathElem = this.$.copyPathInput;
-    copyNameElem.value = this.selectedItem;
+    const dialog = this.$.copyDialog,
+          copyNameElem = this.$.copyNameInput,
+          copyPathElem = this.$.copyPathInput;
+    copyNameElem.value = this.selected.name;
     copyPathElem.value = this.pathToString(this.path);
     dialog.open();
   }
+
 
   /**
    * Copy the selected key or folder.
    */
   async doCopy() {
-    var newName =  this.$.copyNameInput.value;
-    var newPath = JSON.parse(this.$.copyPathInput.value);
+    const newName = this.$.copyNameInput.value;
+    const newPath = JSON.parse(this.$.copyPathInput.value);
+    const name = this.selected.name;
 
     try {
-      if (this.selectedType === 'dir') {
+      if (this.selected.isDir) {
         this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = "Copying...";
-        await this.socket.copyDir({path: this.path, dir: this.selectedItem, newPath: newPath, newDir: newName});
+        this.$.pendingOp.innerText = 'Copying...';
+        await this.socket.copyDir({
+          path: this.path,
+          dir: name,
+          newPath: newPath,
+          newDir: newName
+        });
+      } else if (this.selected.isKey) {
+        await this.socket.copy({
+          path: this.path,
+          key: name,
+          newPath: newPath,
+          newKey: newName
+        });
       }
-      else if (this.selectedType === 'key') {
-        await this.socket.copy({path: this.path, key: this.selectedItem, newPath: newPath, newKey: newName});
-      }
-      this.repopulateList();
     } catch (error) {
       this.handleError(error);
     }
   }
 
+
   /**
-   * Execute the drag operation
+   * Execute the drag operation.
    */
   async doDragOp() {
-    var newName =  this.$.dragNameInput.value;
-    var newPath = JSON.parse(this.$.dragPathInput.value);
-    var oldPath = JSON.parse(this.$.originPath.textContent);
-    var oldName = this.$.originName.textContent;
+    const newName = this.$.dragNameInput.value;
+    const newPath = JSON.parse(this.$.dragPathInput.value);
+    const oldPath = JSON.parse(this.$.originPath.textContent);
+    const oldName = this.$.originName.textContent;
 
     if (this.$.dragOp.innerText === 'Copy') {
       try {
         this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = "Copying...";
+        this.$.pendingOp.innerText = 'Copying...';
         switch (this.$.dragDialog.dragData['kind']) {
-          case "dir":
-            var resp = await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
+          case 'dir':
+            await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
             break;
 
-          case "key":
-            var resp = await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
+          case 'key':
+            await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
             break;
         }
       } catch (error) {
@@ -614,18 +701,17 @@ export class LabradRegistry extends polymer.Base {
         this.$.pendingDialog.close();
         this.$.toastCopySuccess.show();
       }
-    }
-    else if (this.$.dragOp.innerText === 'Move') {
+    } else if (this.$.dragOp.innerText === 'Move') {
       try {
         this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = "Moving...";
+        this.$.pendingOp.innerText = 'Moving...';
         switch (this.$.dragDialog.dragData['kind']) {
-          case "dir":
-            var resp = await this.socket.moveDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
+          case 'dir':
+            await this.socket.moveDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
             break;
 
-          case "key":
-            var resp = await this.socket.move({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
+          case 'key':
+            await this.socket.move({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
             break;
         }
       } catch (error) {
@@ -642,11 +728,9 @@ export class LabradRegistry extends polymer.Base {
    * Launch rename dialog.
    */
   renameClicked() {
-    var dialog = this.$.renameDialog,
-        renameElem = this.$.renameInput;
-
-    var name = this.selectedItem;
-
+    const dialog = this.$.renameDialog,
+          renameElem = this.$.renameInput,
+          name = this.selected.name;
     renameElem.value = name;
     dialog.open();
   }
@@ -655,29 +739,32 @@ export class LabradRegistry extends polymer.Base {
    * Rename the selected key or folder.
    */
   async doRename() {
-    //TODO add pending modal dialog for renames since they are copy commands and take a long time
-    var newName = this.$.renameInput.value;
+    // TODO(maffoo) Add pending modal dialog for renames since they are copy
+    // commands and take a long time.
+    const newName = this.$.renameInput.value,
+          name = this.selected.name;
 
-    var name = this.selectedItem;
-
-    if (newName === null || newName === name) return;
-    if (newName) {
-      try {
-        if (this.selectedType === 'dir') {
-          await this.socket.renameDir({path: this.path, dir: name, newDir: newName});
-        }
-        else if (this.selectedType === 'key') {
-          await this.socket.rename({path: this.path, key: name, newKey: newName});
-        }
-        this.repopulateList();
-      } catch (error) {
-        this.handleError(error);
-      }
+    if (newName === null || newName === name) {
+      return;
     }
-    else {
-      this.handleError(`Cannot rename ${this.selectedType} to empty string`);
+
+    if (!newName) {
+      const selectedType = (this.selected.isDir) ? "dir" : "key";
+      this.handleError(`Cannot rename ${selectedType} to empty string`);
+      return;
+    }
+
+    try {
+      if (this.selected.isDir) {
+        await this.socket.renameDir({path: this.path, dir: name, newDir: newName});
+      } else if (this.selected.isKey) {
+        await this.socket.rename({path: this.path, key: name, newKey: newName});
+      }
+    } catch (error) {
+      this.handleError(error);
     }
   }
+
 
   /**
    * Launch the delete confirmation dialog.
@@ -686,20 +773,19 @@ export class LabradRegistry extends polymer.Base {
     this.$.deleteDialog.open();
   }
 
+
   /**
    * Delete the selected key or folder.
    */
   async doDelete() {
     try {
-      if (this.selectedType === 'dir') {
+      if (this.selected.isDir) {
         this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = "Deleting...";
-        await this.socket.rmDir({path: this.path, dir: this.selectedItem});
+        this.$.pendingOp.innerText = 'Deleting...';
+        await this.socket.rmDir({path: this.path, dir: this.selected.name});
+      } else if (this.selected.isKey) {
+        await this.socket.del({path: this.path, key: this.selected.name});
       }
-      else if (this.selectedType === 'key') {
-        await this.socket.del({path: this.path, key: this.selectedItem});
-      }
-      this.repopulateList();
     } catch (error) {
       this.handleError(error);
     }
