@@ -35,6 +35,18 @@
       };
     }
 
+    .dialogError {
+      color: #f00;
+    }
+    .dialogError p {
+      margin: 0;
+      font-size: 13px;
+    }
+    .dialogError h4 {
+      margin: 0;
+      font-size: 15px;
+    }
+
     .row {
       cursor: pointer;
       display: flex;
@@ -233,6 +245,7 @@
                  on-dblclick="editValueClicked"
                  name="{{item.name}}"
                  value="{{item.value}}"
+                 kind="{{item.kind}}"
                  key-name="{{item.name}}"
                  is-key="{{item.isKey}}">
               <template is="dom-if" if="{{item.isParent}}">
@@ -246,6 +259,7 @@
               <template is="dom-if" if="{{item.isDir}}">
                 <div class="dir label-wide"
                      name="{{item.name}}"
+                     kind="{{item.kind}}"
                      draggable="true"
                      on-dragover="onDirDragOver"
                      on-dragleave="onDirDragLeave"
@@ -259,6 +273,7 @@
               <template is="dom-if" if="{{item.isKey}}">
                 <div class="key mono"
                      name="{{item.name}}"
+                     kind="{{item.kind}}"
                      draggable="true">
                   <iron-icon icon="communication:vpn-key"item-icon></iron-icon>
                   <span title="{{item.name}}">{{item.name}}</span>
@@ -278,8 +293,14 @@
       <h1>Create New Key</h1>
       <paper-input id="newKeyInput" label="Key" autofocus></paper-input>
       <paper-textarea id="newValueInput" label="Value"></paper-textarea>
+      <template is="dom-if" if="{{errorMessage}}">
+        <div class="dialogError">
+          <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+          <p>{{errorMessage}}</p>
+        </div>
+      </template>
       <div class="buttons">
-        <paper-button on-tap="doNewKey" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doNewKey">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -287,8 +308,14 @@
     <paper-dialog id="editValueDialog" modal>
       <h1>Edit "<span id="editValueName"></span>"</h1>
       <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
+      <template is="dom-if" if="{{errorMessage}}">
+        <div class="dialogError">
+          <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+          <p>{{errorMessage}}</p>
+        </div>
+      </template>
       <div class="buttons">
-        <paper-button on-tap="doEditValue" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doEditValue">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -296,8 +323,14 @@
     <paper-dialog id="newFolderDialog" modal>
       <h1>Create New Folder</h1>
       <paper-input id="newFolderInput" label="Name" autofocus></paper-input>
+      <template is="dom-if" if="{{errorMessage}}">
+        <div class="dialogError">
+          <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+          <p>{{errorMessage}}</p>
+        </div>
+      </template>
       <div class="buttons">
-        <paper-button on-tap="doNewFolder" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doNewFolder">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -311,8 +344,14 @@
       </h1>
       <paper-input id="dragNameInput" label="New Name" always-float-label></paper-input>
       <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
+      <template is="dom-if" if="{{errorMessage}}">
+        <div class="dialogError">
+          <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+          <p>{{errorMessage}}</p>
+        </div>
+      </template>
       <div class="buttons">
-        <paper-button on-tap="doDragOp" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doDragOp">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -321,8 +360,14 @@
       <h1>Copy <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
       <paper-input id="copyNameInput" label="New Name" always-float-label autofocus></paper-input>
       <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
+      <template is="dom-if" if="{{errorMessage}}">
+        <div class="dialogError">
+          <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+          <p>{{errorMessage}}</p>
+        </div>
+      </template>
       <div class="buttons">
-        <paper-button on-tap="doCopy" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doCopy">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -330,8 +375,14 @@
     <paper-dialog id="renameDialog" modal>
       <h1>Rename <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
       <paper-input id="renameInput" label="New Name" always-float-label autofocus></paper-input>
+      <template is="dom-if" if="{{errorMessage}}">
+        <div class="dialogError">
+          <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+          <p>{{errorMessage}}</p>
+        </div>
+      </template>
       <div class="buttons">
-        <paper-button on-tap="doRename" dialog-confirm>OK</paper-button>
+        <paper-button on-tap="doRename">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>
@@ -339,7 +390,7 @@
     <paper-dialog id="deleteDialog" modal>
       <h1>Delete <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
       <div class="buttons">
-        <paper-button on-tap="doDelete" dialog-confirm autofocus>OK</paper-button>
+        <paper-button on-tap="doDelete" autofocus>OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
       </div>
     </paper-dialog>

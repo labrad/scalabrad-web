@@ -27,7 +27,6 @@ import {LabradRegistry} from "../elements/labrad-registry";
 import {LabradServer} from "../elements/labrad-server";
 import {LabradSetting} from "../elements/labrad-setting";
 import {Plot} from "../elements/labrad-plot";
-import {SelectableTable} from "../elements/selectable-table";
 
 
 interface Services {
@@ -93,7 +92,6 @@ window.addEventListener('WebComponentsReady', () => {
   LabradServer.register();
   LabradSetting.register();
   Plot.register();
-  SelectableTable.register();
 
   var prefix = "";
   var baseElem = document.querySelector("base");
