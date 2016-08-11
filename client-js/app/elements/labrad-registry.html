@@ -196,23 +196,23 @@
         <paper-toolbar>
           <paper-button on-click="newKeyClicked">
             <iron-icon icon="create"></iron-icon>
-            new key
+            New Key
           </paper-button>
           <paper-button on-click="newFolderClicked">
             <iron-icon icon="folder-open"></iron-icon>
-            new dir
+            New Dir
           </paper-button>
           <paper-button on-click="copyClicked" disabled="[[!selected]]">
             <iron-icon icon="content-copy"></iron-icon>
-            copy
+            Copy
           </paper-button>
           <paper-button on-click="renameClicked" disabled="[[!selected]]">
             <iron-icon icon="code"></iron-icon>
-            rename
+            Rename
           </paper-button>
           <paper-button on-click="deleteClicked" disabled="[[!selected]]">
             <iron-icon icon="delete"></iron-icon>
-            delete
+            Delete
           </paper-button>
           <div id="search-bar">
             <paper-input id="search" value="{{filterText::input}}"
@@ -224,10 +224,10 @@
       </div>
       <div id="listing">
         <iron-list items="{{filteredListItems}}"
-                  id="combinedList"
-                  as="item"
-                  selected-item="{{selected}}"
-                  selection-enabled>
+                   id="combinedList"
+                   as="item"
+                   selected-item="{{selected}}"
+                   selection-enabled>
           <template>
             <div class$="row [[computeSelectedClass(selected)]]"
                 on-dblclick="editValueClicked"
