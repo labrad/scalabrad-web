@@ -354,20 +354,23 @@ export class LabradRegistry extends polymer.Base {
 
     let index = this.getDefaultSelectedItem();
 
-    // If there was a previously selected item, say we were editing one, then
+    // If there was a previously selected key, say we were editing one, then
     // we want to reselect it after the list is repopulated. To do this we
     // fuzzy match the objects by requiring either the name or the value to be
-    // the same. This handles both the case of renaming a dir/key or changing
-    // the value of it.
+    // the same.
     if (selected) {
       index = -1;
       for (let i = 0; i < listLength; ++i) {
         const item = this.filteredListItems[i];
-        if ((item.name === selected.name || item.value === selected.value) &&
-            (item.isDir === selected.isDir && item.isKey === selected.isKey)) {
+        const namesMatch = (item.name === selected.name);
+        const valuesMatch = (item.value && (item.value === selected.value));
+        const dirsMatch = (item.isDir === selected.isDir);
+        const keysMatch = (item.isKey === selected.isKey);
+
+        if ((namesMatch || valuesMatch) && dirsMatch && keysMatch) {
           index = i;
           // If we've matched on name, we're confident to stop.
-          if (item.name === selected.name) {
+          if (namesMatch) {
             break;
           }
         }
