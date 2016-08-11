@@ -167,7 +167,7 @@ export class LabradRegistry extends polymer.Base {
       return;
     }
 
-    const item = this.$.combinedList.selectedItem;
+    const item = this.selected;
     if (!item) {
       return;
     }
@@ -540,7 +540,7 @@ export class LabradRegistry extends polymer.Base {
 
 
   private editValueSelected() {
-    const item = this.$.combinedList.selectedItem;
+    const item = this.selected;
     const dialog = this.$.editValueDialog;
     const editValueElem = this.$.editValueInput;
 
@@ -635,7 +635,7 @@ export class LabradRegistry extends polymer.Base {
     const dialog = this.$.copyDialog,
           copyNameElem = this.$.copyNameInput,
           copyPathElem = this.$.copyPathInput;
-    copyNameElem.value = this.$.combinedList.selectedItem.name;
+    copyNameElem.value = this.selected.name;
     copyPathElem.value = this.pathToString(this.path);
     dialog.open();
   }
@@ -647,7 +647,7 @@ export class LabradRegistry extends polymer.Base {
   async doCopy() {
     const newName = this.$.copyNameInput.value;
     const newPath = JSON.parse(this.$.copyPathInput.value);
-    const name = this.$.combinedList.selectedItem.name;
+    const name = this.selected.name;
 
     try {
       if (this.selected.isDir) {
@@ -730,7 +730,7 @@ export class LabradRegistry extends polymer.Base {
   renameClicked() {
     const dialog = this.$.renameDialog,
           renameElem = this.$.renameInput,
-          name = this.$.combinedList.selectedItem.name;
+          name = this.selected.name;
     renameElem.value = name;
     dialog.open();
   }
@@ -742,7 +742,7 @@ export class LabradRegistry extends polymer.Base {
     // TODO(maffoo) Add pending modal dialog for renames since they are copy
     // commands and take a long time.
     const newName = this.$.renameInput.value,
-          name = this.$.combinedList.selectedItem.name;
+          name = this.selected.name;
 
     if (newName === null || newName === name) {
       return;
@@ -782,9 +782,9 @@ export class LabradRegistry extends polymer.Base {
       if (this.selected.isDir) {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = 'Deleting...';
-        await this.socket.rmDir({path: this.path, dir: this.$.combinedList.selectedItem.name});
+        await this.socket.rmDir({path: this.path, dir: this.selected.name});
       } else if (this.selected.isKey) {
-        await this.socket.del({path: this.path, key: this.$.combinedList.selectedItem.name});
+        await this.socket.del({path: this.path, key: this.selected.name});
       }
     } catch (error) {
       this.handleError(error);
