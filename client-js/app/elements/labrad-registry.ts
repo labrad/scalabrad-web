@@ -687,51 +687,46 @@ export class LabradRegistry extends polymer.Base {
    */
   async doDragOp() {
     const newName = this.$.dragNameInput.value;
-    const newPath = JSON.parse(this.$.dragPathInput.value);
     const oldPath = JSON.parse(this.$.originPath.textContent);
     const oldName = this.$.originName.textContent;
 
-    if (this.$.dragOp.innerText === 'Copy') {
-      try {
-        this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = 'Copying...';
-        switch (this.$.dragDialog.dragData['kind']) {
-          case 'dir':
+    const dragType = (this.$.dragOp.innerText === 'Copy') ? 'copy' : 'move';
+
+    try {
+      const newPath = JSON.parse(this.$.dragPathInput.value);
+
+      this.$.pendingOp.innerText = (dragType === "copy") ? 'Copying...' : 'Moving...';
+      this.$.pendingDialog.open();
+
+      switch (this.$.dragDialog.dragData['kind']) {
+        case 'dir':
+          if (dragType === "copy") {
             await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
-            break;
-
-          case 'key':
-            await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
-            break;
-        }
-        this.$.dragDialog.close();
-      } catch (error) {
-        this.handleError(error);
-      } finally {
-        this.$.pendingDialog.close();
-        this.$.toastCopySuccess.show();
-      }
-    } else if (this.$.dragOp.innerText === 'Move') {
-      try {
-        this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = 'Moving...';
-        switch (this.$.dragDialog.dragData['kind']) {
-          case 'dir':
+          } else {
             await this.socket.moveDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
-            break;
+          }
+          break;
 
-          case 'key':
+        case 'key':
+          if (dragType === "copy") {
+            await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
+          } else {
             await this.socket.move({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
-            break;
-        }
-        this.$.dragDialog.close();
-      } catch (error) {
-        this.handleError(error);
-      } finally {
-        this.$.pendingDialog.close();
+          }
+          break;
+      }
+
+      if (dragType === "copy") {
+        this.$.toastCopySuccess.show();
+      } else {
         this.$.toastMoveSuccess.show();
       }
+      this.$.dragDialog.close();
+    } catch (error) {
+      this.$.dragPathInput.focus();
+      this.handleError(error.message, 'Invalid Path');
     }
+    this.$.pendingDialog.close();
   }
 
 
