@@ -62,6 +62,11 @@
     #location {
       white-space: nowrap;
       text-overflow: ellipsis;
+      overflow: hidden;
+      direction: rtl;
+    }
+    #location labrad-breadcrumbs {
+      display: inline;
     }
 
     #tech-info {
@@ -136,7 +141,7 @@
               <span>{{route}}</span>
             </template>
             <template is="dom-if" if="{{hasBreadcrumbs}}">
-              <labrad-breadcrumbs breadcrumbs={{breadcrumbs}} extras={{breadcrumbExtras}} style="display: inline"></labrad-breadcrumbs>
+              <labrad-breadcrumbs breadcrumbs={{breadcrumbs}} extras={{breadcrumbExtras}}></labrad-breadcrumbs>
             </template>
           </div>
 
