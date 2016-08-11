@@ -752,11 +752,14 @@ export class LabradRegistry extends polymer.Base {
           selectedType = this.getSelectedType();
 
     if (newName === null || newName === name) {
+      this.$.renameInput.focus();
+      this.handleError("The new name cannot be the same as the old name.", "Invalid Name");
       return;
     }
 
     if (!newName) {
-      this.handleError(`Cannot rename ${selectedType} to empty string`);
+      this.$.renameInput.focus();
+      this.handleError(`Cannot rename ${selectedType} to empty string`, "Invalid Name");
       return;
     }
 
@@ -769,7 +772,8 @@ export class LabradRegistry extends polymer.Base {
       }
       this.$.renameDialog.close();
     } catch (error) {
-      this.handleError(error);
+      this.$.renameInput.focus();
+      this.handleError(error.message, "Invalid Name");
     }
   }
 
@@ -795,8 +799,10 @@ export class LabradRegistry extends polymer.Base {
       } else if (selectedType === 'key') {
         await this.socket.del({path: this.path, key: this.$.combinedList.selectedItem.name});
       }
+      this.$.deleteDialog.close();
     } catch (error) {
-      this.handleError(error);
+      this.handleError(error.message, "Invalid Delete");
     }
+    this.$.pendingDialog.close();
   }
 }
