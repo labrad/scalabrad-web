@@ -289,10 +289,12 @@
       <h1>Create New Key</h1>
       <paper-input id="newKeyInput" label="Key" autofocus></paper-input>
       <paper-textarea id="newValueInput" label="Value"></paper-textarea>
+      <template is="dom-if" if="{{errorMessage}}">
       <div class="dialogError">
         <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
         <p>{{errorMessage}}</p>
       </div>
+      </template>
       <div class="buttons">
         <paper-button on-tap="doNewKey">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -302,10 +304,12 @@
     <paper-dialog id="editValueDialog" modal>
       <h1>Edit "<span>{{selected.name}}"</span></h1>
       <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
+      <template is="dom-if" if="{{errorMessage}}">
       <div class="dialogError">
         <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
         <p>{{errorMessage}}</p>
       </div>
+      </template>
       <div class="buttons">
         <paper-button on-tap="doEditValue">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -315,10 +319,12 @@
     <paper-dialog id="newFolderDialog" modal>
       <h1>Create New Folder</h1>
       <paper-input id="newFolderInput" label="Name" autofocus></paper-input>
+      <template is="dom-if" if="{{errorMessage}}">
       <div class="dialogError">
         <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
         <p>{{errorMessage}}</p>
       </div>
+      </template>
       <div class="buttons">
         <paper-button on-tap="doNewFolder">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -334,10 +340,12 @@
       </h1>
       <paper-input id="dragNameInput" label="New Name" always-float-label></paper-input>
       <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
+      <template is="dom-if" if="{{errorMessage}}">
       <div class="dialogError">
         <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
         <p>{{errorMessage}}</p>
       </div>
+      </template>
       <div class="buttons">
         <paper-button on-tap="doDragOp">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -348,10 +356,12 @@
       <h1>Copy <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
       <paper-input id="copyNameInput" label="New Name" always-float-label autofocus></paper-input>
       <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
+      <template is="dom-if" if="{{errorMessage}}">
       <div class="dialogError">
         <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
         <p>{{errorMessage}}</p>
       </div>
+      </template>
       <div class="buttons">
         <paper-button on-tap="doCopy">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
@@ -361,10 +371,12 @@
     <paper-dialog id="renameDialog" modal>
       <h1>Rename <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
       <paper-input id="renameInput" label="New Name" always-float-label autofocus></paper-input>
+      <template is="dom-if" if="{{errorMessage}}">
       <div class="dialogError">
         <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
         <p>{{errorMessage}}</p>
       </div>
+      </template>
       <div class="buttons">
         <paper-button on-tap="doRename">OK</paper-button>
         <paper-button dialog-dismiss>CANCEL</paper-button>
