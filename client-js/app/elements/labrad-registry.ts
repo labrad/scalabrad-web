@@ -348,7 +348,9 @@ export class LabradRegistry extends polymer.Base {
     }
 
     const selected = this.selected;
+    const selectedIndex = this.getSelectedIndex();
     this.applyFilterToListItems();
+    const listLength = this.filteredListItems.length;
 
     let index = this.getDefaultSelectedItem();
 
@@ -358,11 +360,30 @@ export class LabradRegistry extends polymer.Base {
     // the same. This handles both the case of renaming a dir/key or changing
     // the value of it.
     if (selected) {
-      for (let i = 0; i < this.filteredListItems.length; ++i) {
+      index = -1;
+      for (let i = 0; i < listLength; ++i) {
         const item = this.filteredListItems[i];
-        if (item.name == selected.name || item.value == selected.value) {
+        if ((item.name === selected.name || item.value === selected.value) &&
+            (item.isDir === selected.isDir && item.isKey === selected.isKey)) {
           index = i;
-          break;
+          // If we've matched on name, we're confident to stop.
+          if (item.name === selected.name) {
+            break;
+          }
+        }
+      }
+
+      if (index === -1) {
+        // We've deleted the last item in the list, place cursor at the end.
+        if (selectedIndex === listLength) {
+          index = listLength - 1;
+        }
+
+        // Place the cursor back where it was if that position is still valid.
+        // Note, selected index should never be greater than listLength since
+        // only one element can be deleted at a time.
+        else {
+          index = selectedIndex;
         }
       }
     }
@@ -750,6 +771,7 @@ export class LabradRegistry extends polymer.Base {
     }
 
     if (!newName) {
+      const selectedType = (this.selected.isDir) ? "dir" : "key";
       this.handleError(`Cannot rename ${selectedType} to empty string`);
       return;
     }
