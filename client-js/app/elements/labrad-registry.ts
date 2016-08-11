@@ -212,10 +212,10 @@ export class LabradRegistry extends polymer.Base {
       return;
     }
 
-    // New keys have a textbox, so we only want to submit on Shift+Enter,
+    // For dialogs with a textbox, so we only want to submit on Shift+Enter,
     // not on a solo enter keypress.
-    if (event.detail.combo !== 'shift+enter') {
-      if (dialog.id == 'newKeyDialog' || dialog.id === 'editValueDialog') {
+    if (dialog.id == 'newKeyDialog' || dialog.id === 'editValueDialog') {
+      if (event.detail.combo !== 'shift+enter') {
         return;
       }
     }
@@ -660,11 +660,10 @@ export class LabradRegistry extends polymer.Base {
     const newName = this.$.copyNameInput.value;
     const newPath = JSON.parse(this.$.copyPathInput.value);
 
-    const selectedType = this.getSelectedType();
     const name = this.$.combinedList.selectedItem.name;
 
     try {
-      if (selectedType === 'dir') {
+      if (this.selected.isDir) {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = 'Copying...';
         await this.socket.copyDir({
@@ -673,8 +672,7 @@ export class LabradRegistry extends polymer.Base {
           newPath: newPath,
           newDir: newName
         });
-      }
-      else if (selectedType === 'key') {
+      } else if (this.selected.isKey) {
         await this.socket.copy({
           path: this.path,
           key: name,
