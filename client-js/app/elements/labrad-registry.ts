@@ -377,9 +377,13 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
-  handleError(errorMessage, errorTitle:string = '') {
+  handleError(errorMessage, element: HTMLElement, errorTitle:string = '') {
     this.errorMessage = errorMessage;
     this.errorTitle = errorTitle;
+    if (element) {
+      element.focus();
+      Polymer.Base.fire('iron-resize', null, {node: element});
+    }
     console.error(errorMessage);
   }
 
@@ -528,12 +532,11 @@ export class LabradRegistry extends polymer.Base {
         await this.socket.set({path: this.path, key: newKey, value: newVal});
         this.$.newKeyDialog.close();
       } catch (error) {
-        this.$.newValueInput.focus();
-        this.handleError(error.message, 'Invalid Value');
+        this.handleError(error.message, this.$.newValueInput, 'Invalid Value');
       }
     } else {
-      this.$.newKeyInput.focus();
-      this.handleError('Cannot create a key with an empty name.', 'Invalid Name');
+      this.handleError('Cannot create a key with an empty name.',
+                       this.$.newKeyInput, 'Invalid Name');
     }
   }
 
@@ -593,8 +596,7 @@ export class LabradRegistry extends polymer.Base {
       await this.socket.set({path: this.path, key: key, value: newVal});
       this.$.editValueDialog.close();
     } catch (error) {
-      this.$.editValueInput.focus();
-      this.handleError(error.message, 'Invalid Value');
+      this.handleError(error.message, this.$.editValueInput, 'Invalid Value');
     }
   }
 
@@ -621,13 +623,12 @@ export class LabradRegistry extends polymer.Base {
         await this.socket.mkDir({path: this.path, dir: newFolder});
         this.$.newFolderDialog.close();
       } catch (error) {
-        this.$.newFolderInput.focus();
-        this.handleError(error.message, 'Invalid Value');
+        this.handleError(error.message, this.$.newFolderInput, 'Invalid Value');
       }
     }
     else {
-      this.$.newFolderInput.focus();
-      this.handleError('Cannot create folder with empty name', 'Invalid Value');
+      this.handleError('Cannot create folder with empty name',
+                       this.$.newFolderInput, 'Invalid Value');
     }
   }
 
@@ -676,8 +677,7 @@ export class LabradRegistry extends polymer.Base {
       this.$.copyDialog.close();
     } catch (error) {
       this.$.pendingDialog.close();
-      this.$.copyPathInput.focus();
-      this.handleError(error.message, 'Invalid Path');
+      this.handleError(error.message, this.$.copyPathInput, 'Invalid Path');
     }
   }
 
@@ -723,8 +723,7 @@ export class LabradRegistry extends polymer.Base {
       }
       this.$.dragDialog.close();
     } catch (error) {
-      this.$.dragPathInput.focus();
-      this.handleError(error.message, 'Invalid Path');
+      this.handleError(error.message, this.$.dragPathInput, 'Invalid Path');
     }
     this.$.pendingDialog.close();
   }
@@ -752,14 +751,14 @@ export class LabradRegistry extends polymer.Base {
           selectedType = this.getSelectedType();
 
     if (newName === null || newName === name) {
-      this.$.renameInput.focus();
-      this.handleError("The new name cannot be the same as the old name.", "Invalid Name");
+      this.handleError("The new name cannot be the same as the old name.",
+                       this.$.renameInput, "Invalid Name");
       return;
     }
 
     if (!newName) {
-      this.$.renameInput.focus();
-      this.handleError(`Cannot rename ${selectedType} to empty string`, "Invalid Name");
+      this.handleError(`Cannot rename ${selectedType} to empty string`,
+                       this.$.renameInput, "Invalid Name");
       return;
     }
 
@@ -772,8 +771,7 @@ export class LabradRegistry extends polymer.Base {
       }
       this.$.renameDialog.close();
     } catch (error) {
-      this.$.renameInput.focus();
-      this.handleError(error.message, "Invalid Name");
+      this.handleError(error.message, this.$.renameInput, "Invalid Name");
     }
   }
 
@@ -801,7 +799,7 @@ export class LabradRegistry extends polymer.Base {
       }
       this.$.deleteDialog.close();
     } catch (error) {
-      this.handleError(error.message, "Invalid Delete");
+      this.handleError(error.message, null, "Invalid Delete");
     }
     this.$.pendingDialog.close();
   }
