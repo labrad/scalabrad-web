@@ -110,6 +110,13 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
+  /**
+   * Move the cursor on the currently selected item to the next item in the
+   * list depending on if up or down is pressed. If nothing is selected then
+   * the first item in the list is selected when down is pressed.
+   *
+   * This action doesn't work if a dialog is open.
+   */
   cursorMove(event) {
     if (this.getOpenDialog()) {
       return;
@@ -147,14 +154,20 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
+  /**
+   * If we have a selected item, we want to follow it. In the case of a
+   * directory, this means going into it. In the case of a key, it means
+   * opening the edit box.
+   *
+   * This action doesn't work if a dialog window is open or if the search box
+   * is focused.
+   */
   cursorTraverse(event) {
     if (this.getSelectedIndex() === null || this.getOpenDialog() || this.$.search.focused) {
       return;
     }
 
     const item = this.$.combinedList.selectedItem;
-
-    // If we have an item, we want to traverse down.
     if (!item) {
       return;
     }
@@ -168,6 +181,13 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
+  /**
+   * Traverse back up the directory tree if we aren't already at the registry
+   * root.
+   *
+   * This action doesn't work if there is an open dialog or the search box is
+   * focused.
+   */
   cursorBack(event) {
     if (this.path.length === 0 || this.getOpenDialog() || this.$.search.focused) {
       return;
