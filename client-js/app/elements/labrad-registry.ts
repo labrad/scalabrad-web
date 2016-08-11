@@ -72,6 +72,10 @@ export class LabradRegistry extends polymer.Base {
                                               this.$.editValueInput);
 
     for (const dialog of this.dialogs) {
+      // Do not trigger on close of pending dialog.
+      if (dialog === 'pendingDialog') {
+        continue;
+      }
       this.$[dialog].addEventListener('iron-overlay-closed', this.resetError.bind(this));
     }
   }
@@ -120,6 +124,13 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
+  /**
+   * Move the cursor on the currently selected item to the next item in the
+   * list depending on if up or down is pressed. If nothing is selected then
+   * the first item in the list is selected when down is pressed.
+   *
+   * This action doesn't work if a dialog is open.
+   */
   cursorMove(event) {
     if (this.getOpenDialog()) {
       return;
@@ -157,14 +168,20 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
+  /**
+   * If we have a selected item, we want to follow it. In the case of a
+   * directory, this means going into it. In the case of a key, it means
+   * opening the edit box.
+   *
+   * This action doesn't work if a dialog window is open or if the search box
+   * is focused.
+   */
   cursorTraverse(event) {
     if (this.getSelectedIndex() === null || this.getOpenDialog() || this.$.search.focused) {
       return;
     }
 
-    const item = this.$.combinedList.selectedItem;
-
-    // If we have an item, we want to traverse down.
+    const item = this.selected;
     if (!item) {
       return;
     }
@@ -178,6 +195,13 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
+  /**
+   * Traverse back up the directory tree if we aren't already at the registry
+   * root.
+   *
+   * This action doesn't work if there is an open dialog or the search box is
+   * focused.
+   */
   cursorBack(event) {
     if (this.path.length === 0 || this.getOpenDialog() || this.$.search.focused) {
       return;
@@ -202,10 +226,10 @@ export class LabradRegistry extends polymer.Base {
       return;
     }
 
-    // New keys have a textbox, so we only want to submit on Shift+Enter,
+    // For dialogs with a textbox, so we only want to submit on Shift+Enter,
     // not on a solo enter keypress.
-    if (event.detail.combo !== 'shift+enter') {
-      if (dialog.id == 'newKeyDialog' || dialog.id === 'editValueDialog') {
+    if (dialog.id == 'newKeyDialog' || dialog.id === 'editValueDialog') {
+      if (event.detail.combo !== 'shift+enter') {
         return;
       }
     }
@@ -282,17 +306,6 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
-  private getSelectedType(): string {
-    // Account for parent '..' entry.
-    const offset = this.getListOffset();
-    if (this.dirs && this.getSelectedIndex() < this.dirs.length + offset) {
-      return 'dir';
-    } else {
-      return 'key';
-    }
-  }
-
-
   /**
    * This is called whenever a newItem is added, hooked in actitives.
    */
@@ -347,21 +360,45 @@ export class LabradRegistry extends polymer.Base {
     }
 
     const selected = this.selected;
+    const selectedIndex = this.getSelectedIndex();
     this.applyFilterToListItems();
+    const listLength = this.filteredListItems.length;
 
     let index = this.getDefaultSelectedItem();
 
-    // If there was a previously selected item, say we were editing one, then
+    // If there was a previously selected key, say we were editing one, then
     // we want to reselect it after the list is repopulated. To do this we
     // fuzzy match the objects by requiring either the name or the value to be
-    // the same. This handles both the case of renaming a dir/key or changing
-    // the value of it.
+    // the same.
     if (selected) {
-      for (let i = 0; i < this.filteredListItems.length; ++i) {
+      index = -1;
+      for (let i = 0; i < listLength; ++i) {
         const item = this.filteredListItems[i];
-        if (item.name == selected.name || item.value == selected.value) {
+        const namesMatch = (item.name === selected.name);
+        const valuesMatch = (item.value && (item.value === selected.value));
+        const dirsMatch = (item.isDir === selected.isDir);
+        const keysMatch = (item.isKey === selected.isKey);
+
+        if ((namesMatch || valuesMatch) && dirsMatch && keysMatch) {
           index = i;
-          break;
+          // If we've matched on name, we're confident to stop.
+          if (namesMatch) {
+            break;
+          }
+        }
+      }
+
+      if (index === -1) {
+        // We've deleted the last item in the list, place cursor at the end.
+        if (selectedIndex === listLength) {
+          index = listLength - 1;
+        }
+
+        // Place the cursor back where it was if that position is still valid.
+        // Note, selected index should never be greater than listLength since
+        // only one element can be deleted at a time.
+        else {
+          index = selectedIndex;
         }
       }
     }
@@ -382,8 +419,8 @@ export class LabradRegistry extends polymer.Base {
 
 
   private resetError() {
-    this.set('errorMessage', 'a');
-    this.set('errorTitle', 'a');
+    this.set('errorMessage', '');
+    this.set('errorTitle', '');
   }
 
 
@@ -399,33 +436,12 @@ export class LabradRegistry extends polymer.Base {
 
 
   /**
-   * Drag and drop logic.
-   */
-  @listen('dragenter')
-  onDragEnter(event) {
-    event.preventDefault();
-  }
-
-
-  @listen('dragleave')
-  onDragLeave(event) {
-    event.preventDefault();
-  }
-
-
-  /**
    * Allows the ctrl key to be pressed to change cursor between copy/move.
    */
   @listen('dragover')
   onDragOver(event) {
     event.preventDefault();
-
-    if (event.ctrlKey) {
-      event.dataTransfer.dropEffect = 'copy';
-    }
-    else {
-      event.dataTransfer.dropEffect = 'move';
-    }
+    event.dataTransfer.dropEffect = (event.ctrlKey) ? 'copy' : 'move';
   }
 
 
@@ -450,10 +466,6 @@ export class LabradRegistry extends polymer.Base {
   onDirDragLeave(event) {
     event.currentTarget.classList.remove('over');
   }
-
-
-  @listen('dragend')
-  endDrag(event) {}
 
 
   /**
@@ -552,7 +564,7 @@ export class LabradRegistry extends polymer.Base {
 
 
   private editValueSelected() {
-    const item = this.$.combinedList.selectedItem;
+    const item = this.selected;
     const dialog = this.$.editValueDialog;
     const editValueElem = this.$.editValueInput;
 
@@ -650,7 +662,7 @@ export class LabradRegistry extends polymer.Base {
     const dialog = this.$.copyDialog,
           copyNameElem = this.$.copyNameInput,
           copyPathElem = this.$.copyPathInput;
-    copyNameElem.value = this.$.combinedList.selectedItem.name;
+    copyNameElem.value = this.selected.name;
     copyPathElem.value = this.pathToString(this.path);
     dialog.open();
   }
@@ -661,13 +673,11 @@ export class LabradRegistry extends polymer.Base {
    */
   async doCopy() {
     const newName = this.$.copyNameInput.value;
-    const selectedType = this.getSelectedType();
-    const name = this.$.combinedList.selectedItem.name;
+    const name = this.selected.name;
 
     try {
       const newPath = JSON.parse(this.$.copyPathInput.value);
-
-      if (selectedType === 'dir') {
+      if (this.selected.isDir) {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = 'Copying...';
         await this.socket.copyDir({
@@ -676,7 +686,7 @@ export class LabradRegistry extends polymer.Base {
           newPath: newPath,
           newDir: newName
         });
-      } else if (selectedType === 'key') {
+      } else if (this.selected.isKey) {
         await this.socket.copy({
           path: this.path,
           key: name,
@@ -686,9 +696,10 @@ export class LabradRegistry extends polymer.Base {
       }
       this.$.copyDialog.close();
     } catch (error) {
-      this.$.pendingDialog.close();
+      console.log("here");
       this.handleError(error.message, this.$.copyPathInput, 'Invalid Path');
     }
+    this.$.pendingDialog.close();
   }
 
 
@@ -697,12 +708,11 @@ export class LabradRegistry extends polymer.Base {
    */
   async doDragOp() {
     const newName = this.$.dragNameInput.value;
-    const oldPath = JSON.parse(this.$.originPath.textContent);
     const oldName = this.$.originName.textContent;
-
     const dragType = (this.$.dragOp.innerText === 'Copy') ? 'copy' : 'move';
 
     try {
+      const oldPath = JSON.parse(this.$.originPath.textContent);
       const newPath = JSON.parse(this.$.dragPathInput.value);
 
       this.$.pendingOp.innerText = (dragType === "copy") ? 'Copying...' : 'Moving...';
@@ -745,7 +755,7 @@ export class LabradRegistry extends polymer.Base {
   renameClicked() {
     const dialog = this.$.renameDialog,
           renameElem = this.$.renameInput,
-          name = this.$.combinedList.selectedItem.name;
+          name = this.selected.name;
     renameElem.value = name;
     dialog.open();
   }
@@ -757,8 +767,7 @@ export class LabradRegistry extends polymer.Base {
     // TODO(maffoo) Add pending modal dialog for renames since they are copy
     // commands and take a long time.
     const newName = this.$.renameInput.value,
-          name = this.$.combinedList.selectedItem.name,
-          selectedType = this.getSelectedType();
+          name = this.selected.name;
 
     if (newName === null || newName === name) {
       this.handleError("The new name cannot be the same as the old name.",
@@ -767,16 +776,16 @@ export class LabradRegistry extends polymer.Base {
     }
 
     if (!newName) {
+      const selectedType = (this.selected.isDir) ? "dir" : "key";
       this.handleError(`Cannot rename ${selectedType} to empty string`,
                        this.$.renameInput, "Invalid Name");
       return;
     }
 
     try {
-      if (selectedType === 'dir') {
+      if (this.selected.isDir) {
         await this.socket.renameDir({path: this.path, dir: name, newDir: newName});
-      }
-      else if (selectedType === 'key') {
+      } else if (this.selected.isKey) {
         await this.socket.rename({path: this.path, key: name, newKey: newName});
       }
       this.$.renameDialog.close();
@@ -799,13 +808,12 @@ export class LabradRegistry extends polymer.Base {
    */
   async doDelete() {
     try {
-      const selectedType = this.getSelectedType();
-      if (selectedType === 'dir') {
+      if (this.selected.isDir) {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = 'Deleting...';
-        await this.socket.rmDir({path: this.path, dir: this.$.combinedList.selectedItem.name});
-      } else if (selectedType === 'key') {
-        await this.socket.del({path: this.path, key: this.$.combinedList.selectedItem.name});
+        await this.socket.rmDir({path: this.path, dir: this.selected.name});
+      } else if (this.selected.isKey) {
+        await this.socket.del({path: this.path, key: this.selected.name});
       }
       this.$.deleteDialog.close();
     } catch (error) {

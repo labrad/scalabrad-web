@@ -73,7 +73,7 @@
       -webkit-user-select: none;
     }
     .row .key {
-      width: 400px;
+      width: 16em;
       white-space: nowrap;
       padding-right: 2em;
       overflow: hidden;
@@ -111,6 +111,9 @@
     paper-dialog.size-position {
       width: 300px;
       height: 300px;
+    }
+    paper-button {
+      white-space: nowrap;
     }
     menu-button {
       color: #0F9D58;
@@ -205,23 +208,23 @@
         <paper-toolbar>
           <paper-button on-click="newKeyClicked">
             <iron-icon icon="create"></iron-icon>
-            new key
+            New Key
           </paper-button>
           <paper-button on-click="newFolderClicked">
             <iron-icon icon="folder-open"></iron-icon>
-            new dir
+            New Dir
           </paper-button>
           <paper-button on-click="copyClicked" disabled="[[!selected]]">
             <iron-icon icon="content-copy"></iron-icon>
-            copy
+            Copy
           </paper-button>
           <paper-button on-click="renameClicked" disabled="[[!selected]]">
             <iron-icon icon="code"></iron-icon>
-            rename
+            Rename
           </paper-button>
           <paper-button on-click="deleteClicked" disabled="[[!selected]]">
             <iron-icon icon="delete"></iron-icon>
-            delete
+            Delete
           </paper-button>
           <div id="search-bar">
             <paper-input id="search" value="{{filterText::input}}"
@@ -233,16 +236,16 @@
       </div>
       <div id="listing">
         <iron-list items="{{filteredListItems}}"
-                  id="combinedList"
-                  as="item"
-                  selected-item="{{selected}}"
-                  selection-enabled>
+                   id="combinedList"
+                   as="item"
+                   selected-item="{{selected}}"
+                   selection-enabled>
           <template>
             <div class$="row [[computeSelectedClass(selected)]]"
-                on-dblclick="editValueClicked"
-                name="{{item.name}}"
-                key-name="{{item.name}}"
-                is-key="{{item.isKey}}">
+                 on-dblclick="editValueClicked"
+                 name="{{item.name}}"
+                 key-name="{{item.name}}"
+                 is-key="{{item.isKey}}">
               <template is="dom-if" if="{{item.isParent}}">
                 <div class="label-wide">
                   <a class='back-link' is="app-link" path="{{item.url}}" href="{{item.url}}">
@@ -253,11 +256,11 @@
               </template>
               <template is="dom-if" if="{{item.isDir}}">
                 <div class="dir label-wide"
-                    name="{{item.name}}"
-                    draggable="true"
-                    on-dragover="onDirDragOver"
-                    on-dragleave="onDirDragLeave"
-                    on-drop="dirDrop">
+                     name="{{item.name}}"
+                     draggable="true"
+                     on-dragover="onDirDragOver"
+                     on-dragleave="onDirDragLeave"
+                     on-drop="dirDrop">
                   <a is="app-link" path="{{item.url}}" href="{{item.url}}">
                     <iron-icon icon="folder" item-icon class="folder"></iron-icon>
                     <span>{{item.name}}</span>
@@ -266,10 +269,10 @@
               </template>
               <template is="dom-if" if="{{item.isKey}}">
                 <div class="key mono"
-                      name="{{item.name}}"
-                    draggable="true">
-                  <iron-icon icon="communication:vpn-key" item-icon></iron-icon>
-                  <span>{{item.name}}</span>
+                     name="{{item.name}}"
+                     draggable="true">
+                  <iron-icon icon="communication:vpn-key"item-icon></iron-icon>
+                  <span title="{{item.name}}">{{item.name}}</span>
                 </div>
                 <div class="value label-wide mono">
                   <span>{{item.value}}</span>
@@ -323,7 +326,12 @@
     </paper-dialog>
 
      <paper-dialog id="dragDialog" modal>
-      <h1><span id="dragOp"></span> <span id="dragClass"></span> "<span id="originName"></span>" from <span id="originPath"></span></h1>
+      <h1>
+        <span id="dragOp"></span>
+        <span id="dragClass"></span>
+        "<span id="originName"></span>" from
+        <span id="originPath"></span>
+      </h1>
       <paper-input id="dragNameInput" label="New Name" always-float-label></paper-input>
       <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
       <div class="dialogError">
