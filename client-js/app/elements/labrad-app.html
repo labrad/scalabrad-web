@@ -63,7 +63,12 @@
       white-space: nowrap;
       text-overflow: ellipsis;
       overflow: hidden;
-      direction: rtl;
+    }
+    #locationInner {
+      float: right;
+    }
+    #location labrad-breadcrumbs {
+      display: inline;
     }
 
     #tech-info {
@@ -133,13 +138,16 @@
           </button>
 
           <!-- Application name -->
-          <div id="location">Labrad -
-            <template is="dom-if" if="{{!hasBreadcrumbs}}">
-              <span>{{route}}</span>
-            </template>
-            <template is="dom-if" if="{{hasBreadcrumbs}}">
-              <labrad-breadcrumbs breadcrumbs={{breadcrumbs}} extras={{breadcrumbExtras}} style="display: inline"></labrad-breadcrumbs>
-            </template>
+          <div id="location">
+            <div id="locationInner">
+              <span>Labrad -</span>
+              <template is="dom-if" if="{{!hasBreadcrumbs}}">
+                <span>{{route}}</span>
+              </template>
+              <template is="dom-if" if="{{hasBreadcrumbs}}">
+                <labrad-breadcrumbs breadcrumbs={{breadcrumbs}} extras={{breadcrumbExtras}}></labrad-breadcrumbs>
+              </template>
+            </div>
           </div>
 
           <span class="flex"></span>
