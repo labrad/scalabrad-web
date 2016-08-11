@@ -230,10 +230,10 @@
                    selection-enabled>
           <template>
             <div class$="row [[computeSelectedClass(selected)]]"
-                on-dblclick="editValueClicked"
-                name="{{item.name}}"
-                key-name="{{item.name}}"
-                is-key="{{item.isKey}}">
+                 on-dblclick="editValueClicked"
+                 name="{{item.name}}"
+                 key-name="{{item.name}}"
+                 is-key="{{item.isKey}}">
               <template is="dom-if" if="{{item.isParent}}">
                 <div class="label-wide">
                   <a class='back-link' is="app-link" path="{{item.url}}" href="{{item.url}}">
@@ -244,11 +244,11 @@
               </template>
               <template is="dom-if" if="{{item.isDir}}">
                 <div class="dir label-wide"
-                    name="{{item.name}}"
-                    draggable="true"
-                    on-dragover="onDirDragOver"
-                    on-dragleave="onDirDragLeave"
-                    on-drop="dirDrop">
+                     name="{{item.name}}"
+                     draggable="true"
+                     on-dragover="onDirDragOver"
+                     on-dragleave="onDirDragLeave"
+                     on-drop="dirDrop">
                   <a is="app-link" path="{{item.url}}" href="{{item.url}}">
                     <iron-icon icon="folder" item-icon class="folder"></iron-icon>
                     <span>{{item.name}}</span>
@@ -257,8 +257,8 @@
               </template>
               <template is="dom-if" if="{{item.isKey}}">
                 <div class="key mono"
-                      name="{{item.name}}"
-                    draggable="true">
+                     name="{{item.name}}"
+                     draggable="true">
                   <iron-icon icon="communication:vpn-key" item-icon></iron-icon>
                   <span>{{item.name}}</span>
                 </div>
@@ -284,7 +284,7 @@
     </paper-dialog>
 
     <paper-dialog id="editValueDialog" modal>
-      <h1>Edit <span>{{selected.name}}</span></h1>
+      <h1>Edit "<span>{{selected.name}}</span>"</h1>
       <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
       <div class="buttons">
         <paper-button on-tap="doEditValue" dialog-confirm>OK</paper-button>
@@ -302,7 +302,12 @@
     </paper-dialog>
 
      <paper-dialog id="dragDialog" modal>
-      <h1><span id="dragOp"></span> <span id="dragClass"></span> "<span id="originName"></span>" from <span id="originPath"></span></h1>
+      <h1>
+        <span id="dragOp"></span>
+        <span id="dragClass"></span>
+        "<span id="originName"></span>" from
+        <span id="originPath"></span>
+      </h1>
       <paper-input id="dragNameInput" label="New Name" always-float-label></paper-input>
       <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
       <div class="buttons">
