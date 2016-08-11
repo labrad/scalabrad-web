@@ -244,6 +244,7 @@
             <div class$="row [[computeSelectedClass(selected)]]"
                  on-dblclick="editValueClicked"
                  name="{{item.name}}"
+                 kind="{{item.kind}}"
                  key-name="{{item.name}}"
                  is-key="{{item.isKey}}">
               <template is="dom-if" if="{{item.isParent}}">
@@ -257,6 +258,7 @@
               <template is="dom-if" if="{{item.isDir}}">
                 <div class="dir label-wide"
                      name="{{item.name}}"
+                     kind="{{item.kind}}"
                      draggable="true"
                      on-dragover="onDirDragOver"
                      on-dragleave="onDirDragLeave"
@@ -270,6 +272,7 @@
               <template is="dom-if" if="{{item.isKey}}">
                 <div class="key mono"
                      name="{{item.name}}"
+                     kind="{{item.kind}}"
                      draggable="true">
                   <iron-icon icon="communication:vpn-key"item-icon></iron-icon>
                   <span title="{{item.name}}">{{item.name}}</span>

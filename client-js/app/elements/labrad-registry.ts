@@ -3,6 +3,7 @@ import {Places} from '../scripts/places';
 
 type ListItem = {
   name: string,
+  kind: string,
   isParent: boolean,
   isDir: boolean,
   isKey: boolean,
@@ -320,6 +321,7 @@ export class LabradRegistry extends polymer.Base {
       const url = this.places.registryUrl(this.path.slice(0, -1));
       this.push('listItems', {
         name: '..',
+        kind: 'parent',
         isParent: true,
         isDir: false,
         isKey: false,
@@ -335,6 +337,7 @@ export class LabradRegistry extends polymer.Base {
       });
       this.push('listItems', {
         name: name,
+        kind: 'dir',
         isParent: false,
         isDir: true,
         isKey: false,
@@ -352,6 +355,7 @@ export class LabradRegistry extends polymer.Base {
 
       this.push('listItems', {
         name: name,
+        kind: 'key',
         isParent: false,
         isDir: false,
         isKey: true,
@@ -448,10 +452,11 @@ export class LabradRegistry extends polymer.Base {
   @listen('dragstart')
   startDrag(event) {
     // Detect start of drag event, grab info about target.
+    const target = event.target.closest('.row');
     const data = {
       path: this.path,
-      name: event.target.name,
-      kind: event.target.className.split(' ')[0]
+      name: target.name,
+      kind: target.kind
     };
     event.dataTransfer.setData('text', JSON.stringify(data));
     event.dataTransfer.effectAllowed = 'copyMove';
@@ -775,8 +780,7 @@ export class LabradRegistry extends polymer.Base {
     }
 
     if (!newName) {
-      const selectedType = (this.selected.isDir) ? "dir" : "key";
-      this.handleError(`Cannot rename ${selectedType} to empty string`,
+      this.handleError(`Cannot rename ${this.selected.kind} to empty string`,
                        this.$.renameInput, "Invalid Name");
       return;
     }
