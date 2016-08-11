@@ -294,17 +294,6 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
-  private getSelectedType(): string {
-    // Account for parent '..' entry.
-    const offset = this.getListOffset();
-    if (this.dirs && this.getSelectedIndex() < this.dirs.length + offset) {
-      return 'dir';
-    } else {
-      return 'key';
-    }
-  }
-
-
   /**
    * This is called whenever a newItem is added, hooked in actitives.
    */
@@ -659,7 +648,6 @@ export class LabradRegistry extends polymer.Base {
   async doCopy() {
     const newName = this.$.copyNameInput.value;
     const newPath = JSON.parse(this.$.copyPathInput.value);
-
     const name = this.$.combinedList.selectedItem.name;
 
     try {
@@ -755,8 +743,7 @@ export class LabradRegistry extends polymer.Base {
     // TODO(maffoo) Add pending modal dialog for renames since they are copy
     // commands and take a long time.
     const newName = this.$.renameInput.value,
-          name = this.$.combinedList.selectedItem.name,
-          selectedType = this.getSelectedType();
+          name = this.$.combinedList.selectedItem.name;
 
     if (newName === null || newName === name) {
       return;
@@ -768,10 +755,9 @@ export class LabradRegistry extends polymer.Base {
     }
 
     try {
-      if (selectedType === 'dir') {
+      if (this.selected.isDir) {
         await this.socket.renameDir({path: this.path, dir: name, newDir: newName});
-      }
-      else if (selectedType === 'key') {
+      } else if (this.selected.isKey) {
         await this.socket.rename({path: this.path, key: name, newKey: newName});
       }
     } catch (error) {
@@ -793,12 +779,11 @@ export class LabradRegistry extends polymer.Base {
    */
   async doDelete() {
     try {
-      const selectedType = this.getSelectedType();
-      if (selectedType === 'dir') {
+      if (this.selected.isDir) {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = 'Deleting...';
         await this.socket.rmDir({path: this.path, dir: this.$.combinedList.selectedItem.name});
-      } else if (selectedType === 'key') {
+      } else if (this.selected.isKey) {
         await this.socket.del({path: this.path, key: this.$.combinedList.selectedItem.name});
       }
     } catch (error) {
