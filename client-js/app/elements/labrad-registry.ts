@@ -45,6 +45,12 @@ export class LabradRegistry extends polymer.Base {
 
   regex: RegExp; //regular expression for string comparison
 
+  @property({type: String, notify: true, value: ''})
+  errorMessage: string;
+
+  @property({type: String, notify: true, value: ''})
+  errorTitle: string;
+
   target: HTMLElement = document.body;
 
   private dialogs: string[] = [
@@ -227,8 +233,6 @@ export class LabradRegistry extends polymer.Base {
         // Nothing to do.
         break;
     }
-
-    dialog.close();
   }
 
 
@@ -373,9 +377,10 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
-  handleError(error) {
-    // We can add a more creative way of displaying errors here.
-    console.error(error);
+  handleError(errorMessage, errorTitle:string = '') {
+    this.errorMessage = errorMessage;
+    this.errorTitle = errorTitle;
+    console.error(errorMessage);
   }
 
 
@@ -523,11 +528,12 @@ export class LabradRegistry extends polymer.Base {
         await this.socket.set({path: this.path, key: newKey, value: newVal});
         this.$.newKeyDialog.close();
       } catch (error) {
-        this.handleError(error);
+        this.$.newValueInput.focus();
+        this.handleError(error.message, 'Invalid Value');
       }
-    }
-    else {
-      this.handleError('Cannot create key with empty name');
+    } else {
+      this.$.newKeyInput.focus();
+      this.handleError('Cannot create a key with an empty name.', 'Invalid Name');
     }
   }
 
@@ -587,7 +593,8 @@ export class LabradRegistry extends polymer.Base {
       await this.socket.set({path: this.path, key: key, value: newVal});
       this.$.editValueDialog.close();
     } catch (error) {
-      this.handleError(error);
+      this.$.editValueInput.focus();
+      this.handleError(error.message, 'Invalid Value');
     }
   }
 
@@ -611,14 +618,16 @@ export class LabradRegistry extends polymer.Base {
 
     if (newFolder) {
       try {
-        await this.socket.mkDir({path: this.path, dir: newFolder})
+        await this.socket.mkDir({path: this.path, dir: newFolder});
         this.$.newFolderDialog.close();
       } catch (error) {
-        this.handleError(error);
+        this.$.newFolderInput.focus();
+        this.handleError(error.message, 'Invalid Value');
       }
     }
     else {
-      this.handleError('Cannot create folder with empty name');
+      this.$.newFolderInput.focus();
+      this.handleError('Cannot create folder with empty name', 'Invalid Value');
     }
   }
 
@@ -641,12 +650,12 @@ export class LabradRegistry extends polymer.Base {
    */
   async doCopy() {
     const newName = this.$.copyNameInput.value;
-    const newPath = JSON.parse(this.$.copyPathInput.value);
-
     const selectedType = this.getSelectedType();
     const name = this.$.combinedList.selectedItem.name;
 
     try {
+      const newPath = JSON.parse(this.$.copyPathInput.value);
+
       if (selectedType === 'dir') {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = 'Copying...';
@@ -666,7 +675,9 @@ export class LabradRegistry extends polymer.Base {
       }
       this.$.copyDialog.close();
     } catch (error) {
-      this.handleError(error);
+      this.$.pendingDialog.close();
+      this.$.copyPathInput.focus();
+      this.handleError(error.message, 'Invalid Path');
     }
   }
 
