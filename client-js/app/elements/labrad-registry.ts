@@ -521,6 +521,7 @@ export class LabradRegistry extends polymer.Base {
     if (newKey) {
       try {
         await this.socket.set({path: this.path, key: newKey, value: newVal});
+        this.$.newKeyDialog.close();
       } catch (error) {
         this.handleError(error);
       }
@@ -584,6 +585,7 @@ export class LabradRegistry extends polymer.Base {
           newVal = this.$.editValueInput.value;
     try {
       await this.socket.set({path: this.path, key: key, value: newVal});
+      this.$.editValueDialog.close();
     } catch (error) {
       this.handleError(error);
     }
@@ -610,6 +612,7 @@ export class LabradRegistry extends polymer.Base {
     if (newFolder) {
       try {
         await this.socket.mkDir({path: this.path, dir: newFolder})
+        this.$.newFolderDialog.close();
       } catch (error) {
         this.handleError(error);
       }
@@ -653,8 +656,7 @@ export class LabradRegistry extends polymer.Base {
           newPath: newPath,
           newDir: newName
         });
-      }
-      else if (selectedType === 'key') {
+      } else if (selectedType === 'key') {
         await this.socket.copy({
           path: this.path,
           key: name,
@@ -662,6 +664,7 @@ export class LabradRegistry extends polymer.Base {
           newKey: newName
         });
       }
+      this.$.copyDialog.close();
     } catch (error) {
       this.handleError(error);
     }
@@ -690,6 +693,7 @@ export class LabradRegistry extends polymer.Base {
             await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
             break;
         }
+        this.$.dragDialog.close();
       } catch (error) {
         this.handleError(error);
       } finally {
@@ -709,6 +713,7 @@ export class LabradRegistry extends polymer.Base {
             await this.socket.move({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
             break;
         }
+        this.$.dragDialog.close();
       } catch (error) {
         this.handleError(error);
       } finally {
@@ -756,6 +761,7 @@ export class LabradRegistry extends polymer.Base {
       else if (selectedType === 'key') {
         await this.socket.rename({path: this.path, key: name, newKey: newName});
       }
+      this.$.renameDialog.close();
     } catch (error) {
       this.handleError(error);
     }
