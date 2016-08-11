@@ -11,13 +11,6 @@
       display: flex;
     }
 
-    #reg-menu {
-      position: fixed;
-      top: var(--maintoolbar-height);
-      width: 100%;
-      @apply(--shadow-elevation-2dp);
-    }
-
     #reg-area {
       margin-top: var(--maintoolbar-height);
       background-color: white;
@@ -31,7 +24,7 @@
       flex-direction: column;
       position: relative;
     }
-    #outer, #reg-area, #listing, #combinedList {
+    #outer, #listing, #combinedList {
       flex: 1;
       display: flex;
       width: 100%;
@@ -180,22 +173,52 @@
   </style>
   <template>
   <div id="outer">
-    <div id="reg-area">
-      <!-- Dialog Controls -->
-      <iron-a11y-keys target="[[target]]" keys="esc"
-                      on-keys-pressed="dialogCancel"></iron-a11y-keys>
-      <iron-a11y-keys target="[[target]]" keys="shift+enter enter"
-                      on-keys-pressed="dialogSubmit"></iron-a11y-keys>
-      <!-- Cursor Controls -->
-      <iron-a11y-keys target="[[target]]" keys="up down"
-                      on-keys-pressed="cursorMove"></iron-a11y-keys>
-      <iron-a11y-keys target="[[target]]" keys="right enter"
-                      on-keys-pressed="cursorTraverse"></iron-a11y-keys>
-      <iron-a11y-keys target="[[target]]" keys="left backspace"
-                      on-keys-pressed="cursorBack"></iron-a11y-keys>
-      <!-- Search Controls -->
-      <iron-a11y-keys target="[[target]]" keys="enter"
-                      on-keys-pressed="searchSubmit"></iron-a11y-keys>
+    <!-- Dialog Controls -->
+    <iron-a11y-keys target="[[target]]" keys="esc"
+                    on-keys-pressed="dialogCancel"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="shift+enter enter"
+                    on-keys-pressed="dialogSubmit"></iron-a11y-keys>
+    <!-- Cursor Controls -->
+    <iron-a11y-keys target="[[target]]" keys="up down"
+                    on-keys-pressed="cursorMove"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="right enter"
+                    on-keys-pressed="cursorTraverse"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="left backspace"
+                    on-keys-pressed="cursorBack"></iron-a11y-keys>
+    <!-- Search Controls -->
+    <iron-a11y-keys target="[[target]]" keys="enter"
+                    on-keys-pressed="searchSubmit"></iron-a11y-keys>
+    <paper-header-panel id="left-column">
+      <div class="paper-header" id="buttons">
+        <paper-toolbar>
+          <paper-button on-click="newKeyClicked">
+            <iron-icon icon="create"></iron-icon>
+            new key
+          </paper-button>
+          <paper-button on-click="newFolderClicked">
+            <iron-icon icon="folder-open"></iron-icon>
+            new dir
+          </paper-button>
+          <paper-button on-click="copyClicked" disabled="[[!selected]]">
+            <iron-icon icon="content-copy"></iron-icon>
+            copy
+          </paper-button>
+          <paper-button on-click="renameClicked" disabled="[[!selected]]">
+            <iron-icon icon="code"></iron-icon>
+            rename
+          </paper-button>
+          <paper-button on-click="deleteClicked" disabled="[[!selected]]">
+            <iron-icon icon="delete"></iron-icon>
+            delete
+          </paper-button>
+          <div id="search-bar">
+            <paper-input id="search" value="{{filterText::input}}"
+              noLabelFloat>
+              <iron-icon icon="search" prefix></iron-icon>
+            </paper-input>
+          </div>
+        </paper-toolbar>
+      </div>
       <div id="listing">
         <iron-list items="{{filteredListItems}}"
                   id="combinedList"
@@ -244,37 +267,6 @@
           </template>
         </iron-list>
       </div>
-    </div>
-    <div id="reg-menu">
-      <paper-toolbar>
-        <paper-button on-click="newKeyClicked">
-          <iron-icon icon="create"></iron-icon>
-          new key
-        </paper-button>
-        <paper-button on-click="newFolderClicked">
-          <iron-icon icon="folder-open"></iron-icon>
-          new dir
-        </paper-button>
-        <paper-button on-click="copyClicked" disabled="[[!selected]]">
-          <iron-icon icon="content-copy"></iron-icon>
-          copy
-        </paper-button>
-        <paper-button on-click="renameClicked" disabled="[[!selected]]">
-          <iron-icon icon="code"></iron-icon>
-          rename
-        </paper-button>
-        <paper-button on-click="deleteClicked" disabled="[[!selected]]">
-          <iron-icon icon="delete"></iron-icon>
-          delete
-        </paper-button>
-        <div id="search-bar">
-          <paper-input id="search" value="{{filterText::input}}"
-            noLabelFloat>
-            <iron-icon icon="search" prefix></iron-icon>
-          </paper-input>
-        </div>
-      </paper-toolbar>
-    </div>
 
     <!-- Dialogs for various registry operations -->
 
