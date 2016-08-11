@@ -46,6 +46,12 @@ export class LabradRegistry extends polymer.Base {
 
   regex: RegExp; //regular expression for string comparison
 
+  @property({type: String, notify: true, value: ''})
+  errorMessage: string;
+
+  @property({type: String, notify: true, value: ''})
+  errorTitle: string;
+
   target: HTMLElement = document.body;
 
   private dialogs: string[] = [
@@ -65,6 +71,14 @@ export class LabradRegistry extends polymer.Base {
 
     this.bindIronAutogrowTextAreaResizeEvents(this.$.editValueDialog,
                                               this.$.editValueInput);
+
+    for (const dialog of this.dialogs) {
+      // Do not trigger on close of pending dialog.
+      if (dialog === 'pendingDialog') {
+        continue;
+      }
+      this.$[dialog].addEventListener('iron-overlay-closed', this.resetError.bind(this));
+    }
   }
 
 
@@ -248,8 +262,6 @@ export class LabradRegistry extends polymer.Base {
         // Nothing to do.
         break;
     }
-
-    dialog.close();
   }
 
 
@@ -410,9 +422,20 @@ export class LabradRegistry extends polymer.Base {
   }
 
 
-  handleError(error) {
-    // We can add a more creative way of displaying errors here.
-    console.error(error);
+  private resetError() {
+    this.set('errorMessage', '');
+    this.set('errorTitle', '');
+  }
+
+
+  handleError(errorMessage, element: HTMLElement, errorTitle:string = '') {
+    this.set('errorMessage', errorMessage);
+    this.set('errorTitle', errorTitle);
+    if (element) {
+      element.focus();
+      Polymer.Base.fire('iron-resize', null, {node: element});
+    }
+    console.error(errorMessage);
   }
 
 
@@ -534,12 +557,13 @@ export class LabradRegistry extends polymer.Base {
     if (newKey) {
       try {
         await this.socket.set({path: this.path, key: newKey, value: newVal});
+        this.$.newKeyDialog.close();
       } catch (error) {
-        this.handleError(error);
+        this.handleError(error.message, this.$.newValueInput, 'Invalid Value');
       }
-    }
-    else {
-      this.handleError('Cannot create key with empty name');
+    } else {
+      this.handleError('Cannot create a key with an empty name.',
+                       this.$.newKeyInput, 'Invalid Name');
     }
   }
 
@@ -597,8 +621,9 @@ export class LabradRegistry extends polymer.Base {
           newVal = this.$.editValueInput.value;
     try {
       await this.socket.set({path: this.path, key: key, value: newVal});
+      this.$.editValueDialog.close();
     } catch (error) {
-      this.handleError(error);
+      this.handleError(error.message, this.$.editValueInput, 'Invalid Value');
     }
   }
 
@@ -622,13 +647,15 @@ export class LabradRegistry extends polymer.Base {
 
     if (newFolder) {
       try {
-        await this.socket.mkDir({path: this.path, dir: newFolder})
+        await this.socket.mkDir({path: this.path, dir: newFolder});
+        this.$.newFolderDialog.close();
       } catch (error) {
-        this.handleError(error);
+        this.handleError(error.message, this.$.newFolderInput, 'Invalid Value');
       }
     }
     else {
-      this.handleError('Cannot create folder with empty name');
+      this.handleError('Cannot create folder with empty name',
+                       this.$.newFolderInput, 'Invalid Value');
     }
   }
 
@@ -651,10 +678,10 @@ export class LabradRegistry extends polymer.Base {
    */
   async doCopy() {
     const newName = this.$.copyNameInput.value;
-    const newPath = JSON.parse(this.$.copyPathInput.value);
     const name = this.selected.name;
 
     try {
+      const newPath = JSON.parse(this.$.copyPathInput.value);
       if (this.selected.isDir) {
         this.$.pendingDialog.open();
         this.$.pendingOp.innerText = 'Copying...';
@@ -672,9 +699,11 @@ export class LabradRegistry extends polymer.Base {
           newKey: newName
         });
       }
+      this.$.copyDialog.close();
     } catch (error) {
-      this.handleError(error);
+      this.handleError(error.message, this.$.copyPathInput, 'Invalid Path');
     }
+    this.$.pendingDialog.close();
   }
 
 
@@ -683,49 +712,44 @@ export class LabradRegistry extends polymer.Base {
    */
   async doDragOp() {
     const newName = this.$.dragNameInput.value;
-    const newPath = JSON.parse(this.$.dragPathInput.value);
-    const oldPath = JSON.parse(this.$.originPath.textContent);
     const oldName = this.$.originName.textContent;
+    const dragType = (this.$.dragOp.innerText === 'Copy') ? 'copy' : 'move';
 
-    if (this.$.dragOp.innerText === 'Copy') {
-      try {
-        this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = 'Copying...';
-        switch (this.$.dragDialog.dragData['kind']) {
-          case 'dir':
+    try {
+      const oldPath = JSON.parse(this.$.originPath.textContent);
+      const newPath = JSON.parse(this.$.dragPathInput.value);
+
+      this.$.pendingOp.innerText = (dragType === "copy") ? 'Copying...' : 'Moving...';
+      this.$.pendingDialog.open();
+
+      switch (this.$.dragDialog.dragData['kind']) {
+        case 'dir':
+          if (dragType === "copy") {
             await this.socket.copyDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
-            break;
-
-          case 'key':
-            await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
-            break;
-        }
-      } catch (error) {
-        this.handleError(error);
-      } finally {
-        this.$.pendingDialog.close();
-        this.$.toastCopySuccess.show();
-      }
-    } else if (this.$.dragOp.innerText === 'Move') {
-      try {
-        this.$.pendingDialog.open();
-        this.$.pendingOp.innerText = 'Moving...';
-        switch (this.$.dragDialog.dragData['kind']) {
-          case 'dir':
+          } else {
             await this.socket.moveDir({path: oldPath, dir: oldName, newPath: newPath, newDir: newName});
-            break;
+          }
+          break;
 
-          case 'key':
+        case 'key':
+          if (dragType === "copy") {
+            await this.socket.copy({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
+          } else {
             await this.socket.move({path: oldPath, key: oldName, newPath: newPath, newKey: newName});
-            break;
-        }
-      } catch (error) {
-        this.handleError(error);
-      } finally {
-        this.$.pendingDialog.close();
+          }
+          break;
+      }
+
+      if (dragType === "copy") {
+        this.$.toastCopySuccess.show();
+      } else {
         this.$.toastMoveSuccess.show();
       }
+      this.$.dragDialog.close();
+    } catch (error) {
+      this.handleError(error.message, this.$.dragPathInput, 'Invalid Path');
     }
+    this.$.pendingDialog.close();
   }
 
 
@@ -750,11 +774,14 @@ export class LabradRegistry extends polymer.Base {
           name = this.selected.name;
 
     if (newName === null || newName === name) {
+      this.handleError("The new name cannot be the same as the old name.",
+                       this.$.renameInput, "Invalid Name");
       return;
     }
 
     if (!newName) {
-      this.handleError(`Cannot rename ${this.selected.kind} to empty string`);
+      this.handleError(`Cannot rename ${this.selected.kind} to empty string`,
+                       this.$.renameInput, "Invalid Name");
       return;
     }
 
@@ -764,8 +791,9 @@ export class LabradRegistry extends polymer.Base {
       } else if (this.selected.isKey) {
         await this.socket.rename({path: this.path, key: name, newKey: newName});
       }
+      this.$.renameDialog.close();
     } catch (error) {
-      this.handleError(error);
+      this.handleError(error.message, this.$.renameInput, "Invalid Name");
     }
   }
 
@@ -790,8 +818,10 @@ export class LabradRegistry extends polymer.Base {
       } else if (this.selected.isKey) {
         await this.socket.del({path: this.path, key: this.selected.name});
       }
+      this.$.deleteDialog.close();
     } catch (error) {
-      this.handleError(error);
+      this.handleError(error.message, null, "Invalid Delete");
     }
+    this.$.pendingDialog.close();
   }
 }
