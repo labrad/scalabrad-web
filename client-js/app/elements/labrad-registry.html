@@ -300,7 +300,7 @@
     </paper-dialog>
 
     <paper-dialog id="editValueDialog" modal>
-      <h1>Edit <span>{{selected.name}}</span></h1>
+      <h1>Edit "<span>{{selected.name}}"</span></h1>
       <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
       <div class="dialogError">
         <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
