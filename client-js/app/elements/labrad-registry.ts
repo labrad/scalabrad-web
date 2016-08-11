@@ -696,7 +696,6 @@ export class LabradRegistry extends polymer.Base {
       }
       this.$.copyDialog.close();
     } catch (error) {
-      console.log("here");
       this.handleError(error.message, this.$.copyPathInput, 'Invalid Path');
     }
     this.$.pendingDialog.close();
