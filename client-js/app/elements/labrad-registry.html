@@ -61,7 +61,7 @@
       -webkit-user-select: none;
     }
     .row .key {
-      width: 400px;
+      width: 16em;
       white-space: nowrap;
       padding-right: 2em;
       overflow: hidden;
@@ -259,8 +259,8 @@
                 <div class="key mono"
                      name="{{item.name}}"
                      draggable="true">
-                  <iron-icon icon="communication:vpn-key" item-icon></iron-icon>
-                  <span>{{item.name}}</span>
+                  <iron-icon icon="communication:vpn-key"item-icon></iron-icon>
+                  <span title="{{item.name}}">{{item.name}}</span>
                 </div>
                 <div class="value label-wide mono">
                   <span>{{item.value}}</span>
