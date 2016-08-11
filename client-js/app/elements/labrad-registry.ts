@@ -573,6 +573,7 @@ export class LabradRegistry extends polymer.Base {
     const dialog = this.$.editValueDialog;
     const editValueElem = this.$.editValueInput;
 
+    this.$.editValueName.innerText = item.name;
     editValueElem.value = item.value;
     dialog.keyName = item.name;
     dialog.open();
@@ -585,25 +586,14 @@ export class LabradRegistry extends polymer.Base {
   editValueClicked(event) {
     const dialog = this.$.editValueDialog,
           editValueElem = this.$.editValueInput,
-          name = event.currentTarget.keyName,
-          isKey = event.currentTarget.isKey;
+          target = event.target.closest('.row'),
+          name = target.name,
+          value = target.value,
+          isKey = target.isKey;
+
+    this.$.editValueName.innerText = name;
 
     if (!isKey) {
-      return;
-    }
-
-    let value: string = null,
-        found = false;
-
-    for (let item of this.keys) {
-      if (item.name == name) {
-        value = item.value;
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
       return;
     }
 

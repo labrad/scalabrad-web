@@ -244,6 +244,7 @@
             <div class$="row [[computeSelectedClass(selected)]]"
                  on-dblclick="editValueClicked"
                  name="{{item.name}}"
+                 value="{{item.value}}"
                  kind="{{item.kind}}"
                  key-name="{{item.name}}"
                  is-key="{{item.isKey}}">
@@ -305,7 +306,7 @@
     </paper-dialog>
 
     <paper-dialog id="editValueDialog" modal>
-      <h1>Edit "<span>{{selected.name}}"</span></h1>
+      <h1>Edit "<span id="editValueName"></span>"</h1>
       <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
       <template is="dom-if" if="{{errorMessage}}">
         <div class="dialogError">
