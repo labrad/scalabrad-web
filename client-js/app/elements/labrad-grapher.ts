@@ -51,7 +51,7 @@ export class LabradGrapher extends polymer.Base {
   @property({type: String})
   connectionError: string;
 
-  selectedThrottleTimeout: any = null;
+  selectedThrottleTimeout: number = null;
 
   target: HTMLElement = document.body;
 
