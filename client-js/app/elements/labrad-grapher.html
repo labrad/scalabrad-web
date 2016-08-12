@@ -64,17 +64,23 @@
       font-size: 24px;
       line-height: 45px;
     }
-    #params thead tr {
-      background-color: #7744AA;
+    #params thead th {
+      background-color: #3f51b5;
       color: white;
+      padding: 0.5em;
+    }
+    #params tbody td {
+      padding-top: 0.4em;
+      padding-bottom: 0.4em;
     }
     #params th,td {
       padding-left: 0.5em;
       padding-right: 0.5em;
     }
     .monospace {
-      font-family: courier;
+      font-family: "Roboto Mono", "Roboto", sans-serif;
       text-overflow: ellipsis;
+      font-size: 12px;
     }
     .row {
       cursor: pointer;
@@ -186,9 +192,9 @@
                 <tbody>
                 <template is="dom-repeat" items="{{selectedDatasetInfo.independents}}">
                   <tr>
-                    <td>{{item.label}}</td>
+                    <td class="monospace">{{item.label}}</td>
                     <td></td>
-                    <td>{{item.unit}}</td>
+                    <td class="monospace">{{item.unit}}</td>
                   </tr>
                 </template>
                 </tbody>
@@ -199,9 +205,9 @@
                 <tbody>
                 <template is="dom-repeat" items="{{selectedDatasetInfo.dependents}}">
                   <tr>
-                    <td>{{item.label}}</td>
-                    <td>{{item.legend}}</td>
-                    <td>{{item.unit}}</td>
+                    <td class="monospace">{{item.label}}</td>
+                    <td class="monospace">{{item.legend}}</td>
+                    <td class="monospace">{{item.unit}}</td>
                   </tr>
                 </template>
                 </tbody>
