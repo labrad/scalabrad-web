@@ -88,8 +88,8 @@ export class LabradGrapher extends polymer.Base {
 
     if (index < first) {
       list.scrollToIndex(index);
-    } else if (index > last) {
-      list.scrollToIndex(index - (last - first));
+    } else if (index >= last) {
+      list.scrollToIndex(index - (last - first - 1));
     }
   }
 
