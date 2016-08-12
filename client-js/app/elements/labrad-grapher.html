@@ -73,6 +73,10 @@
       padding-top: 0.4em;
       padding-bottom: 0.4em;
     }
+    #params tbody td.value {
+      word-wrap: break-word;
+      word-break: break-all;
+    }
     #params th,td {
       padding-left: 0.5em;
       padding-right: 0.5em;
@@ -221,7 +225,7 @@
                 <template is="dom-repeat" items="{{selectedDatasetInfo.params}}">
                   <tr>
                     <td class="monospace">{{item.name}}</td>
-                    <td class="monospace">{{item.value}}</td>
+                    <td class="monospace value">{{item.value}}</td>
                   </tr>
                 </template>
                 </tbody>
