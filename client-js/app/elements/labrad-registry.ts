@@ -162,6 +162,10 @@ export class LabradRegistry extends polymer.Base {
         }
         break;
 
+      case 'esc':
+        this.set('filterText', '');
+        break;
+
       default:
         // Nothing to do.
         break;
