@@ -294,12 +294,12 @@ export class LabradGrapher extends polymer.Base {
   }
 
   private filterListItemsFunction(): ListItemFilterFunction {
-    // Return trashed and parent items
+    // Return all items including those that are trashed.
     if (this.showTrash) {
-      return (x) => (x.trashed || x.isParent);
+      return (x) => true;
     }
 
-    // Return starred and parent items, no trash
+    // Return starred and parent items, no trash.
     if (this.showStars) {
       return (x) => ((x.starred && !x.trashed) || x.isParent);
     }
