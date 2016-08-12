@@ -338,15 +338,15 @@ export class LabradGrapher extends polymer.Base {
 
     this.selectedThrottleTimeout = setTimeout(() => {
       this.selectedDataset = "";
-
       if (!this.selected) {
         return;
       }
 
-      if (this.selected.id.startsWith('dataset:')) {
-        const name = this.selected.id.substring(8);
-        this.fetchInfo(name);
+      const id = this.selected.id;
+      if (id.startsWith('dataset:')) {
+        const name = id.substring(8);
         this.selectedDataset = name;
+        this.fetchInfo(name);
       }
     }, THROTTLE_DELAY_SELECTED_DATASET);
   }
