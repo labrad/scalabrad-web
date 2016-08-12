@@ -1,6 +1,8 @@
 import * as datavault from '../scripts/datavault';
 import {Places} from '../scripts/places';
 
+const THROTTLE_DELAY_SELECTED_DATASET = 100;
+
 type ListItem = {
   id: string,
   name: string,
@@ -34,6 +36,9 @@ export class LabradGrapher extends polymer.Base {
   @property({type: Object, notify: true})
   selected: ListItem;
 
+  @property({type: String})
+  selectedDataset: string = "";
+
   @property({type: Object})
   selectedDatasetInfo: datavault.DatasetInfo = null;
 
@@ -45,6 +50,8 @@ export class LabradGrapher extends polymer.Base {
 
   @property({type: String})
   connectionError: string;
+
+  selectedThrottleTimeout: NodeJS.Timer = null;
 
   target: HTMLElement = document.body;
 
@@ -323,19 +330,25 @@ export class LabradGrapher extends polymer.Base {
     return false;
   }
 
-  @computed()
-  selectedDataset(selected: {id: string}): string {
-    if (!selected) {
-      return "";
+  @observe('selected')
+  updateSelectedDataset(): void {
+    if (this.selectedThrottleTimeout) {
+      clearTimeout(this.selectedThrottleTimeout);
     }
 
-    if (selected.id.startsWith('dataset:')) {
-      const name = selected.id.substring(8);
-      this.fetchInfo(name);
-      return name;
-    } else {
-      return "";
-    }
+    this.selectedThrottleTimeout = setTimeout(() => {
+      this.selectedDataset = "";
+
+      if (!this.selected) {
+        return;
+      }
+
+      if (this.selected.id.startsWith('dataset:')) {
+        const name = this.selected.id.substring(8);
+        this.fetchInfo(name);
+        this.selectedDataset = name;
+      }
+    }, THROTTLE_DELAY_SELECTED_DATASET);
   }
 
   async fetchInfo(name: string) {
