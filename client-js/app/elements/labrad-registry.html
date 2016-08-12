@@ -203,6 +203,17 @@
     <!-- Search Controls -->
     <iron-a11y-keys target="[[target]]" keys="enter"
                     on-keys-pressed="searchSubmit"></iron-a11y-keys>
+    <!-- Edit Controls -->
+    <iron-a11y-keys target="[[target]]" keys="c"
+                    on-keys-pressed="copyClicked"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="x"
+                    on-keys-pressed="deleteClicked"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="r"
+                    on-keys-pressed="renameClicked"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="n k"
+                    on-keys-pressed="newKeyClicked"></iron-a11y-keys>
+    <iron-a11y-keys target="[[target]]" keys="d f"
+                    on-keys-pressed="newFolderClicked"></iron-a11y-keys>
     <paper-header-panel id="left-column">
       <div class="paper-header" id="buttons">
         <paper-toolbar>
