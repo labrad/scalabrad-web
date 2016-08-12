@@ -64,17 +64,31 @@
       font-size: 24px;
       line-height: 45px;
     }
-    #params thead tr {
-      background-color: #7744AA;
+    #params thead th {
+      background-color: #673AB7;
       color: white;
+      padding: 0.5em;
+    }
+    #params tbody td {
+      padding-top: 0.5em;
+      padding-bottom: 0.5em;
+      vertical-align: top;
+    }
+    #params tbody tr:nth-of-type(odd) {
+      background-color: #EEEEEE;
+    }
+    #params tbody td.value {
+      word-wrap: break-word;
+      word-break: break-all;
     }
     #params th,td {
-      padding-left: 0.5em;
-      padding-right: 0.5em;
+      padding-left: 0.7em;
+      padding-right: 0.7em;
     }
     .monospace {
-      font-family: courier;
+      font-family: "Roboto Mono", "Roboto", sans-serif;
       text-overflow: ellipsis;
+      font-size: 12px;
     }
     .row {
       cursor: pointer;
@@ -186,9 +200,9 @@
                 <tbody>
                 <template is="dom-repeat" items="{{selectedDatasetInfo.independents}}">
                   <tr>
-                    <td>{{item.label}}</td>
+                    <td class="monospace">{{item.label}}</td>
                     <td></td>
-                    <td>{{item.unit}}</td>
+                    <td class="monospace">{{item.unit}}</td>
                   </tr>
                 </template>
                 </tbody>
@@ -199,9 +213,9 @@
                 <tbody>
                 <template is="dom-repeat" items="{{selectedDatasetInfo.dependents}}">
                   <tr>
-                    <td>{{item.label}}</td>
-                    <td>{{item.legend}}</td>
-                    <td>{{item.unit}}</td>
+                    <td class="monospace">{{item.label}}</td>
+                    <td class="monospace">{{item.legend}}</td>
+                    <td class="monospace">{{item.unit}}</td>
                   </tr>
                 </template>
                 </tbody>
@@ -215,7 +229,7 @@
                 <template is="dom-repeat" items="{{selectedDatasetInfo.params}}">
                   <tr>
                     <td class="monospace">{{item.name}}</td>
-                    <td class="monospace">{{item.value}}</td>
+                    <td class="monospace value">{{item.value}}</td>
                   </tr>
                 </template>
                 </tbody>
