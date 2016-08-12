@@ -140,7 +140,7 @@ export class LabradRegistry extends polymer.Base {
     this.searchSubmit();
     event.detail.keyboardEvent.preventDefault();
 
-    const length = this.listItems.length;
+    const length = this.filteredListItems.length;
     const selectedIndex = this.getSelectedIndex();
     const list = this.$.combinedList;
 
@@ -153,13 +153,17 @@ export class LabradRegistry extends polymer.Base {
         break;
 
       case 'down':
-        if (selectedIndex === null) {
+        if (selectedIndex === null && length > 0) {
           list.selectItem(0);
           this.scrollToIndex(0);
         } else if (selectedIndex < length - 1) {
           list.selectItem(selectedIndex + 1);
           this.scrollToIndex(selectedIndex + 1);
         }
+        break;
+
+      case 'esc':
+        this.set('filterText', '');
         break;
 
       default:
@@ -213,6 +217,50 @@ export class LabradRegistry extends polymer.Base {
     this.fire('app-link-click', {path: parentUrl});
   }
 
+
+  actionHandler(event) {
+    if (this.getOpenDialog() || this.$.search.focused) {
+      return;
+    }
+
+    const key = event.detail.combo;
+    // Copy, Rename and Delete only work with a selection.
+    if (!this.selected && (key === "c" || key === "d" || key === "r")) {
+      return;
+    }
+
+    switch (key) {
+      case 'k':
+        this.newKeyClicked();
+        break;
+
+      case 'n':
+        this.newFolderClicked();
+        break;
+
+      case 'c':
+        this.copyClicked();
+        break;
+
+      case 'r':
+        this.renameClicked();
+        break;
+
+      case 'd':
+        this.deleteClicked();
+        break;
+
+      case 'f':
+        this.$.search.focus();
+        // Prevent the key from being typed into the search box.
+        event.detail.keyboardEvent.preventDefault();
+        break;
+
+      default:
+        // Nothing to do.
+        break;
+    }
+  }
 
   searchSubmit() {
     if (this.$.search.focused) {
@@ -537,7 +585,7 @@ export class LabradRegistry extends polymer.Base {
   /**
    * Launch new key dialog.
    */
-  newKeyClicked(event) {
+  newKeyClicked() {
     const dialog = this.$.newKeyDialog,
           newKeyElem = this.$.newKeyInput,
           newValueElem = this.$.newValueInput;

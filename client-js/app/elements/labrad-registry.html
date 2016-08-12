@@ -194,7 +194,7 @@
     <iron-a11y-keys target="[[target]]" keys="shift+enter enter"
                     on-keys-pressed="dialogSubmit"></iron-a11y-keys>
     <!-- Cursor Controls -->
-    <iron-a11y-keys target="[[target]]" keys="up down"
+    <iron-a11y-keys target="[[target]]" keys="esc up down"
                     on-keys-pressed="cursorMove"></iron-a11y-keys>
     <iron-a11y-keys target="[[target]]" keys="right enter"
                     on-keys-pressed="cursorTraverse"></iron-a11y-keys>
@@ -203,33 +203,37 @@
     <!-- Search Controls -->
     <iron-a11y-keys target="[[target]]" keys="enter"
                     on-keys-pressed="searchSubmit"></iron-a11y-keys>
+    <!-- Action Controls -->
+    <iron-a11y-keys target="[[target]]" keys="k n c r d f"
+                    on-keys-pressed="actionHandler"></iron-a11y-keys>
     <paper-header-panel id="left-column">
       <div class="paper-header" id="buttons">
         <paper-toolbar>
           <paper-button on-click="newKeyClicked">
             <iron-icon icon="create"></iron-icon>
-            New Key
+            <span title="New Key (k)">New Key</span>
           </paper-button>
           <paper-button on-click="newFolderClicked">
             <iron-icon icon="folder-open"></iron-icon>
-            New Dir
+            <span title="New Dir (n)">New Dir</span>
           </paper-button>
           <paper-button on-click="copyClicked" disabled="[[!selected]]">
             <iron-icon icon="content-copy"></iron-icon>
-            Copy
+            <span title="Copy (c)">Copy</span>
           </paper-button>
           <paper-button on-click="renameClicked" disabled="[[!selected]]">
             <iron-icon icon="code"></iron-icon>
-            Rename
+            <span title="Rename (r)">Rename</span>
           </paper-button>
           <paper-button on-click="deleteClicked" disabled="[[!selected]]">
             <iron-icon icon="delete"></iron-icon>
-            Delete
+            <span title="Delete (d)">Delete</span>
           </paper-button>
           <div id="search-bar">
-            <paper-input id="search" value="{{filterText::input}}"
-              noLabelFloat>
-              <iron-icon icon="search" prefix></iron-icon>
+            <paper-input id="search" value="{{filterText::input}}" noLabelFloat>
+              <span title="Search (f)" prefix>
+                <iron-icon icon="search"></iron-icon>
+              </span>
             </paper-input>
           </div>
         </paper-toolbar>
