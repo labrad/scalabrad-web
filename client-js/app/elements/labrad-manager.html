@@ -7,15 +7,14 @@
       width: 100%;
       border-collapse: collapse;
     }
-    th {
-      padding: 4px;
-    }
     td {
-      padding: 4px;
+      padding: 0.3em 0.5em;
+      font-size: 15px;
     }
-    thead tr {
-      background-color: #440088;
+    thead th {
+      background-color: #673AB7;
       color: white;
+      padding: 0.5em;
     }
     tbody tr:nth-child(odd) {
       background-color: #EEEEEE;
@@ -28,6 +27,12 @@
     }
     .close {
       text-align: center;
+    }
+    td.close {
+      font-size: 20px;
+    }
+    .close a {
+      text-decoration: none;
     }
     .close a:hover {
       color: #f00;
@@ -69,11 +74,11 @@
             <td>
               <template is="dom-if" if="{{item.server}}">
                 <a is="app-link" path="{{item.url}}" href="{{item.url}}">
-                  <span class="paper-font-body1">{{item.name}}</span>
+                  <span>{{item.name}}</span>
                 </a>
               </template>
               <template is="dom-if" if="{{!item.server}}">
-                <span class="paper-font-body1">{{item.name}}</span>
+                <span>{{item.name}}</span>
               </template>
             </td>
             <td><span>{{item.serverReqCount}}</span></td><!-- TODO: only if server, else '-' -->
