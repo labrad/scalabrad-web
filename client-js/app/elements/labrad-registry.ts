@@ -223,7 +223,15 @@ export class LabradRegistry extends polymer.Base {
       return;
     }
 
-    const key = event.detail.combo;
+    const key = event.detail.combo,
+          keyboardEvent = event.detail.keyboardEvent,
+          hasModifiers = (keyboardEvent.shiftKey || keyboardEvent.ctrlKey ||
+                          keyboardEvent.altKey || keyboardEvent.metaKey);
+
+    if (hasModifiers) {
+      return;
+    }
+
     // Copy, Rename and Delete only work with a selection.
     if (!this.selected && (key === "c" || key === "d" || key === "r")) {
       return;
