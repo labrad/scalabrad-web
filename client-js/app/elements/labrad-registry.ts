@@ -140,7 +140,7 @@ export class LabradRegistry extends polymer.Base {
     this.searchSubmit();
     event.detail.keyboardEvent.preventDefault();
 
-    const length = this.listItems.length;
+    const length = this.filteredListItems.length;
     const selectedIndex = this.getSelectedIndex();
     const list = this.$.combinedList;
 
@@ -153,7 +153,7 @@ export class LabradRegistry extends polymer.Base {
         break;
 
       case 'down':
-        if (selectedIndex === null) {
+        if (selectedIndex === null && length > 0) {
           list.selectItem(0);
           this.scrollToIndex(0);
         } else if (selectedIndex < length - 1) {
