@@ -81,16 +81,32 @@ export class LabradGrapher extends polymer.Base {
   }
 
 
-  scrollToIndex(index: number) {
+  private scrollToIndex(index: number): void {
     const list = this.$.combinedList;
     const first = list.firstVisibleIndex;
     const last = list.lastVisibleIndex;
 
-    if (index < first) {
-      list.scrollToIndex(index);
-    } else if (index > last) {
-      list.scrollToIndex(index - (last - first));
+    // If between the first and last elements, no need to scroll.
+    if (index > first && index < last) {
+      return;
     }
+
+    const currentScroll = list.scrollTop;
+    const listBounds = list.getBoundingClientRect();
+    const selectedElement = list.children.items.querySelector('.iron-selected');
+    const selectedBounds = selectedElement.getBoundingClientRect();
+
+    // Due to the fact an element can be only partially on the screen, we want
+    // to scroll by the distance between the top/bottom of the element and the
+    // top/bottom of the list respectively, rather than a fixed amount or to a
+    // specific index.
+    let distance;
+    if (selectedBounds.top < listBounds.top) {
+      distance = selectedBounds.top - listBounds.top;
+    } else {
+      distance = selectedBounds.bottom - listBounds.bottom;
+    }
+    list.scroll(0, currentScroll + distance);
   }
 
 
