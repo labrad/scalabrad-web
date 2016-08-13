@@ -1,4 +1,5 @@
-import 'd3';
+import 'polymer-ts';
+import d3 from 'd3';
 import THREE from 'three';
 import {viridisData} from '../scripts/colormaps';
 import * as datavault from '../scripts/datavault';
@@ -230,7 +231,7 @@ export class Plot extends polymer.Base {
    * A short-hand to access the positions array in a unit plane.
    */
   private planeVertexPositions =
-      this.planeUnitGeometry.getAttribute('position').array;
+      (this.planeUnitGeometry.getAttribute('position') as THREE.BufferAttribute).array;
 
 
   /**
@@ -1427,7 +1428,7 @@ export class Plot extends polymer.Base {
    */
   private drawRectangle(rect: HTMLElement): Promise<RectangleBound> {
     // Only trigger zoom rectangle on left click.
-    if (d3.event.button !== MOUSE_MAIN_BUTTON) {
+    if ((d3.event as MouseEvent).button !== MOUSE_MAIN_BUTTON) {
       return;
     }
 

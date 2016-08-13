@@ -40,6 +40,7 @@ var typescriptOptions = {
   typescript: typescript,
   target: 'ES6',
   module: 'ES6',
+  moduleResolution: 'node',
   declarationFiles: false,
   noExternalResolve: true,
   experimentalDecorators: true,
@@ -80,7 +81,7 @@ gulp.task('tslint', function () {
 
 // Compile TypeScript and include references to library and app .d.ts files.
 gulp.task('compile-ts', function () {
-  var tsResult = gulp.src(['app/**/*.ts', 'typings/**/*.ts'])
+  var tsResult = gulp.src(['app/**/*.ts'])
     .pipe(sourcemaps.init())
     .pipe(tsc(typescriptOptions));
 
@@ -91,7 +92,7 @@ gulp.task('compile-ts', function () {
 });
 
 gulp.task('compile-test', function () {
-  var tsResult = gulp.src(['app/**/*.ts','test/**/*.ts', 'typings/**/*.ts'])
+  var tsResult = gulp.src(['app/**/*.ts','test/**/*.ts'])
     .pipe(sourcemaps.init())
     .pipe(tsc(typescriptOptions));
 

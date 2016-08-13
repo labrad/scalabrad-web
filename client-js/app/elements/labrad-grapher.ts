@@ -1,3 +1,4 @@
+import 'polymer-ts';
 import * as datavault from '../scripts/datavault';
 import {Places} from '../scripts/places';
 

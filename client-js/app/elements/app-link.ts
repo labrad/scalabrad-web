@@ -1,3 +1,5 @@
+import 'polymer-ts';
+
 const MOUSE_MAIN_BUTTON = 0;
 
 @component('app-link')

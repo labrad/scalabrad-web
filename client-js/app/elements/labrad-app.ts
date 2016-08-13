@@ -1,3 +1,4 @@
+import 'polymer-ts';
 import {BreadcrumbItem} from './labrad-breadcrumbs';
 import {Places} from '../scripts/places';
 

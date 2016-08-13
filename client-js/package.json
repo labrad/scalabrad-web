@@ -12,6 +12,11 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@types/d3": "0.0.29",
+    "@types/page": "^1.5.27",
+    "@types/polymer-ts": "^0.1.27",
+    "@types/three": "0.0.17",
+    "@types/whatwg-fetch": "0.0.28",
     "bower": "^1.7.9",
     "browser-sync": "^2.6.4",
     "del": "^1.1.1",

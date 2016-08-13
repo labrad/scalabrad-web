@@ -1,3 +1,4 @@
+import 'polymer-ts';
 import {Lifetime} from '../scripts/lifetime';
 import {ManagerApi, ServerConnectMessage, ServerDisconnectMessage} from '../scripts/manager';
 import {NodeApi, NodeStatus, ServerStatus, ServerStatusMessage} from '../scripts/node';
