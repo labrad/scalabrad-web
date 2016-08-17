@@ -431,6 +431,9 @@ window.addEventListener('WebComponentsReady', () => {
             manager: manager
           });
           break;
+
+        default:
+          throw Error(`Unknown credential type: ${credential.kind}`);
       }
     } catch (error) {
       if (isPasswordError(error)) {
