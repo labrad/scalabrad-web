@@ -25,6 +25,7 @@ def demo(func):
     demos.append(func)
     return func
 
+
 @demo
 def demo_1d_exponential(dv):
     dv.new('demo_1d_exponential', ['x [ms]'], ['y [V]'])
@@ -37,6 +38,7 @@ def demo_1d_exponential(dv):
         dv.add([x, y])
         time.sleep(0.002)
 
+
 @demo
 def demo_1d_parabola(dv):
     dv.new('demo_1d_parabola', ['x [ms]'], ['y [V]'])
@@ -46,6 +48,7 @@ def demo_1d_parabola(dv):
         y = i**2 + i + random.random()*5000
         dv.add([x, y])
         time.sleep(0.002)
+
 
 @demo
 def demo_1d_parabola_2(dv):
@@ -57,6 +60,7 @@ def demo_1d_parabola_2(dv):
         dv.add([x, y])
         time.sleep(0.002)
 
+
 @demo
 def demo_1d_simple(dv):
     dv.new('demo_1d_simple', ['x [ms]'], ['y [V]'])
@@ -66,6 +70,18 @@ def demo_1d_simple(dv):
         y = 5 * math.sin(x) + random.random() - 0.5
         dv.add([x, y])
         time.sleep(0.002)
+
+
+@demo
+def demo_1d_slow(dv):
+    dv.new('demo_1d_slow', ['x [ms]'], ['Probability (0) []', 'Probability (1) []'])
+    add_params(dv)
+    for i in xrange(0, 1000):
+        x = i / 100.0
+        p0 = math.sin(x) + 0.2 * (i % 2)
+        p1 = 1 - p0
+        dv.add([x, p0, p1])
+        time.sleep(0.2 * random.random())
 
 
 @demo
