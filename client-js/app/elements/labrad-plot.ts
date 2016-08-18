@@ -859,7 +859,7 @@ export class Plot extends polymer.Base {
     this.dataLimits1D(data);
 
     if (this.lastData) {
-      data.splice(0, 1, this.lastData);
+      data.splice(0, 0, this.lastData);
     }
 
     const ob = this.getSceneObject();
