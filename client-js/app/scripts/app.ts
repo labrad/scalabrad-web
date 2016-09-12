@@ -398,9 +398,9 @@ window.addEventListener('WebComponentsReady', () => {
     page.redirect(state['path']);
   }
 
-  function isPasswordError(error): boolean {
+  function isAuthError(error): boolean {
     var errStr = String(error.message || error);
-    return errStr.indexOf('password') >= 0;
+    return errStr.indexOf('password') >= 0 || errStr.indexOf('id token') >= 0;
   }
 
   /**
@@ -436,7 +436,7 @@ window.addEventListener('WebComponentsReady', () => {
           throw Error(`Unknown credential type: ${credential.kind}`);
       }
     } catch (error) {
-      if (isPasswordError(error)) {
+      if (isAuthError(error)) {
         // If we had credentials, clear them out.
         clearCredential(manager, storage);
       }
@@ -464,7 +464,7 @@ window.addEventListener('WebComponentsReady', () => {
           break;
         } catch (e) {
           console.error('Connection failed', e);
-          if (isPasswordError(e)) {
+          if (isAuthError(e)) {
             break;
           }
         } finally {
