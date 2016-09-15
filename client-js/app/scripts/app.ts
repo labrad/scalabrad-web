@@ -384,6 +384,7 @@ window.addEventListener('WebComponentsReady', () => {
       body: encodeQueryString(requestParams)
     });
     const responseParams = await response.json();
+    const expiresInMillis = responseParams['expires_in'] * 1000;
     const storage = state['remember_me'] ? window.localStorage
                                          : window.sessionStorage;
     saveCredential(state['manager'], storage, {
@@ -391,7 +392,7 @@ window.addEventListener('WebComponentsReady', () => {
       clientId: state['client_id'],
       clientSecret: state['client_secret'],
       accessToken: responseParams['access_token'],
-      expiresAt: responseParams['expires_in'] + new Date().getTime(),
+      expiresAt: new Date().getTime() + expiresInMillis,
       idToken: responseParams['id_token'],
       refreshToken: responseParams['refresh_token']
     });
