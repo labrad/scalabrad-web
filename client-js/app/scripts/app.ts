@@ -319,7 +319,8 @@ window.addEventListener('WebComponentsReady', () => {
     const authMethods = await mgr.authMethods({manager: manager});
     app.host = manager;
     app.allowUsernameLogin = authMethods.indexOf('username+password') >= 0;
-    app.allowOAuthLogin = authMethods.indexOf('oauth_token') >= 0;
+    app.allowOAuthLogin = authMethods.indexOf('oauth_token') >= 0
+                       || authMethods.indexOf('oauth_access_token') >= 0;
     app.$.loginButton.addEventListener('click', (event) => doLogin());
     app.$.loginForm.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -327,8 +328,10 @@ window.addEventListener('WebComponentsReady', () => {
       doLogin();
     });
     if (app.allowOAuthLogin) {
+      const tokenType = authMethods.indexOf('oauth_access_token') >= 0 ? 'access' : 'id';
       app.$.oauthButton.addEventListener('click', (event) => {
-        startOAuthLogin(mgr, manager)
+        startOAuthLogin(mgr, manager, tokenType);
+      });
       });
     }
     app.$.loginDialog.open();
@@ -336,7 +339,7 @@ window.addEventListener('WebComponentsReady', () => {
     return promise;
   }
 
-  async function startOAuthLogin(mgr: ManagerApi, manager: string) {
+  async function startOAuthLogin(mgr: ManagerApi, manager: string, tokenType: string) {
     const rememberMe = app.$.rememberPassword.checked;
     try {
       const {clientId, clientSecret} = await mgr.oauthInfo({ manager: manager });
@@ -352,7 +355,8 @@ window.addEventListener('WebComponentsReady', () => {
           client_id: clientId,
           client_secret: clientSecret,
           redirect_uri: redirectUri,
-          remember_me: rememberMe
+          remember_me: rememberMe,
+          token_type: tokenType
         })
       };
       const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth'
@@ -394,7 +398,8 @@ window.addEventListener('WebComponentsReady', () => {
       accessToken: responseParams['access_token'],
       expiresAt: new Date().getTime() + expiresInMillis,
       idToken: responseParams['id_token'],
-      refreshToken: responseParams['refresh_token']
+      refreshToken: responseParams['refresh_token'],
+      tokenType: state['token_type']
     });
     page.redirect(state['path']);
   }
@@ -419,16 +424,27 @@ window.addEventListener('WebComponentsReady', () => {
       // TODO(maffoo): TS2 compiler understands .kind; can then remove casts.
       switch (credential.kind) {
         case 'oauth_token':
+          const oauthCred = credential as OAuthToken;
+          const tokenType = oauthCred.tokenType || "id";
+          var token: string;
+          switch (tokenType) {
+            case "id": token = oauthCred.idToken; break;
+            case "access": token = oauthCred.accessToken; break;
+            default:
+              throw Error(`Unknown token type: ${tokenType}`);
+          }
           await mgr.oauthLogin({
-            idToken: (credential as OAuthToken).idToken,
-            manager: manager
+            token: token,
+            tokenType: tokenType,
+            manager: manager,
           });
           break;
 
         case 'username+password':
+          const passwordCred = credential as Password;
           await mgr.login({
-            username: (credential as Password).username,
-            password: (credential as Password).password,
+            username: passwordCred.username,
+            password: passwordCred.password,
             manager: manager
           });
           break;

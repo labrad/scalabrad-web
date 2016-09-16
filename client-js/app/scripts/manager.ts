@@ -48,7 +48,7 @@ export interface ManagerApi {
   authMethods(params: {manager: string}): Promise<string[]>;
   login(params: {username: string; password: string; manager: string}): Promise<void>;
   oauthInfo(params: {manager: string}): Promise<OAuthInfo>;
-  oauthLogin(params: {idToken: string; manager: string}): Promise<void>;
+  oauthLogin(params: {token: string; tokenType?: string; manager: string}): Promise<void>;
   ping(): Promise<void>;
   version(): Promise<string>;
   connections(): Promise<ConnectionInfo[]>;
@@ -88,7 +88,7 @@ export class ManagerServiceJsonRpc extends rpc.RpcService implements ManagerApi 
     return this.call<OAuthInfo>("oauthInfo", params);
   }
 
-  oauthLogin(params: {idToken: string; manager: string}): Promise<void> {
+  oauthLogin(params: {token: string; tokenType?: string; manager: string}): Promise<void> {
     return this.call<void>("oauthLogin", params);
   }
 
