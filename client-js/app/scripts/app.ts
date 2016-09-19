@@ -384,6 +384,7 @@ window.addEventListener('WebComponentsReady', () => {
       body: encodeQueryString(requestParams)
     });
     const responseParams = await response.json();
+    const expiresInMillis = responseParams['expires_in'] * 1000;
     const storage = state['remember_me'] ? window.localStorage
                                          : window.sessionStorage;
     saveCredential(state['manager'], storage, {
@@ -391,16 +392,16 @@ window.addEventListener('WebComponentsReady', () => {
       clientId: state['client_id'],
       clientSecret: state['client_secret'],
       accessToken: responseParams['access_token'],
-      expiresAt: responseParams['expires_in'] + new Date().getTime(),
+      expiresAt: new Date().getTime() + expiresInMillis,
       idToken: responseParams['id_token'],
       refreshToken: responseParams['refresh_token']
     });
     page.redirect(state['path']);
   }
 
-  function isPasswordError(error): boolean {
+  function isAuthError(error): boolean {
     var errStr = String(error.message || error);
-    return errStr.indexOf('password') >= 0;
+    return errStr.indexOf('password') >= 0 || errStr.indexOf('id token') >= 0;
   }
 
   /**
@@ -436,7 +437,7 @@ window.addEventListener('WebComponentsReady', () => {
           throw Error(`Unknown credential type: ${credential.kind}`);
       }
     } catch (error) {
-      if (isPasswordError(error)) {
+      if (isAuthError(error)) {
         // If we had credentials, clear them out.
         clearCredential(manager, storage);
       }
@@ -464,7 +465,7 @@ window.addEventListener('WebComponentsReady', () => {
           break;
         } catch (e) {
           console.error('Connection failed', e);
-          if (isPasswordError(e)) {
+          if (isAuthError(e)) {
             break;
           }
         } finally {
