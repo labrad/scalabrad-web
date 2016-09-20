@@ -298,9 +298,6 @@ export class Plot extends polymer.Base {
   /** If the render loop should stop. */
   private finishRender: boolean = false;
 
-  /** Store the canvas' bounding rectangle for performance. */
-  private canvasBoundingRect = null;
-
   target: HTMLElement = document.body;
 
 
@@ -617,7 +614,6 @@ export class Plot extends polymer.Base {
     this.renderer.setSize(this.width, this.height);
     this.$.canvas.style.top = `${this.margin.top}px`;
     this.$.canvas.style.left = `${this.margin.left}px`;
-    this.canvasBoundingRect = this.$.canvas.getBoundingClientRect();
   }
 
 
@@ -1826,7 +1822,7 @@ export class Plot extends polymer.Base {
 
   @listen('mousemove')
   private onCanvasMouseMove(e): void {
-    const rect = this.canvasBoundingRect;
+    const rect = this.$.canvas.getBoundingClientRect();
 
     const xMouseScreen = e.pageX - rect.left,
           yMouseScreen = e.pageY - rect.top,
