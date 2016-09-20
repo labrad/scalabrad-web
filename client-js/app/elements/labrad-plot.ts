@@ -888,7 +888,9 @@ export class Plot extends polymer.Base {
 
       // Plot the regular data line.
       const line = this.createLine(data, i+1, color, PLOT_LINE_WIDTH);
-      lines.push(line);
+      if (line) {
+        lines.push(line);
+      }
 
       const fitData = dataInFitBounds[i];
       const xMin = this.dataLimits.xMin;
