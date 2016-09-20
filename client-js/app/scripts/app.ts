@@ -6,7 +6,7 @@ import "whatwg-fetch";
 import {Activity} from "./activity";
 import * as activities from "./activities";
 import {Credential, Password, OAuthToken, loadCredential, saveCredential, clearCredential} from "./credentials";
-import {ManagerApi, ManagerServiceJsonRpc} from "./manager";
+import {ManagerApi, ManagerServiceJsonRpc, OAuthInfo} from "./manager";
 import * as registry from "./registry";
 import * as datavault from "./datavault";
 import * as nodeApi from "./node";
@@ -319,7 +319,8 @@ window.addEventListener('WebComponentsReady', () => {
     const authMethods = await mgr.authMethods({manager: manager});
     app.host = manager;
     app.allowUsernameLogin = authMethods.indexOf('username+password') >= 0;
-    app.allowOAuthLogin = authMethods.indexOf('oauth_token') >= 0;
+    app.allowOAuthLogin = authMethods.indexOf('oauth_token') >= 0
+                       || authMethods.indexOf('oauth_access_token') >= 0;
     app.$.loginButton.addEventListener('click', (event) => doLogin());
     app.$.loginForm.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -327,8 +328,16 @@ window.addEventListener('WebComponentsReady', () => {
       doLogin();
     });
     if (app.allowOAuthLogin) {
-      app.$.oauthButton.addEventListener('click', (event) => {
-        startOAuthLogin(mgr, manager)
+      app.$.oauthButton.addEventListener('click', async (event) => {
+        try {
+          const oauthInfo = await mgr.oauthInfo({manager: manager});
+          const tokenType = authMethods.indexOf('oauth_access_token') >= 0 ? 'access' : 'id';
+          const rememberMe = app.$.rememberPassword.checked;
+          await startOAuthLogin(manager, oauthInfo, tokenType, rememberMe)
+          // Redirected to oauth login page, so we never get here.
+        } catch (error) {
+          app.loginError = error.message || error;
+        }
       });
     }
     app.$.loginDialog.open();
@@ -336,32 +345,31 @@ window.addEventListener('WebComponentsReady', () => {
     return promise;
   }
 
-  async function startOAuthLogin(mgr: ManagerApi, manager: string) {
-    const rememberMe = app.$.rememberPassword.checked;
-    try {
-      const {clientId, clientSecret} = await mgr.oauthInfo({ manager: manager });
-      const redirectUri = `${location.protocol}//${location.host}${prefix}/oauth2callback`;
-      const params = {
-        'response_type': 'code',
-        'client_id': clientId,
-        'redirect_uri': redirectUri,
-        'scope': 'openid email profile',
-        'state': JSON.stringify({
-          path: location.pathname + location.search + location.hash,
-          manager: manager,
-          client_id: clientId,
-          client_secret: clientSecret,
-          redirect_uri: redirectUri,
-          remember_me: rememberMe
-        })
-      };
-      const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth'
-      const url = `${baseUrl}?${encodeQueryString(params)}`;
-      window.location.href = url;
-    } catch (error) {
-      app.loginError = error.message || error;
-      setTimeout(() => app.$.passwordInput.$.input.focus(), 0);
-    }
+  /**
+   * Start OAuth login flow by redirecting to oauth login page. Returns a
+   * promise that never fires since there's nothing to do after the redirect.
+   */
+  async function startOAuthLogin(manager: string, oauthInfo: OAuthInfo, tokenType: string, rememberMe: boolean) {
+    const redirectUri = `${location.protocol}//${location.host}${prefix}/oauth2callback`;
+    const params = {
+      'response_type': 'code',
+      'client_id': oauthInfo.clientId,
+      'redirect_uri': redirectUri,
+      'scope': 'openid email profile',
+      'state': JSON.stringify({
+        path: location.pathname + location.search + location.hash,
+        manager: manager,
+        client_id: oauthInfo.clientId,
+        client_secret: oauthInfo.clientSecret,
+        redirect_uri: redirectUri,
+        remember_me: rememberMe,
+        token_type: tokenType
+      })
+    };
+    const baseUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+    const url = `${baseUrl}?${encodeQueryString(params)}`;
+    window.location.href = url;
+    await promises.never();
   }
 
   async function finishOAuthLogin(queryString: string) {
@@ -394,7 +402,8 @@ window.addEventListener('WebComponentsReady', () => {
       accessToken: responseParams['access_token'],
       expiresAt: new Date().getTime() + expiresInMillis,
       idToken: responseParams['id_token'],
-      refreshToken: responseParams['refresh_token']
+      refreshToken: responseParams['refresh_token'],
+      tokenType: state['token_type']
     });
     page.redirect(state['path']);
   }
@@ -410,7 +419,7 @@ window.addEventListener('WebComponentsReady', () => {
    * If the login fails due to an invalid password, we clear the credentials
    * from this storage object.
    */
-  async function attemptLogin(mgr: ManagerApi, manager: string, storage: Storage): Promise<void> {
+  async function attemptLogin(mgr: ManagerApi, manager: string, storage: Storage, rememberMe: boolean): Promise<void> {
     var credential = loadCredential(manager, storage);
     if (credential === null) {
       throw new Error('no credentials');
@@ -419,16 +428,41 @@ window.addEventListener('WebComponentsReady', () => {
       // TODO(maffoo): TS2 compiler understands .kind; can then remove casts.
       switch (credential.kind) {
         case 'oauth_token':
-          await mgr.oauthLogin({
-            idToken: (credential as OAuthToken).idToken,
-            manager: manager
-          });
+          const oauthCred = credential as OAuthToken;
+          const tokenType = oauthCred.tokenType || "id";
+          var token: string;
+          switch (tokenType) {
+            case "id": token = oauthCred.idToken; break;
+            case "access": token = oauthCred.accessToken; break;
+            default:
+              throw Error(`Unknown token type: ${tokenType}`);
+          }
+          const expired = oauthCred.expiresAt < Date.now() + 60 * 1000;
+          if (tokenType === "access" && expired) {
+            // If access token is expired (or expires soon), restart the OAuth
+            // flow. This handles the common case where the labrad clientId is
+            // still authorized, so the redirect will succeed without any user
+            // interaction, basically like using a refresh token in the desktop
+            // flow (except that we don't get a refresh token in the web flow,
+            // alas). However, we don't want to get stuck in a loop if this
+            // fails, so we clear the credentials before attempting to login.
+            clearCredential(manager, storage);
+            await startOAuthLogin(manager, oauthCred, tokenType, rememberMe);
+            // Redirected to oauth login page, so we never get here.
+          } else {
+            await mgr.oauthLogin({
+              token: token,
+              tokenType: tokenType,
+              manager: manager,
+            });
+          }
           break;
 
         case 'username+password':
+          const passwordCred = credential as Password;
           await mgr.login({
-            username: (credential as Password).username,
-            password: (credential as Password).password,
+            username: passwordCred.username,
+            password: passwordCred.password,
             manager: manager
           });
           break;
@@ -503,10 +537,10 @@ window.addEventListener('WebComponentsReady', () => {
     }
 
     try {
-      await attemptLogin(mgr, host, window.sessionStorage);
+      await attemptLogin(mgr, host, window.sessionStorage, false);
     } catch (e) {
       try {
-        await attemptLogin(mgr, host, window.localStorage);
+        await attemptLogin(mgr, host, window.localStorage, true);
       } catch (e) {
         if (topLevel) {
           await loginWithDialog(mgr, host);

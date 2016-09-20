@@ -18,6 +18,7 @@ export interface OAuthToken {
   expiresAt: number;
   idToken: string;
   refreshToken?: string;
+  tokenType?: string;
 }
 
 export type Credential = Password | OAuthToken;

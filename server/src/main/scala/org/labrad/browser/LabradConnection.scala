@@ -59,8 +59,12 @@ class LabradConnection(
     doLogin(Password(username, password.toCharArray), manager)
   }
 
-  def oauthLogin(idToken: String, manager: String = ""): Unit = {
-    doLogin(OAuthToken(idToken), manager)
+  def oauthLogin(token: String, tokenType: String = "id", manager: String = ""): Unit = {
+    val credential = tokenType match {
+      case "id" => OAuthIdToken(token)
+      case "access" => OAuthAccessToken(token)
+    }
+    doLogin(credential, manager)
   }
 
   private def doLogin(credential: Credential, manager: String): Unit = {
@@ -158,7 +162,7 @@ class LabradConnection(
    */
   private def withTempConnection[A](manager: String)(f: Client => A): A = {
     val host = getHost(manager)
-    val cxn = new Client("Browser", host = host, credential = OAuthToken(""))
+    val cxn = new Client("Browser", host = host, credential = OAuthIdToken(""))
     cxn.connect(login = false)
     try {
       f(cxn)
