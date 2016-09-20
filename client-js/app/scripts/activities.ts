@@ -309,7 +309,7 @@ export class DatasetActivity implements Activity {
     });
 
     var elem: HTMLElement = null;
-    if (info.independents.length <= 2) {
+    if (info.independents.length > 0 && info.independents.length <= 2) {
       let plot = <Plot> Plot.create();
       plot.backUrl = this.places.grapherUrl(this.path);
       plot.setAttribute('class', 'flex');
