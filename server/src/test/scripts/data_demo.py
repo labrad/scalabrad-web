@@ -216,6 +216,28 @@ def demo_1d_x_coords(dv):
     dv.add(data)
 
 
+@demo
+def demo_0d_points(dv):
+    dv.new('demo_0d_points', [], ['x', 'y'])
+    add_params(dv)
+    for i in range(100):
+        dv.add([random.random(), random.random()])
+
+
+@demo
+def demo_3d_points(dv):
+    dv.new('demo_3d_points', ['x', 'y', 'z'], ['w'])
+    add_params(dv)
+    for i in range(11):
+        x = i - 5
+        for j in range(11):
+            y = j - 5
+            for k in range(11):
+                z = k - 5
+                w = math.exp(-(x**2 + y**2 + z**2) / 5**2)
+                dv.add([x, y, z, w])
+
+
 def main(dv):
     path = ['', 'Test', 'Demo']
     dv.cd(path, True)
