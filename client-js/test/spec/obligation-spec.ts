@@ -1,4 +1,4 @@
-import {Obligation, obligate} from '../app/scripts/obligation';
+import {Obligation, obligate} from '../../app/scripts/obligation';
 
 describe('Obligation', function() {
 
