@@ -425,19 +425,17 @@ window.addEventListener('WebComponentsReady', () => {
       throw new Error('no credentials');
     }
     try {
-      // TODO(maffoo): TS2 compiler understands .kind; can then remove casts.
       switch (credential.kind) {
         case 'oauth_token':
-          const oauthCred = credential as OAuthToken;
-          const tokenType = oauthCred.tokenType || "id";
+          const tokenType = credential.tokenType || "id";
           var token: string;
           switch (tokenType) {
-            case "id": token = oauthCred.idToken; break;
-            case "access": token = oauthCred.accessToken; break;
+            case "id": token = credential.idToken; break;
+            case "access": token = credential.accessToken; break;
             default:
               throw Error(`Unknown token type: ${tokenType}`);
           }
-          const expired = oauthCred.expiresAt < Date.now() + 60 * 1000;
+          const expired = credential.expiresAt < Date.now() + 60 * 1000;
           if (tokenType === "access" && expired) {
             // If access token is expired (or expires soon), restart the OAuth
             // flow. This handles the common case where the labrad clientId is
@@ -447,7 +445,7 @@ window.addEventListener('WebComponentsReady', () => {
             // alas). However, we don't want to get stuck in a loop if this
             // fails, so we clear the credentials before attempting to login.
             clearCredential(manager, storage);
-            await startOAuthLogin(manager, oauthCred, tokenType, rememberMe);
+            await startOAuthLogin(manager, credential, tokenType, rememberMe);
             // Redirected to oauth login page, so we never get here.
           } else {
             await mgr.oauthLogin({
@@ -459,16 +457,12 @@ window.addEventListener('WebComponentsReady', () => {
           break;
 
         case 'username+password':
-          const passwordCred = credential as Password;
           await mgr.login({
-            username: passwordCred.username,
-            password: passwordCred.password,
+            username: credential.username,
+            password: credential.password,
             manager: manager
           });
           break;
-
-        default:
-          throw Error(`Unknown credential type: ${credential.kind}`);
       }
     } catch (error) {
       if (isAuthError(error)) {

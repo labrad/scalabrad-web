@@ -30,10 +30,12 @@ export type Credential = Password | OAuthToken;
  */
 export function loadCredential(manager: string, storage: Storage): Credential {
   try {
-    return JSON.parse(storage.getItem(storageKey(manager))) as Credential;
-  } catch (e) {
-    return null;
-  }
+    const obj = JSON.parse(storage.getItem(storageKey(manager)));
+    if (obj.kind === 'username+password' || obj.kind === 'oauth_token') {
+      return obj as Credential;
+    }
+  } catch (e) {}
+  return null;
 }
 
 /**
