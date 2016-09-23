@@ -1,6 +1,6 @@
 import {Agent} from './hello-world';
-import {Observable} from '../app/scripts/observable';
-import {Lifetime} from '../app/scripts/lifetime';
+import {Observable} from '../../app/scripts/observable';
+import {Lifetime} from '../../app/scripts/lifetime';
 
 /*
 * Example test
