@@ -70,7 +70,7 @@ export class DatavaultActivity implements Activity {
   private lifetime = new Lifetime();
 
   constructor(private places: Places,
-              private api: datavault.DataVaultService,
+              private api: datavault.DataVaultApi,
               public path: string[]) {}
 
   async start(): Promise<ActivityState> {

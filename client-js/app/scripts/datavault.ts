@@ -40,7 +40,7 @@ export interface DataVaultApi {
   updateTags(params: {path: string[]; name: string; isDir: boolean; tags: string[]}): Promise<void>;
 }
 
-export class DataVaultService extends rpc.RpcService implements DataVaultApi {
+export class DataVaultApiImpl extends rpc.RpcService implements DataVaultApi {
 
   newDir = new Observable<{name: string}>();
   newDataset = new Observable<{name: string}>();

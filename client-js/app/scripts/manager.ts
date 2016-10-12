@@ -61,7 +61,7 @@ export interface ManagerApi {
   serverDisconnected: Observable<ServerDisconnectMessage>;
 }
 
-export class ManagerServiceJsonRpc extends rpc.RpcService implements ManagerApi {
+export class ManagerApiImpl extends rpc.RpcService implements ManagerApi {
 
   connected = new Observable<LabradConnectMessage>();
   disconnected = new Observable<LabradDisconnectMessage>();

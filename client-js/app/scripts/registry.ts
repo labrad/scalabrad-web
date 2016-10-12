@@ -30,7 +30,7 @@ export interface RegistryApi {
   unwatch(params: {path: string[]}): Promise<void>;
 }
 
-export class RegistryServiceJsonRpc extends rpc.RpcService implements RegistryApi {
+export class RegistryApiImpl extends rpc.RpcService implements RegistryApi {
 
   newItem = new Observable<{name: string}>();
 
