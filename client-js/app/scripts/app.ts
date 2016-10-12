@@ -6,7 +6,7 @@ import "whatwg-fetch";
 import {Activity} from "./activity";
 import * as activities from "./activities";
 import {Credential, Password, OAuthToken, loadCredential, saveCredential, clearCredential} from "./credentials";
-import {ManagerApi, ManagerServiceJsonRpc, OAuthInfo} from "./manager";
+import {ManagerApi, ManagerApiImpl, OAuthInfo} from "./manager";
 import * as registry from "./registry";
 import * as datavault from "./datavault";
 import * as nodeApi from "./node";
@@ -520,7 +520,7 @@ window.addEventListener('WebComponentsReady', () => {
       });
     }
 
-    var mgr = new ManagerServiceJsonRpc(socket);
+    var mgr = new ManagerApiImpl(socket);
     if (topLevel) {
       mgr.version().then((version) => {
         app.serverVersion = version;
@@ -557,9 +557,9 @@ window.addEventListener('WebComponentsReady', () => {
       places: new Places(prefix, host),
       socket: socket,
       mgr: mgr,
-      reg: new registry.RegistryServiceJsonRpc(socket),
-      dv: new datavault.DataVaultService(socket),
-      node: new nodeApi.NodeService(socket)
+      reg: new registry.RegistryApiImpl(socket),
+      dv: new datavault.DataVaultApiImpl(socket),
+      node: new nodeApi.NodeApiImpl(socket)
     };
   }
 

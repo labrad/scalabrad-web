@@ -42,7 +42,7 @@ export interface NodeApi {
   serverStatus: Observable<ServerStatusMessage>;
 }
 
-export class NodeService extends rpc.RpcService implements NodeApi {
+export class NodeApiImpl extends rpc.RpcService implements NodeApi {
 
   nodeStatus = new Observable<NodeStatus>();
   serverStatus = new Observable<ServerStatusMessage>();

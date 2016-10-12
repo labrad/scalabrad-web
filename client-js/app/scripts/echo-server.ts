@@ -4,7 +4,7 @@ export interface EchoApi {
   echo(message: string): Promise<string>;
 }
 
-export class EchoServiceJsonRpc extends rpc.RpcService implements EchoApi {
+export class EchoApiImpl extends rpc.RpcService implements EchoApi {
 
   constructor(socket: rpc.JsonRpcSocket) {
     super(socket, "org.labrad.");
