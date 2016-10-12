@@ -11,7 +11,7 @@ var tsc = require('gulp-typescript');
 var typescript = require('typescript');
 var del = require('del');
 var runSequence = require('run-sequence');
-var browserSync = require('browser-sync');
+var browserSync = require('browser-sync').create();
 var merge = require('merge-stream');
 var path = require('path');
 var fs = require('fs');
@@ -296,9 +296,10 @@ gulp.task('clean', del.bind(null, ['.tmp', 'dist']));
 // Watch Files For Changes & Reload
 gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'elements', 'images'], function () {
   var folder = path.resolve(__dirname, ".");
-  browserSync({
+  browserSync.init({
     notify: false,
     open: false,
+    ghostMode: false,
     server: {
       baseDir: ['.tmp', 'app'],
       routes: {
@@ -346,9 +347,10 @@ gulp.task('test-watch', function () {
 
 // Build and serve the output from the dist build
 gulp.task('serve:dist', ['default'], function () {
-  browserSync({
+  browserSync.init({
     notify: false,
     open: false,
+    ghostMode: false,
     server: 'dist'
   });
 });
