@@ -10,6 +10,22 @@ To run the server in production mode, download and extract a pre-built binary pa
 The extracted archive includes a startup script in its `bin/` directory.
 This will start a webserver which you can see by browsing to `localhost:7667`.
 
+## Browser Compatibility
+
+We test and use scalabrad-web with Google Chrome.
+It may work in other browsers with varying degrees of success, but in general browser compatibility has not been a priority.
+We would be happy to accept contributions to improve compatibility with other browsers.
+
+The scalabrad-web grapher components use WebGL for rendering, so your browser will need to have WebGL enabled to see the plots.
+If you are trying to use Google Chrome through remote desktop, you may need to adjust browser settings to enable WebGL software rendering:
+
+- Open Google Chrome.
+- Type `chrome://flags` in the address bar.
+- Enable the setting `Override software rendering list`.
+- Restart your browser.
+
+## Development
+
 To run the server in development mode, you'll first need to install sbt, then from the repository root run
 
 ```
