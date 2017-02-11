@@ -242,7 +242,7 @@ export class DatavaultLiveActivity implements Activity {
     // resize all plots to ensure they fit the view.
     if (this.activities.length <= 3) {
       for (const activity of this.activities) {
-        activity.plot.redrawScene();
+        activity.redraw();
       }
     }
 
@@ -274,7 +274,7 @@ export class DatasetActivity implements Activity {
   private dataAvailable = new AsyncQueue<void>();
   private token = String(Math.random());
 
-  plot: Plot;
+  private plot: Plot;
 
   constructor(private places: Places,
               private api: datavault.DataVaultApi,
@@ -351,12 +351,20 @@ export class DatasetActivity implements Activity {
     var done = false;
     while (!done) {
       var data = await this.api.dataStreamGet({token: this.token, limit: 2000});
-      this.plot.addData(data);
+      if (this.plot) {
+        this.plot.addData(data);
+      }
       try {
         await this.dataAvailable.take();
       } catch (error) {
         done = true; // queue closed
       }
+    }
+  }
+
+  redraw() {
+    if (this.plot) {
+      this.plot.redrawScene();
     }
   }
 
