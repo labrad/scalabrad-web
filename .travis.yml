@@ -5,7 +5,7 @@ scala:
 jdk:
   - oraclejdk8
 env:
-  - NODE_VERSION=4.4.7
+  - NODE_VERSION=6.9.5
 cache:
   directories:
     - $HOME/node-v$NODE_VERSION-linux-x64
