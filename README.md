@@ -55,7 +55,7 @@ $ npm run bower install
 Now, you should be able to run the gulp build to compile and launch the app:
 
 ```
-$ gulp serve
+$ npm run gulp serve
 ```
 
 This will start a web server running on `localhost:3000` that will serve the static files for the new client.
