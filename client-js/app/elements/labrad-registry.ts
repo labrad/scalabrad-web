@@ -9,6 +9,7 @@ type ListItem = {
   isKey: boolean,
   url?: string,
   value?: string,
+  prettyValue?: string,
 };
 
 @component('labrad-registry')
@@ -420,6 +421,7 @@ export class LabradRegistry extends polymer.Base {
     for (const j in resp.keys) {
       const name = resp.keys[j];
       const value = resp.vals[j];
+      const prettyValue = resp.prettyVals[j];
       this.push('keys', {
         name: name,
         value: value,
@@ -431,7 +433,8 @@ export class LabradRegistry extends polymer.Base {
         isParent: false,
         isDir: false,
         isKey: true,
-        value: value
+        value: value,
+        prettyValue: prettyValue,
       });
     }
 
@@ -646,7 +649,7 @@ export class LabradRegistry extends polymer.Base {
     const editValueElem = this.$.editValueInput;
 
     this.$.editValueName.innerText = item.name;
-    editValueElem.value = item.value;
+    editValueElem.value = item.prettyValue;
     dialog.keyName = item.name;
     dialog.open();
   }
