@@ -6,6 +6,7 @@ export interface RegistryListing {
   dirs: string[];
   keys: string[];
   vals: string[];
+  prettyVals: string[];
 }
 
 export interface RegistryApi {

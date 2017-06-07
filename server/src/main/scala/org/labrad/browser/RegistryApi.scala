@@ -35,10 +35,17 @@ object RegistryContents {
  *
  * This is in a form suitable for encoding in JSON.
  */
-case class RegistryListing(path: Seq[String], dirs: Seq[String], keys: Seq[String], vals: Seq[String])
+case class RegistryListing(
+  path: Seq[String],
+  dirs: Seq[String],
+  keys: Seq[String],
+  vals: Seq[String],
+  prettyVals: Seq[String]
+)
 object RegistryListing { implicit val format = Json.format[RegistryListing] }
 
-class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec: ExecutionContext) extends Logging {
+class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec: ExecutionContext)
+extends Logging {
 
   import RegistryApi._
 
@@ -51,7 +58,10 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
     pkt
   }
 
-  private def regGetContents(path: Seq[String], recursive: Boolean = false): Future[RegistryContents] = async {
+  private def regGetContents(
+    path: Seq[String],
+    recursive: Boolean = false
+  ): Future[RegistryContents] = async {
     // get directory listing
     val pkt = startPacket(path)
     val dirF = pkt.dir()
@@ -87,7 +97,13 @@ class RegistryApi(cxn: LabradConnection, client: RegistryClientApi)(implicit ec:
 
   private def regDir(path: Seq[String]): Future[RegistryListing] = async {
     val ans = await { regGetContents(path) }
-    RegistryListing(path, ans.dirs.map(_._1), ans.keys.map(_._1), ans.keys.map(_._2.toString))
+    RegistryListing(
+      path = path,
+      dirs = ans.dirs.map(_._1),
+      keys = ans.keys.map(_._1),
+      vals = ans.keys.map(_._2.toString),
+      prettyVals = ans.keys.map(_._2.toPrettyString(80))
+    )
   }
 
   private def regDel(path: Seq[String], key: String): Future[Unit] = async {

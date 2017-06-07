@@ -154,6 +154,9 @@
       font-family: 'roboto mono', monospace;
       font-size: 15px;
     }
+    #editValueInput {
+      min-width: 50em;
+    }
 
     iron-icon {
       margin: 5px;
@@ -248,7 +251,7 @@
             <div class$="row [[computeSelectedClass(selected)]]"
                  on-dblclick="editValueClicked"
                  name="{{item.name}}"
-                 value="{{item.value}}"
+                 value="{{item.prettyValue}}"
                  kind="{{item.kind}}"
                  key-name="{{item.name}}"
                  is-key="{{item.isKey}}">
