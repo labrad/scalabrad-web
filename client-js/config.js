@@ -12,6 +12,7 @@ System.config({
   "map": {
     "d3": "github:mbostock/d3@3.5.17",
     "page": "npm:page@1.6.3",
+    "polymer-ts": "npm:polymer-ts@0.1.26",
     "three": "github:mrdoob/three.js@r78",
     "traceur": "github:jmcriffey/bower-traceur@0.0.88",
     "traceur-runtime": "github:jmcriffey/bower-traceur-runtime@0.0.88",

@@ -65,6 +65,7 @@
     "dependencies": {
       "d3": "github:d3/d3@^3.5.17",
       "page": "npm:page@^1.6.3",
+      "polymer-ts": "npm:polymer-ts@^0.1.26",
       "three": "github:mrdoob/three.js@r78",
       "whatwg-fetch": "npm:whatwg-fetch@^1.0.0"
     },
