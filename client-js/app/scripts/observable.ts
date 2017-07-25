@@ -40,4 +40,14 @@ export class Observable<A> {
       setTimeout(() => callback(value), 0);
     }
   }
+
+  /**
+   * Create an observable that will apply a function to values we emit.
+   */
+  map<B>(f: (A) => Promise<B>, lifetime?: Lifetime): Observable<B> {
+    const observable = new Observable<B>();
+    this.add(async (a) => observable.call(await f(a)), lifetime);
+    return observable;
+  }
 }
+

@@ -9,12 +9,21 @@ export interface ServerStatus {
   environmentVars: string[];
   instances: string[];
   autostart: boolean;
+  outdated: boolean;
+  runningVersion: string;
+  latestVersion: string;
 }
 
 export interface NodeStatus {
   name: string;
   servers: ServerStatus[];
-  autostartList: string[];
+}
+
+export interface OutdatedServerInfo {
+  name: string;
+  instanceName: string;
+  runningVersion: string;
+  latestVersion: string;
 }
 
 export interface ServerStatusMessage {
@@ -26,6 +35,7 @@ export interface ServerStatusMessage {
 
 export interface NodeApi {
   allNodes(): Promise<NodeStatus[]>;
+  getNodeStatus(node: string): Promise<NodeStatus>;
 
   refreshNode(node: string): Promise<string>;
 
@@ -33,6 +43,9 @@ export interface NodeApi {
   autostartList(node: string): Promise<string[]>;
   autostartAdd(params: {node: string; server: string}): Promise<void>;
   autostartRemove(params: {node: string; server: string}): Promise<void>;
+
+  outdatedList(node: string): Promise<OutdatedServerInfo[]>;
+  outdatedRestart(node: string): Promise<string>;
 
   restartServer(params: {node: string; server: string}): Promise<void>;
   startServer(params: {node: string; server: string}): Promise<void>;
@@ -44,17 +57,77 @@ export interface NodeApi {
 
 export class NodeApiImpl extends rpc.RpcService implements NodeApi {
 
-  nodeStatus = new Observable<NodeStatus>();
-  serverStatus = new Observable<ServerStatusMessage>();
+  nodeStatus: Observable<NodeStatus> = null;
+  serverStatus: Observable<ServerStatusMessage> = null;
 
   constructor(socket: rpc.JsonRpcSocket) {
     super(socket, 'org.labrad.node.');
-    this.connect('org.labrad.node.nodeStatus', this.nodeStatus);
+
+    const rawNodeStatus = new Observable<NodeStatus>();
+    this.nodeStatus = rawNodeStatus.map((s) => this.updateNodeStatus(s));
+    this.serverStatus = new Observable<ServerStatusMessage>();
+
+    this.connect('org.labrad.node.nodeStatus', rawNodeStatus);
     this.connect('org.labrad.node.serverStatus', this.serverStatus);
   }
 
-  allNodes(): Promise<NodeStatus[]> {
-    return this.call<NodeStatus[]>('allNodes', []);
+  // Fetch additional info needed along with the basic node status.
+  //
+  // Extra information like the autostart list and list of outdated servers is
+  // needed by the node interface but not included in status messages from the
+  // node server. This function grabs the extra data. We do this here in the
+  // NodeApi so other code can use the NodeStatus type without having to
+  // manually fetch additional data.
+  private async updateNodeStatus(nodeStatus: NodeStatus): Promise<NodeStatus> {
+    const autostartListPromise = this.autostartList(nodeStatus.name);
+    const outdatedListPromise = this.outdatedList(nodeStatus.name);
+
+    // set default values for extra info
+    for (const server of nodeStatus.servers) {
+      server.autostart = false;
+      server.outdated = false;
+      server.runningVersion = '';
+      server.latestVersion = '';
+    }
+
+    // update autostart info
+    try {
+      const autostartSet = new Set<string>(await autostartListPromise);
+      for (const server of nodeStatus.servers) {
+        server.autostart = autostartSet.has(server.name);
+      }
+    } catch (error) {
+      console.warn(`failed to list autostart servers for ${nodeStatus.name}`, error);
+    }
+
+    // update info about outdated server versions
+    try {
+      const outdatedList = await outdatedListPromise;
+      for (const server of nodeStatus.servers) {
+        for (const outdated of outdatedList) {
+          if (outdated.name == server.name) {
+            server.outdated = true;
+            server.runningVersion = outdated.runningVersion;
+            server.latestVersion = outdated.latestVersion;
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`failed to list outdated servers for ${nodeStatus.name}`, error);
+    }
+
+    // return the updated node status
+    return nodeStatus;
+  }
+
+  async allNodes(): Promise<NodeStatus[]> {
+    const statuses = await this.call<NodeStatus[]>('allNodes', []);
+    return Promise.all(statuses.map((s) => this.updateNodeStatus(s)));
+  }
+
+  async getNodeStatus(node: string): Promise<NodeStatus> {
+    const status = await this.call<NodeStatus>('getNodeStatus', [node]);
+    return this.updateNodeStatus(status);
   }
 
   refreshNode(node: string): Promise<string> {
@@ -75,6 +148,14 @@ export class NodeApiImpl extends rpc.RpcService implements NodeApi {
 
   autostartRemove(params: {node: string; server: string}): Promise<void> {
     return this.call<void>('autostartRemove', params);
+  }
+
+  outdatedList(node: string): Promise<OutdatedServerInfo[]> {
+    return this.call<OutdatedServerInfo[]>('outdatedList', [node]);
+  }
+
+  outdatedRestart(node: string): Promise<string> {
+    return this.call<string>('outdatedRestart', [node]);
   }
 
   restartServer(params: {node: string; server: string}): Promise<void> {
