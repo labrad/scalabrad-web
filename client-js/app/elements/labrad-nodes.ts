@@ -141,7 +141,7 @@ export class LabradInstanceController extends polymer.Base {
       this.set('server.errorString', '');
       this.set('server.errorException', '');
     } catch (e) {
-      const message = `${this.instanceName} (${this.node}): An error occured while starting the server`;
+      const message = `${this.instanceName} (${this.node}): An error occured while toggling autostart setting`;
       console.error(message, e);
       this.set('server.errorString', message);
       this.set('server.errorException', e.message);
@@ -315,21 +315,7 @@ export class LabradNodes extends polymer.Base {
     // the state of each controller of that server type to all others of the
     // same type. This informs existing servers of the new server state, and
     // informs the new server of the existing servers' states.
-    const instances = Polymer.dom(this.root)
-                             .querySelectorAll('labrad-instance-controller');
-    for (const inst of instances) {
-      // Required to make the compiler cast the object correctly.
-      const instance = <any>inst;
-      if (instance.name == event.detail.server) {
-        const msg = {
-          node: instance.node,
-          server: instance.name,
-          instance: instance.instanceName,
-          status: instance.status
-        };
-        this.onServerStatus(msg);
-      }
-    }
+    this.onServerStatus(event.detail);
   }
 
 
@@ -480,14 +466,10 @@ export class LabradNodes extends polymer.Base {
     const versionMap = this.versionMap(this.info);
 
     for (const server of item.servers) {
-      const versions = versionMap.get(server.name);
-      const version = (versions.size === 1) ? versions.values().next().value
-                                            : 'Version Conflict!';
-
       const isGlobal = server.environmentVars.length === 0;
       const newServer = {
         name: server.name,
-        version: version,
+        version: '',
         autostart: false,
         errorString: '',
         errorException: '',
@@ -544,6 +526,10 @@ export class LabradNodes extends polymer.Base {
     if (this.isAutostartFiltered) {
       this.updateFilters();
     }
+  }
+
+
+  private updateServerVersions() {
   }
 
 
@@ -639,12 +625,24 @@ export class LabradNodes extends polymer.Base {
   }
 
 
+  private updateServerVersion(serversName: string,
+                              serverIdx: number): void {
+    const server = this[serversName][serverIdx];
+    const versionMap = this.versionMap(this.info);
+    const versions = versionMap.get(server.name);
+    const version = (versions.size === 1) ? versions.values().next().value
+                                          : 'Version Conflict!';
+    this.set(`${serversName}.#${serverIdx}.version`, version);
+  }
+
+
   private updateNodeServerBinding(serversName: string): void {
     const servers = this[serversName];
     for (let idx = 0; idx < servers.length; ++idx) {
       this.removeOfflineNodes(serversName, idx);
       this.addOnlineNodes(serversName, idx);
       this.updateServerAutostartStatus(serversName, idx);
+      this.updateServerVersion(serversName, idx);
     }
   }
 
