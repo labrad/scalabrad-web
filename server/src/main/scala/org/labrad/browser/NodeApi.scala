@@ -15,6 +15,9 @@ object NodeApi {
   case class NodeStatus(name: String, servers: Seq[ServerStatus])
   object NodeStatus { implicit val format = Json.format[NodeStatus] }
 
+  case class OutdatedServerInfo(name: String, instanceName: String, runningVersion: String, latestVersion: String)
+  object OutdatedServerInfo { implicit val format = Json.format[OutdatedServerInfo] }
+
   def getServerStatuses(servers: Data): Seq[ServerStatus] = {
     servers.get[Seq[(String, String, String, String, Seq[String], Seq[String])]].map {
       case (name, desc, ver, instName, env, instances) =>
@@ -40,6 +43,12 @@ class NodeApi(cxn: LabradConnection)(implicit ec: ExecutionContext) extends Logg
       results.map { case (node, servers) =>
         NodeStatus(node, getServerStatuses(servers))
       }
+    }
+  }
+
+  def getNodeStatus(node: String): Future[NodeStatus] = {
+    cxn.to(node).call("status").map { servers =>
+      NodeStatus(node, getServerStatuses(servers))
     }
   }
 
@@ -69,6 +78,30 @@ class NodeApi(cxn: LabradConnection)(implicit ec: ExecutionContext) extends Logg
 
   def autostartRemove(node: String, server: String): Future[Unit] = {
     cxn.to(node).call("autostart_remove", Str(server)).map { _ => () }
+  }
+
+  def outdatedList(node: String): Future[Seq[OutdatedServerInfo]] = {
+    cxn.to(node).call("outdated_list").map { result =>
+      if (result.isNone) {
+        Seq()
+      } else {
+        result.clusterIterator.map { item =>
+          val entries = item.clusterIterator.map(_.get[(String, String)]).toMap
+          OutdatedServerInfo(
+            name = entries("server"),
+            instanceName = entries("instance"),
+            runningVersion = entries("running_version"),
+            latestVersion = entries("latest_version")
+          )
+        }.toSeq
+      }
+    }
+  }
+
+  def outdatedRestart(node: String): Future[String] = {
+    cxn.to(node).call("outdated_restart").map { _ =>
+      "restarted"
+    }
   }
 
   def restartServer(node: String, server: String) = doRequest(node, server, "restart")

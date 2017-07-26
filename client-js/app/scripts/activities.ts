@@ -419,9 +419,7 @@ export class NodesActivity implements Activity {
 
     var nodesInfo = await this.nodeApi.allNodes();
     for (const node of nodesInfo) {
-      var list = await this.nodeApi.autostartList(node.name);
-      node.autostartList = list;
-      elem.addItemToList(node);
+      elem.updateNode(node);
     }
 
     elem.places = this.places;

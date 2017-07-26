@@ -68,8 +68,8 @@
       padding: 0px;
     }
     paper-spinner {
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
       top: 5px;
     }
     paper-icon-button.autostart {
@@ -108,6 +108,7 @@
             icon="star-border"
             on-click="toggleAutostart"
             title="Autostart: Off"></paper-icon-button>
+        <span>{{version}}</span>
       </span>
     </div>
   </template>
@@ -121,8 +122,8 @@
       padding: 0px;
     }
     paper-spinner {
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
       top: 5px;
     }
   </style>
@@ -134,11 +135,18 @@
     </span>
 
     <span hidden$="{{active}}">
-      <paper-icon-button id="refresh" icon="av:replay"></paper-icon-button>
+      <paper-icon-button
+        id="refresh"
+        icon="settings"
+        title="Reload Node Configuration"></paper-icon-button>
       <paper-icon-button
         id="autostart"
         icon="av:playlist-play"
         title="Start All Autostart Servers"></paper-icon-button>
+      <paper-icon-button
+        id="outdated"
+        icon="update"
+        title="Restart All Outdated Servers"></paper-icon-button>
     </span>
   </template>
 </dom-module>
@@ -224,7 +232,6 @@
       <table>
         <thead>
           <th>Global Servers</th>
-          <th></th>
           <template is="dom-repeat"
                     items="{{nodeNames}}"
                     as="node"
@@ -238,7 +245,6 @@
                     as="server">
             <tr>
               <td class='name'>{{server.name}}</td>
-              <td class='version'>{{server.version}}</td>
               <template is="dom-repeat"
                         items="{{server.nodes}}"
                         as="node"
@@ -251,6 +257,7 @@
                       local
                       name={{server.name}}
                       server={{server}}
+                      version={{node.version}}
                       instance-name={{node.instanceName}}
                       node={{node.name}}
                       status={{node.status}}
@@ -267,7 +274,6 @@
 
         <thead>
           <th>Local Servers</th>
-          <th></th>
           <template is="dom-repeat" items="{{nodeNames}}">
             <th></th>
           </template>
@@ -276,7 +282,6 @@
           <template is="dom-repeat" items="{{localServersFiltered}}" as="server">
             <tr>
               <td class="name">{{server.name}}</td>
-              <td class="version">{{server.version}}</td>
               <template is="dom-repeat"
                         items="{{server.nodes}}"
                         as="node"
@@ -288,6 +293,7 @@
                       api={{api}}
                       name={{server.name}}
                       server={{server}}
+                      version={{node.version}}
                       instance-name={{node.instanceName}}
                       node={{node.name}}
                       status={{node.status}}
