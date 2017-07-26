@@ -41,10 +41,12 @@ var typescriptOptions = {
   target: 'ES6',
   module: 'ES6',
   declarationFiles: false,
-  noExternalResolve: true,
+  noResolve: true,
   experimentalDecorators: true,
   emitDecoratorMetadata: true,
-  noEmitOnError: true
+  noEmitOnError: true,
+  traceResolution: true,
+  types: []
 };
 
 var AUTOPREFIXER_BROWSERS = [

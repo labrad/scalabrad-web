@@ -3,4 +3,3 @@
 /// <reference path="page/page.d.ts" />
 /// <reference path="path-to-regexp/path-to-regexp.d.ts" />
 /// <reference path="polymer-ts/polymer-ts.d.ts" />
-/// <reference path="whatwg-fetch/whatwg-fetch.d.ts" />

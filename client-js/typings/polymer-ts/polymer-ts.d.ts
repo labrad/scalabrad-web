@@ -1,4 +1,4 @@
-declare module polymer {
+declare namespace polymer {
     class PolymerBase extends HTMLElement {
         $: any;
         $$: any;
@@ -100,10 +100,12 @@ declare module polymer {
         computed?: string;
         observer?: string;
     }
-    class Base extends polymer.PolymerBase implements polymer.Element {
+    class Base extends polymer.PolymerBase {
         static create<T extends polymer.Base>(...args: any[]): T;
         static register(): void;
         is: string;
+    }
+    interface Base extends polymer.Element {
     }
     function createEs6PolymerBase(): void;
     function prepareForRegistration(elementClass: Function): polymer.Element;
