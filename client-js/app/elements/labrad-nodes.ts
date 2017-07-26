@@ -275,7 +275,7 @@ interface ServerInfo {
   errorString: string;
   errorException: string;
   nodes: NodeServerStatus[];
-};
+}
 
 type NodeServerStatus = {
   name: string,
