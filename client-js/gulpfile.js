@@ -46,7 +46,8 @@ var typescriptOptions = {
   emitDecoratorMetadata: true,
   noEmitOnError: true,
   traceResolution: true,
-  types: []
+  allowSyntheticDefaultImports: true,
+  types: ['page']
 };
 
 var AUTOPREFIXER_BROWSERS = [
