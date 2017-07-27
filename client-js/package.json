@@ -12,6 +12,9 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@types/d3": "^4.10.0",
+    "@types/d3-array": "^1.2.0",
+    "@types/d3-scale": "^1.0.10",
     "bower": "^1.7.9",
     "browser-sync": "^2.6.4",
     "del": "^1.1.1",
@@ -58,7 +61,7 @@
   "jspm": {
     "directories": {},
     "dependencies": {
-      "d3": "github:d3/d3@^3.5.17",
+      "d3": "npm:d3@4.10.0",
       "page": "npm:page@^1.6.3",
       "three": "github:mrdoob/three.js@r78",
       "whatwg-fetch": "npm:whatwg-fetch@^1.0.0"

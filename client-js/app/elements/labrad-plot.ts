@@ -1,4 +1,4 @@
-import 'd3';
+import d3 from 'd3';
 import THREE from 'three';
 import {viridisData} from '../scripts/colormaps';
 import * as datavault from '../scripts/datavault';
@@ -482,13 +482,13 @@ export class Plot extends polymer.Base {
       p.margin.right = PLOT_RIGHT_MARGIN + COLOR_BAR_WIDGET_SIZE;
     }
 
-    p.xScale = d3.scale.linear()
+    p.xScale = d3.scaleLinear()
             .domain([p.limits.xMin, p.limits.xMax]);
 
-    p.yScale = d3.scale.linear()
+    p.yScale = d3.scaleLinear()
             .domain([p.limits.yMin, p.limits.yMax]);
 
-    p.zScale = d3.scale.linear()
+    p.zScale = d3.scaleLinear()
             .domain([0, 1]);
 
     p.xAxis = d3.svg.axis()
@@ -505,7 +505,7 @@ export class Plot extends polymer.Base {
             .x((d) => p.xScale(d[0]))
             .y((d) => p.yScale(d[1]));
 
-    p.zoom = d3.behavior.zoom()
+    p.zoom = d3.zoom()
             .x(p.xScale)
             .y(p.yScale)
             .on('zoom', () => p.handleZoom());
