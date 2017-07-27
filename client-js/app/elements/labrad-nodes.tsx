@@ -1,5 +1,8 @@
 /// <reference types="polymer-ts" />
 
+import React from 'react';
+import ReactDOM from 'react-dom';
+
 import {Lifetime} from '../scripts/lifetime';
 import {ManagerApi, ServerConnectMessage, ServerDisconnectMessage} from '../scripts/manager';
 import {NodeApi, NodeStatus, ServerStatus, ServerStatusMessage} from '../scripts/node';
@@ -334,6 +337,15 @@ export class LabradNodes extends polymer.Base {
     // same type. This informs existing servers of the new server state, and
     // informs the new server of the existing servers' states.
     this.broadcastStatusChange(event.detail);
+  }
+
+
+  attached() {
+    console.log('ReactDOM', ReactDOM);
+    ReactDOM.render(
+      <h1>Hello, World!</h1>,
+      Polymer.dom(this.root).querySelector('#react-root')
+    );
   }
 
 

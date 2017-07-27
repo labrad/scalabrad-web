@@ -45,8 +45,9 @@ var typescriptOptions = {
   emitDecoratorMetadata: true,
   noEmitOnError: true,
   traceResolution: true,
+  jsx: 'React',
   allowSyntheticDefaultImports: true,
-  types: ['d3', 'jasmine', 'page', 'three']
+  types: ['d3', 'jasmine', 'page', 'react', 'react-dom', 'three']
 };
 
 var AUTOPREFIXER_BROWSERS = [
@@ -75,14 +76,14 @@ function metaTag(name, content) {
 
 // Lint all custom TypeScript files.
 gulp.task('tslint', function () {
-  return gulp.src('app/**/*.ts')
+  return gulp.src('app/**/*.ts?(x)')
     .pipe(tslint())
     .pipe(tslint.report('prose'));
 });
 
 // Compile TypeScript and include references to library and app .d.ts files.
 gulp.task('compile-ts', function () {
-  var tsResult = gulp.src(['app/**/*.ts'])
+  var tsResult = gulp.src(['app/**/*.ts?(x)'])
     .pipe(sourcemaps.init())
     .pipe(tsc(typescriptOptions));
 
@@ -93,7 +94,7 @@ gulp.task('compile-ts', function () {
 });
 
 gulp.task('compile-test', function () {
-  var tsResult = gulp.src(['app/**/*.ts', 'test/**/*.ts'])
+  var tsResult = gulp.src(['app/**/*.ts?(x)', 'test/**/*.ts?(x)'])
     .pipe(sourcemaps.init())
     .pipe(tsc(typescriptOptions));
 
@@ -326,8 +327,8 @@ gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'elements', 'images
   gulp.watch(['app/**/*.html'], reload);
   gulp.watch(['app/styles/**/*.css'], ['styles', reload]);
   gulp.watch(['app/elements/**/*.css'], ['elements', reload]);
-  gulp.watch(['app/{scripts,elements}/**/*.js'], ['jshint', reload]);
-  gulp.watch(['app/{scripts,elements}/**/*.ts'], ['bundle', reload]);
+  gulp.watch(['app/{scripts,elements}/**/*.js?(x)'], ['jshint', reload]);
+  gulp.watch(['app/{scripts,elements}/**/*.ts?(x)'], ['bundle', reload]);
   gulp.watch(['app/images/**/*'], reload);
 });
 
@@ -344,7 +345,7 @@ gulp.task('watch', function () {
 });
 
 gulp.task('test-watch', function () {
-  gulp.watch(['app/{scripts,elements}/**/*.ts'], ['test']);
+  gulp.watch(['app/{scripts,elements}/**/*.ts?(x)'], ['test']);
 });
 
 // Build and serve the output from the dist build

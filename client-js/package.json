@@ -16,6 +16,8 @@
     "@types/jasmine": "^2.5.53",
     "@types/page": "^1.5.32",
     "@types/polymer-ts": "^0.1.29",
+    "@types/react": "^15.0.39",
+    "@types/react-dom": "^15.5.1",
     "@types/three": "^0.81.1",
     "bower": "^1.7.9",
     "browser-sync": "^2.6.4",
@@ -65,6 +67,8 @@
     "dependencies": {
       "d3": "github:d3/d3@^3.5.17",
       "page": "npm:page@^1.6.3",
+      "react": "npm:react@15.6.1",
+      "react-dom": "npm:react-dom@15.6.1",
       "three": "github:mrdoob/three.js@r78",
       "whatwg-fetch": "npm:whatwg-fetch@^1.0.0"
     },
