@@ -47,7 +47,7 @@ var typescriptOptions = {
   noEmitOnError: true,
   traceResolution: true,
   allowSyntheticDefaultImports: true,
-  types: ['page']
+  types: ['jasmine', 'page']
 };
 
 var AUTOPREFIXER_BROWSERS = [
