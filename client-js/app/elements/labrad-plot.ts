@@ -1,3 +1,5 @@
+/// <reference types="polymer-ts" />
+
 import 'd3';
 import THREE from 'three';
 import {viridisData} from '../scripts/colormaps';

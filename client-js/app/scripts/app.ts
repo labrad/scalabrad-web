@@ -1,4 +1,5 @@
 /// <reference path="../../typings/tsd.d.ts" />
+/// <reference types="polymer-ts" />
 
 import page from "page";
 import "whatwg-fetch";

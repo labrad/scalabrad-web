@@ -1,3 +1,5 @@
+/// <reference types="polymer-ts" />
+
 @component('labrad-grapher-live')
 export class LabradGrapherLive extends polymer.Base {
   @property({type: Array, value: () => []})

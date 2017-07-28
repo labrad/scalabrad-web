@@ -1,3 +1,5 @@
+/// <reference types="polymer-ts" />
+
 export interface BreadcrumbItem {
   name: string;
   isLink: boolean;

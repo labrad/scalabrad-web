@@ -1,3 +1,5 @@
+/// <reference types="polymer-ts" />
+
 import {RegistryApi, RegistryListing} from '../scripts/registry';
 import {Places} from '../scripts/places';
 

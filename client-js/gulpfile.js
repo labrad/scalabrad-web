@@ -41,7 +41,6 @@ var typescriptOptions = {
   target: 'ES6',
   module: 'ES6',
   declarationFiles: false,
-  noResolve: true,
   experimentalDecorators: true,
   emitDecoratorMetadata: true,
   noEmitOnError: true,

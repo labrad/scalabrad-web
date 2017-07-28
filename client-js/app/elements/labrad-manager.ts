@@ -1,3 +1,5 @@
+/// <reference types="polymer-ts" />
+
 import {Lifetime} from '../scripts/lifetime';
 import {ConnectionInfo, ManagerApi} from '../scripts/manager';
 import {Places} from "../scripts/places";

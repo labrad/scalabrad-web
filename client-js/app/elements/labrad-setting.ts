@@ -1,3 +1,5 @@
+/// <reference types="polymer-ts" />
+
 @component('labrad-setting')
 export class LabradSetting extends polymer.Base {
   @property({type: Object, notify: true})
