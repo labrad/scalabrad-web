@@ -15,6 +15,7 @@
     "@types/jasmine": "^2.5.53",
     "@types/page": "^1.5.32",
     "@types/polymer-ts": "^0.1.29",
+    "@types/three": "^0.81.1",
     "bower": "^1.7.9",
     "browser-sync": "^2.6.4",
     "del": "^1.1.1",
