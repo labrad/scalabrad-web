@@ -46,7 +46,7 @@ var typescriptOptions = {
   noEmitOnError: true,
   traceResolution: true,
   allowSyntheticDefaultImports: true,
-  types: ['jasmine', 'page', 'three']
+  types: ['d3', 'jasmine', 'page', 'three']
 };
 
 var AUTOPREFIXER_BROWSERS = [
@@ -82,7 +82,7 @@ gulp.task('tslint', function () {
 
 // Compile TypeScript and include references to library and app .d.ts files.
 gulp.task('compile-ts', function () {
-  var tsResult = gulp.src(['app/**/*.ts', 'typings/**/*.ts'])
+  var tsResult = gulp.src(['app/**/*.ts'])
     .pipe(sourcemaps.init())
     .pipe(tsc(typescriptOptions));
 
@@ -93,7 +93,7 @@ gulp.task('compile-ts', function () {
 });
 
 gulp.task('compile-test', function () {
-  var tsResult = gulp.src(['app/**/*.ts','test/**/*.ts', 'typings/**/*.ts'])
+  var tsResult = gulp.src(['app/**/*.ts', 'test/**/*.ts'])
     .pipe(sourcemaps.init())
     .pipe(tsc(typescriptOptions));
 

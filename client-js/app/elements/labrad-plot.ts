@@ -1,6 +1,6 @@
 /// <reference types="polymer-ts" />
 
-import 'd3';
+import d3 from 'd3';
 import THREE from 'three';
 import {viridisData} from '../scripts/colormaps';
 import * as datavault from '../scripts/datavault';
@@ -1428,10 +1428,14 @@ export class Plot extends polymer.Base {
    * Zoom into a selected rectangular region on the graph.
    */
   private drawRectangle(rect: HTMLElement): Promise<RectangleBound> {
+    const event = d3.event as MouseEvent;
+
     // Only trigger zoom rectangle on left click.
-    if (d3.event.button !== MOUSE_MAIN_BUTTON) {
+    if (event.button !== MOUSE_MAIN_BUTTON) {
       return;
     }
+    event.preventDefault();
+    event.stopPropagation();
 
     const [originX, originY] = this.mousePositionClipped(0);
 
@@ -1472,8 +1476,6 @@ export class Plot extends polymer.Base {
 
           resolve({xMin: xMin, xMax: xMax, yMin: yMin, yMax: yMax});
         }, true);
-      d3.event.preventDefault();
-      d3.event.stopPropagation();
     });
 
     return promise;
