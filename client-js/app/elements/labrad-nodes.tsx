@@ -341,11 +341,7 @@ export class LabradNodes extends polymer.Base {
 
 
   attached() {
-    console.log('ReactDOM', ReactDOM);
-    ReactDOM.render(
-      <h1>Hello, World!</h1>,
-      Polymer.dom(this.root).querySelector('#react-root')
-    );
+    this.doRender();
   }
 
 
@@ -382,6 +378,13 @@ export class LabradNodes extends polymer.Base {
     return (s) => true;
   }
 
+
+  private doRender() {
+    ReactDOM.render(
+      <Nodes api={null} managerApi={null} isAutostartFiltered={false} nodes={this.nodes.slice()} places={null} />,
+      Polymer.dom(this.root).querySelector('#react-root')
+    );
+  } 
 
   // Listeners called on api object properties when they get set. This is
   // necessary because these properties are set asynchronously sometime after
@@ -557,6 +560,7 @@ export class LabradNodes extends polymer.Base {
     if (this.isAutostartFiltered) {
       this.updateFilters();
     }
+    this.doRender();
   }
 
 
@@ -690,3 +694,252 @@ export class LabradNodes extends polymer.Base {
     return new Map(servers.map(toKeyValue));
   }
 }
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "paper-header-panel": any;
+      "paper-icon-button": any;
+      "paper-spinner": any;
+    }
+  }
+}
+
+interface NodesProps {
+  nodes: NodeStatus[];
+  api: NodeApi;
+  places: Places;
+  managerApi: ManagerApi;
+  isAutostartFiltered: boolean;
+}
+
+class Nodes extends React.Component<NodesProps, undefined> {
+  render() {
+    const nodeNames = this.props.nodes.map((node) => node.name);
+    nodeNames.sort();
+
+    const serverNodeMap = new Map<string, Map<string, ServerStatus>>();
+    const globalServerNameSet = new Set<string>();
+    const localServerNameSet = new Set<string>();
+    for (const node of this.props.nodes) {
+      for (const server of node.servers) {
+        if (!serverNodeMap.has(server.name)) {
+          serverNodeMap.set(server.name, new Map<string, ServerStatus>());
+        }
+        serverNodeMap.get(server.name).set(node.name, server);
+        if (server.environmentVars.length === 0) {
+          globalServerNameSet.add(server.name);
+        } else {
+          localServerNameSet.add(server.name);
+        }
+      }
+    }
+
+    const globalServerNames = Array.from(globalServerNameSet.values());
+    const localServerNames = Array.from(localServerNameSet.values());
+    globalServerNames.sort();
+    localServerNames.sort();
+
+    function makeServerInfo(name: string): ServerInfo {
+      const serverNodes = serverNodeMap.get(name);
+      return {
+        name: name,
+        errorString: '',
+        errorException: null,
+        nodes: nodeNames.map((node) => {
+          return !serverNodes.has(node) ? (
+            {
+              name: node,
+              exists: false
+            }
+          ) : (
+            {
+              name: node,
+              exists: true
+            }
+          );
+        })
+      };
+    }
+
+    const globalServers = globalServerNames.map(makeServerInfo);
+    const localServers = localServerNames.map(makeServerInfo);
+
+    const nodeControllers = nodeNames.map((name) => {
+      return <NodeController key={name} name={name} />;
+    });
+    const globalServerControllers = globalServers.map((server) => {
+      return <ServerController key={server.name} name={server.name} nodes={server.nodes} isGlobal={true} />;
+    });
+    const localServerControllers = localServers.map((server) => {
+      return <ServerController key={server.name} name={server.name} nodes={server.nodes} isGlobal={false} />;
+    });
+
+    return <div id="container">
+      <paper-header-panel id="left-column">
+        <div className="paper-header" id="buttons">
+          <paper-icon-button
+            className={this.props.isAutostartFiltered ? "autostartFilterOff" : "autostartFilterOn"}
+            icon="star"
+            id="star"
+            on-click="toggleAutostartFilter"
+            title="Show Only Autostart Servers"></paper-icon-button>
+        </div>
+
+        <div className="fit">
+          <table>
+            <thead>
+              <tr>
+                <th>Global Servers</th>
+                {nodeControllers}
+              </tr>
+            </thead>
+            <tbody>
+              {globalServerControllers}
+            </tbody>
+
+            <thead>
+              <tr>
+                <th>Local Servers</th>
+                {nodeNames.map((name) => <th key={name}></th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {localServerControllers}
+            </tbody>
+          </table>
+        </div>
+      </paper-header-panel>
+    </div>;
+  }
+}
+
+interface NodeControllerProps {
+  key: string;
+  name: string;
+}
+
+class NodeController extends React.Component<NodeControllerProps, undefined> {
+  render() {
+    const active = false;
+    const controls = active ? (
+      <span>
+        <paper-spinner active></paper-spinner>
+      </span>
+    ) : (
+      <span>
+        <paper-icon-button
+          id="refresh"
+          icon="settings"
+          title="Reload Node Configuration"></paper-icon-button>
+        <paper-icon-button
+          id="autostart"
+          icon="av:playlist-play"
+          title="Start All Autostart Servers"></paper-icon-button>
+        <paper-icon-button
+          id="outdated"
+          icon="update"
+          title="Restart All Outdated Servers"></paper-icon-button>
+       </span>
+    );
+    return <th><span>{this.props.name}</span>{controls}</th>;
+  }
+}
+
+interface ServerControllerProps {
+  key: string;
+  name: string;
+  nodes: NodeServerStatus[];
+  isGlobal: boolean;
+}
+
+class ServerController extends React.Component<ServerControllerProps, undefined> {
+  render() {
+    const instanceControllers = this.props.nodes.map((node) => {
+      if (node.exists) {
+        return <InstanceController key={node.name} name={this.props.name} node={node.name} />;
+      } else {
+        return <td key={node.name}></td>;
+      }
+    });
+    return <tr>
+      <td className="name">{this.props.name}</td>
+      {instanceControllers}
+    </tr>;
+  }
+}
+
+interface InstanceControllerProps {
+  key: string;
+  name: string;
+  node: string;
+}
+
+class InstanceController extends React.Component<InstanceControllerProps, undefined> {
+  render() {
+    return <td>{this.props.name} on {this.props.node}</td>;
+  }
+}
+
+/*
+          <template is="dom-repeat"
+                    items="{{globalServersFiltered}}"
+                    as="server">
+            <tr>
+              <td class='name'>{{server.name}}</td>
+              <template is="dom-repeat"
+                        items="{{server.nodes}}"
+                        as="node"
+                        sort="compareNodes">
+                <td class='controls'>
+                  <template is="dom-if" if="{{node.exists}}">
+                    <labrad-instance-controller
+                      places={{places}}
+                      api={{api}}
+                      local
+                      name={{server.name}}
+                      server={{server}}
+                      version={{node.version}}
+                      instance-name={{node.instanceName}}
+                      node={{node.name}}
+                      status={{node.status}}
+                      autostart={{node.autostart}} />
+                  </template>
+                </td>
+              </template>
+            </tr>
+            <labrad-exception-handler
+              error="{{server.errorString}}"
+              exception="{{server.errorException}}" />
+          </template>
+*/
+
+/*
+              <template is="dom-repeat" items="{{localServersFiltered}}" as="server">
+                <tr>
+                  <td class="name">{{server.name}}</td>
+                  <template is="dom-repeat"
+                            items="{{server.nodes}}"
+                            as="node"
+                            sort="compareNodes">
+                    <td class="controls">
+                      <template is="dom-if" if="{{node.exists}}">
+                        <labrad-instance-controller
+                          places={{places}}
+                          api={{api}}
+                          name={{server.name}}
+                          server={{server}}
+                          version={{node.version}}
+                          instance-name={{node.instanceName}}
+                          node={{node.name}}
+                          status={{node.status}}
+                          autostart={{node.autostart}} />
+                      </template>
+                    </td>
+                  </template>
+                </tr>
+                <labrad-exception-handler
+                  error="{{server.errorString}}"
+                  exception="{{server.errorException}}" />
+              </template>
+*/
