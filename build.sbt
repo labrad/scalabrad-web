@@ -12,7 +12,10 @@ lazy val jsonrpc = project.in(file("jsonrpc"))
   .settings(
     name := "scalabrad-web-jsonrpc",
 
-    resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
+    resolvers ++= Seq(
+      "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
+      Resolver.bintrayRepo("maffoo", "maven")
+    ),
 
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -27,6 +30,8 @@ lazy val server = project.in(file("server"))
   .settings(commonSettings)
   .settings(
     name := "scalabrad-web-server",
+
+    resolvers += Resolver.bintrayRepo("labrad", "maven"),
 
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-async" % "0.9.2",
