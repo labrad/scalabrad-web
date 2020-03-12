@@ -24,7 +24,7 @@
     "paper-item": "PolymerElements/paper-item#^2.0.0",
     "paper-listbox": "PolymerElements/paper-listbox#^2.0.0",
     "paper-material": "PolymerElements/paper-material#^2.0.0",
-    "paper-menu": "PolymerElements/paper-menu#^1.0.0",
+    "paper-menu": "YvanDaSilva/paper-menu#2.0-preview",
     "paper-radio-button": "PolymerElements/paper-radio-button#^2.0.0",
     "paper-radio-group": "PolymerElements/paper-radio-group#^2.0.0",
     "paper-spinner": "PolymerElements/paper-spinner#^2.0.0",
@@ -42,6 +42,14 @@
   },
   "resolutions": {
     "test-fixture": "^2.0.0",
-    "webcomponentsjs": "^1.0.0"
+    "webcomponentsjs": "^1.0.0",
+    "iron-flex-layout": "^2.0.0",
+    "iron-collapse": "^2.0.0",
+    "iron-selector": "^2.0.0",
+    "paper-styles": "^2.0.0",
+    "iron-a11y-keys-behavior": "^2.0.0",
+    "iron-resizable-behavior": "^2.0.0",
+    "iron-menu-behavior": "^2.0.0",
+    "iron-behaviors": "^2.0.0"
   }
 }
