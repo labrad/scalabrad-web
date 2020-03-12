@@ -3,7 +3,7 @@ sudo: false
 scala:
   - "2.11.7"
 jdk:
-  - oraclejdk8
+  - openjdk8
 env:
   - NODE_VERSION=6.9.5
 cache:
