@@ -14,7 +14,7 @@ lazy val jsonrpc = project.in(file("jsonrpc"))
 
     resolvers ++= Seq(
       "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
-      Resolver.bintrayRepo("maffoo", "maven")
+      Resolver.jcenterRepo
     ),
 
     libraryDependencies ++= Seq(
@@ -31,7 +31,7 @@ lazy val server = project.in(file("server"))
   .settings(
     name := "scalabrad-web-server",
 
-    resolvers += Resolver.bintrayRepo("labrad", "maven"),
+    resolvers += Resolver.jcenterRepo,
 
     libraryDependencies ++= Seq(
       "org.scala-lang.modules" %% "scala-async" % "0.9.2",
