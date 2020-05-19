@@ -2,7 +2,7 @@ lazy val commonSettings = Seq(
   useJGit,
   git.useGitDescribe := true,
   scalaVersion := "2.11.7",
-  resolvers += "bintray" at "http://jcenter.bintray.com"
+  resolvers += Resolver.jcenterRepo
 )
 
 enablePlugins(GitVersioning)
@@ -11,8 +11,6 @@ lazy val jsonrpc = project.in(file("jsonrpc"))
   .settings(commonSettings)
   .settings(
     name := "scalabrad-web-jsonrpc",
-
-    resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
 
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect" % scalaVersion.value,
