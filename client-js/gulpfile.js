@@ -2,28 +2,23 @@
 
 // Include Gulp & Tools We'll Use
 var gulp = require('gulp');
-var gutil = require('gulp-util');
+var webpack = require('webpack-stream');
 var htmlmin = require('gulp-htmlmin');
 var $ = require('gulp-load-plugins')();
 var sourcemaps = require('gulp-sourcemaps');
-var tslint = require('gulp-tslint');
+var eslint = require('gulp-eslint');
 var tsc = require('gulp-typescript');
 var typescript = require('typescript');
 var del = require('del');
 var runSequence = require('run-sequence');
 var browserSync = require('browser-sync').create();
-var merge = require('merge-stream');
 var path = require('path');
 var fs = require('fs');
-var path = require('path');
 var url = require('url');
-var glob = require('glob');
 var merge = require('merge2');
-var exec = require('child_process').exec;
 var jasmineBrowser = require('gulp-jasmine-browser');
 var jasmine = require('gulp-jasmine');
 var gitDescribe = require('git-describe');
-var util = require('util');
 
 var minimist = require('minimist');
 
@@ -41,7 +36,7 @@ var typescriptOptions = {
   target: 'ES6',
   module: 'ES6',
   declarationFiles: false,
-  noExternalResolve: true,
+  noResolve: true,
   experimentalDecorators: true,
   emitDecoratorMetadata: true,
   noEmitOnError: true
@@ -72,10 +67,11 @@ function metaTag(name, content) {
 }
 
 // Lint all custom TypeScript files.
-gulp.task('tslint', function () {
+gulp.task('eslint', function () {
   return gulp.src('app/**/*.ts')
-    .pipe(tslint())
-    .pipe(tslint.report('prose'));
+    .pipe(eslint())
+    .pipe(eslint.format())
+    .pipe(eslint.failAfterError());
 });
 
 // Compile TypeScript and include references to library and app .d.ts files.
@@ -101,40 +97,39 @@ gulp.task('compile-test', function () {
   ]);
 });
 
-gulp.task('jasmine-browser', ['bundle-test'], function() {
+gulp.task('jasmine-browser', ['build-test'], function() {
   return gulp.src(['.tmp/testing/specBundle.js'])
     .pipe(jasmineBrowser.specRunner())
     .pipe(jasmineBrowser.server({port: 8888}));
 });
 
 /**
- * Build a self-executing javascript bundle using jspm.
- * Bundle configuration is found in config.js.
+ * Build a self-executing javascript bundle using webpack.
  */
 function buildBundle(mainModule, outputFile, callback) {
-  var template = 'npm run jspm bundle-sfx %s %s --skip-source-maps';
-  var cmd = util.format(template, mainModule, outputFile);
-  exec(cmd, function (err, stdout, stderr) {
-    console.log(stdout);
-    console.log(stderr);
-    callback(err);
-  });
+  var inputFile = '.tmp/' + mainModule + '.js';
+
+  var dirname = path.dirname(outputFile);
+  var basename = path.basename(outputFile);
+  gulp.src(inputFile)
+    .pipe(webpack({output: {filename: basename}}))
+    .pipe(gulp.dest(dirname + '/'))
+    .on('end', callback);
 }
 
 /*
  * Create bundle of main app code.
  */
 gulp.task('bundle', ['compile-ts'], function(callback) {
+  gulp.src(['node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js'])
+    .pipe(gulp.dest('.tmp/scripts/'));
   buildBundle('app/scripts/app', '.tmp/scripts/bundle.js', callback);
 });
 
 /*
  * Create bundle of test code.
  */
-gulp.task('bundle-test', ['compile-test', 'compile-ts'], function(callback) {
-  buildBundle('spec/main', '.tmp/testing/spec-bundle.js', callback);
-});
-
+gulp.task('build-test', ['compile-test', 'compile-ts']);
 
 var styleTask = function (stylesPath, srcs) {
   return gulp.src(srcs.map(function(src) {
@@ -151,24 +146,6 @@ var styleTask = function (stylesPath, srcs) {
 // Compile and Automatically Prefix Stylesheets
 gulp.task('styles', function () {
   return styleTask('styles', ['**/*.css']);
-});
-
-gulp.task('elements', function () {
-  return styleTask('elements', ['**/*.css']);
-});
-
-// Lint JavaScript
-gulp.task('jshint', function () {
-  return gulp.src([
-      'app/scripts/**/*.js',
-      'app/elements/**/*.js',
-      'app/elements/**/*.html'
-    ])
-    .pipe(browserSync.reload({stream: true, once: true}))
-    .pipe($.jshint.extract()) // Extract JS from .html files
-    .pipe($.jshint())
-    .pipe($.jshint.reporter('jshint-stylish'))
-    .pipe($.if(!browserSync.active, $.jshint.reporter('fail')));
 });
 
 // Optimize Images
@@ -189,29 +166,20 @@ gulp.task('copy', function () {
     '.tmp/**/*.js.map',
     'app/*',
     '!app/test',
-    '!app/precache.json'
   ], {
     dot: true
   }).pipe(gulp.dest('dist'));
 
-  var bower = gulp.src(['bower_components/**/*'])
-    .pipe(gulp.dest('dist/bower_components'));
-
-  var elements = gulp.src(['app/elements/**/*.html'])
-    .pipe(gulp.dest('dist/elements'));
-
-  var swBootstrap = gulp.src(['bower_components/platinum-sw/bootstrap/*.js'])
-    .pipe(gulp.dest('dist/elements/bootstrap'));
-
-  var swToolbox = gulp.src(['bower_components/sw-toolbox/*.js'])
-    .pipe(gulp.dest('dist/sw-toolbox'));
-
-  var vulcanized = gulp.src(['app/elements/elements.html'])
-    .pipe($.rename('elements.vulcanized.html'))
-    .pipe(gulp.dest('dist/elements'));
-
-  return merge(app, bower, elements, vulcanized, swBootstrap, swToolbox)
+  return merge(app)
     .pipe($.size({title: 'copy'}));
+});
+
+// copy bundle files to prod
+gulp.task('copy-bundle', function() {
+  gulp.src('.tmp/scripts/webcomponents-bundle.js')
+    .pipe(gulp.dest('dist/scripts/'));
+  gulp.src('.tmp/scripts/bundle.js')
+    .pipe(gulp.dest('dist/scripts/'));
 });
 
 // Copy Web Fonts To Dist
@@ -229,9 +197,6 @@ gulp.task('html', function () {
     // Add version info
     .pipe($.if('*.html', $.replace('<!-- DEV_MODE_CONFIG -->',
                                    metaTag("labrad-clientVersion", gitVersion()))))
-    // Replace path for vulcanized assets
-    .pipe($.if('*.html', $.replace('elements/elements.html', 'elements/elements.vulcanized.html')))
-    .pipe(assets)
     // Concatenate And Minify JavaScript
     .pipe($.if('*.js', $.uglify({preserveComments: 'some'})))
     // Concatenate And Minify Styles
@@ -259,42 +224,11 @@ gulp.task('insert-dev-config', function () {
     .pipe(gulp.dest('.tmp'));
 });
 
-// Vulcanize imports
-gulp.task('vulcanize', function () {
-  var DEST_DIR = 'dist/elements';
-
-  return gulp.src('dist/elements/elements.vulcanized.html')
-    .pipe($.vulcanize({
-      dest: DEST_DIR,
-      strip: true,
-      inlineCss: true,
-      inlineScripts: true
-    }))
-    .pipe(gulp.dest(DEST_DIR))
-    .pipe($.size({title: 'vulcanize'}));
-});
-
-// Generate a list of files that should be precached when serving from 'dist'.
-// The list will be consumed by the <platinum-sw-cache> element.
-gulp.task('precache', function (callback) {
-  var dir = 'dist';
-
-  glob('{elements,scripts,styles}/**/*.*', {cwd: dir}, function(error, files) {
-    if (error) {
-      callback(error);
-    } else {
-      files.push('index.html', './', 'bower_components/webcomponentsjs/webcomponents.min.js');
-      var filePath = path.join(dir, 'precache.json');
-      fs.writeFile(filePath, JSON.stringify(files), callback);
-    }
-  });
-});
-
 // Clean Output Directory
 gulp.task('clean', del.bind(null, ['.tmp', 'dist']));
 
 // Watch Files For Changes & Reload
-gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'elements', 'images'], function () {
+gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'images'], function () {
   var folder = path.resolve(__dirname, ".");
   browserSync.init({
     notify: false,
@@ -302,9 +236,6 @@ gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'elements', 'images
     ghostMode: false,
     server: {
       baseDir: ['.tmp', 'app'],
-      routes: {
-        '/bower_components': 'bower_components'
-      },
       middleware: function(req, res, next) {
         var fileName = url.parse(req.url);
         fileName = fileName.href.split(fileName.search).join("");
@@ -324,12 +255,11 @@ gulp.task('serve', ['bundle', 'insert-dev-config', 'styles', 'elements', 'images
   gulp.watch(['app/**/*.html'], reload);
   gulp.watch(['app/styles/**/*.css'], ['styles', reload]);
   gulp.watch(['app/elements/**/*.css'], ['elements', reload]);
-  gulp.watch(['app/{scripts,elements}/**/*.js'], ['jshint', reload]);
   gulp.watch(['app/{scripts,elements}/**/*.ts'], ['bundle', reload]);
   gulp.watch(['app/images/**/*'], reload);
 });
 
-gulp.task('test', ['bundle-test'], function() {
+gulp.task('test', ['build-test'], function() {
   return gulp
     .src('.tmp/testing/spec-bundle.js')
     .pipe(jasmine());
@@ -360,9 +290,8 @@ gulp.task('default', ['clean'], function (cb) {
   runSequence(
     'bundle',
     ['copy', 'styles'],
-    'elements',
-    ['jshint', 'images', 'fonts', 'html'],
-    'vulcanize', 'precache',
+    ['images', 'fonts', 'html'],
+    'copy-bundle',
     cb);
 });
 
