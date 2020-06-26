@@ -1,5 +1,26 @@
-@component('labrad-grapher-live')
-export class LabradGrapherLive extends polymer.Base {
+import {PolymerElement, html} from "@polymer/polymer";
+import {customElement, property} from "@polymer/decorators";
+
+@customElement('labrad-grapher-live')
+export class LabradGrapherLive extends PolymerElement {
+
+  static get template(): HTMLTemplateElement {
+    return html`
+      <style>
+        :host {
+          display: block;
+          height: 100%;
+        }
+        #plots {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+        }
+      </style>
+      <div id="plots"></div>
+    `;
+  }
+
   @property({type: Array, value: () => []})
   plots: HTMLElement[];
 
@@ -25,8 +46,32 @@ export class LabradGrapherLive extends polymer.Base {
   }
 }
 
-@component('labrad-labeled-plot')
-export class LabeledPlot extends polymer.Base {
+@customElement('labrad-labeled-plot')
+export class LabeledPlot extends PolymerElement {
+
+  static get template(): HTMLTemplateElement {
+    return html`
+      <style>
+        :host {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          min-height: 450px;
+        }
+        #plot {
+          min-height: 400px;
+          height: 100%;
+          display: flex;
+          flex: 1;
+        }
+      </style>
+      <a is="app-link" path="{{url}}" href="{{url}}">{{name}}</a>
+      <div id="plot"></div>
+    `;
+  }
+
   @property({type: String, value: ''})
   name: string;
 
