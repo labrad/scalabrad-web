@@ -1,5 +1,11 @@
+import {PolymerElement, html} from "@polymer/polymer";
+import {customElement, property} from "@polymer/decorators";
+
 import {RegistryApi, RegistryListing} from '../scripts/registry';
 import {Places} from '../scripts/places';
+import "@polymer/paper-input/paper-textarea.js"
+import "@polymer/paper-toast/paper-toast.js"
+import "@polymer/iron-list/iron-list.js"
 
 type ListItem = {
   name: string,
@@ -12,8 +18,424 @@ type ListItem = {
   prettyValue?: string,
 };
 
-@component('labrad-registry')
-export class LabradRegistry extends polymer.Base {
+/*
+This is the component that simply renders the table of registry content
+*/
+
+@customElement('labrad-registry')
+export class LabradRegistry extends PolymerElement {
+
+  static get template(): HTMLTemplateElement {
+    return html`
+      <style>
+        :host {
+          height: 100%;
+          overflow: hidden;
+          display: flex;
+        }
+
+        #reg-area {
+          margin-top: var(--maintoolbar-height);
+          background-color: white;
+          display: inline-block;
+          @apply(--shadow-elevation-2dp);
+          height: 100%;
+          width: 100%;
+        }
+
+        #outer {
+          flex-direction: column;
+          position: relative;
+        }
+        #listing {
+          overflow: auto;
+        }
+        #outer, #listing, #combinedList {
+          flex: 1;
+          display: flex;
+          width: 100%;
+        }
+        iron-list {
+          --iron-list-items-container: {
+            width: 100%;
+          };
+        }
+
+        .dialogError {
+          color: #f00;
+        }
+        .dialogError p {
+          margin: 0;
+          font-size: 13px;
+        }
+        .dialogError h4 {
+          margin: 0;
+          font-size: 15px;
+        }
+
+        .row {
+          cursor: pointer;
+          display: flex;
+          flex-direction: row;
+          align-items: middle;
+        }
+        .row:nth-child(1n).iron-selected {
+          background-color: #CCCCCC;
+        }
+        .row:nth-child(odd) {
+          background-color: #EEEEEE;
+        }
+        .row:nth-child(odd):hover {
+          background-color: #F6F699;
+        }
+        .row:nth-child(even):hover {
+          background-color: #FFFFAA;
+        }
+        .row .dir.over {
+          background-color: #93d4d4;
+        }
+        .row .dir {
+          white-space: nowrap;
+          -webkit-user-select: none;
+        }
+        .row .key {
+          width: 16em;
+          white-space: nowrap;
+          padding-right: 2em;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .row .value {
+          flex: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          padding-right: 1em;
+          line-height: 30px;
+        }
+
+        .iron-selector {
+          width: 100%;
+          display: block;
+          border: 1px solid #ccc;
+          border-top: none;
+        }
+
+        paper-toolbar {
+          background-color: #EEEEEE;
+          color: black;
+        }
+
+        paper-dialog {
+          overflow-y: auto;
+        }
+        paper-dialog.size-position {
+          position: fixed;
+          top: 16p
+          right: 16px;
+        }
+        paper-dialog.size-position {
+          width: 300px;
+          height: 300px;
+        }
+        paper-button {
+          white-space: nowrap;
+        }
+        menu-button {
+          color: #0F9D58;
+        }
+        iron-autogrow-textarea {
+          max-width: 400px;
+        }
+        #search-bar {
+          padding: 0px 10px;
+          flex-grow: 1;
+          text-align: right;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        #search-bar paper-input {
+          font-family: var(--primary-font-family);
+          width: calc(100% - 50px);
+          border: 0;
+          border-radius: 2px;
+          -webkit-appearance: none;
+          display: inline-block;
+          text-align: left;
+          --paper-font-caption: {
+            display: none;
+          }
+          --layout-center: {
+            background-color: #fff;
+            align-items: center;
+          }
+          --paper-input-container-input: {
+            line-height: 24px;
+            padding: 10px;
+            width: calc(100% - 20px);
+          }
+        }
+        .mono {
+          font-family: 'roboto mono', monospace;
+          font-size: 15px;
+        }
+        #editValueInput {
+          min-width: 50em;
+        }
+
+        iron-icon {
+          margin: 5px;
+        }
+        iron-icon.folder {
+          color: #CFBA78;
+        }
+        .key iron-icon {
+          color: #209131;
+        }
+        paper-dialog {
+          max-width: 90%;
+          max-height: 90%;
+        }
+        .label-wide {
+          width: 100%;
+        }
+        .label-wide a {
+          text-decoration: none;
+        }
+        .label-wide a span {
+          text-decoration: underline;
+        }
+        .label-wide .back-link,
+        .label-wide .back-link:visited {
+          color: #555;
+        }
+        .label-wide .back-link:hover,
+        .label-wide .back-link:visited:hover {
+          color: #3f51b5;
+        }
+      </style>
+      <div id="outer">
+        <!-- Dialog Controls -->
+        <iron-a11y-keys target="[[target]]" keys="esc"
+                        on-keys-pressed="dialogCancel"></iron-a11y-keys>
+        <iron-a11y-keys target="[[target]]" keys="shift+enter enter"
+                        on-keys-pressed="dialogSubmit"></iron-a11y-keys>
+        <!-- Cursor Controls -->
+        <iron-a11y-keys target="[[target]]" keys="esc up down"
+                        on-keys-pressed="cursorMove"></iron-a11y-keys>
+        <iron-a11y-keys target="[[target]]" keys="right enter"
+                        on-keys-pressed="cursorTraverse"></iron-a11y-keys>
+        <iron-a11y-keys target="[[target]]" keys="left backspace"
+                        on-keys-pressed="cursorBack"></iron-a11y-keys>
+        <!-- Search Controls -->
+        <iron-a11y-keys target="[[target]]" keys="enter"
+                        on-keys-pressed="searchSubmit"></iron-a11y-keys>
+        <!-- Action Controls -->
+        <iron-a11y-keys target="[[target]]" keys="k n c r d f"
+                        on-keys-pressed="actionHandler"></iron-a11y-keys>
+        <paper-header-panel id="left-column">
+          <div class="paper-header" id="buttons">
+            <paper-toolbar>
+              <paper-button on-click="newKeyClicked">
+                <iron-icon icon="create"></iron-icon>
+                <span title="New Key (k)">New Key</span>
+              </paper-button>
+              <paper-button on-click="newFolderClicked">
+                <iron-icon icon="folder-open"></iron-icon>
+                <span title="New Dir (n)">New Dir</span>
+              </paper-button>
+              <paper-button on-click="copyClicked" disabled="[[!selected]]">
+                <iron-icon icon="content-copy"></iron-icon>
+                <span title="Copy (c)">Copy</span>
+              </paper-button>
+              <paper-button on-click="renameClicked" disabled="[[!selected]]">
+                <iron-icon icon="code"></iron-icon>
+                <span title="Rename (r)">Rename</span>
+              </paper-button>
+              <paper-button on-click="deleteClicked" disabled="[[!selected]]">
+                <iron-icon icon="delete"></iron-icon>
+                <span title="Delete (d)">Delete</span>
+              </paper-button>
+              <div id="search-bar">
+                <paper-input id="search" value="{{filterText::input}}" noLabelFloat>
+                  <span title="Search (f)" prefix>
+                    <iron-icon icon="search"></iron-icon>
+                  </span>
+                </paper-input>
+              </div>
+            </paper-toolbar>
+          </div>
+          <div id="listing">
+            <iron-list items="{{filteredListItems}}"
+                      id="combinedList"
+                      as="item"
+                      selected-item="{{selected}}"
+                      selection-enabled>
+              <template>
+                <div class$="row [[computeSelectedClass(selected)]]"
+                    on-dblclick="editValueClicked"
+                    name="{{item.name}}"
+                    value="{{item.prettyValue}}"
+                    kind="{{item.kind}}"
+                    key-name="{{item.name}}"
+                    is-key="{{item.isKey}}">
+                  <template is="dom-if" if="{{item.isParent}}">
+                    <div class="label-wide">
+                      <a class='back-link' is="app-link" path="{{item.url}}" href="{{item.url}}">
+                        <iron-icon icon="arrow-back" item-icon></iron-icon>
+                        <span>{{item.name}}</span>
+                      </a>
+                    </div>
+                  </template>
+                  <template is="dom-if" if="{{item.isDir}}">
+                    <div class="dir label-wide"
+                        name="{{item.name}}"
+                        kind="{{item.kind}}"
+                        draggable="true"
+                        on-dragover="onDirDragOver"
+                        on-dragleave="onDirDragLeave"
+                        on-drop="dirDrop">
+                      <a is="app-link" path="{{item.url}}" href="{{item.url}}">
+                        <iron-icon icon="folder" item-icon class="folder"></iron-icon>
+                        <span>{{item.name}}</span>
+                      </a>
+                    </div>
+                  </template>
+                  <template is="dom-if" if="{{item.isKey}}">
+                    <div class="key mono"
+                        name="{{item.name}}"
+                        kind="{{item.kind}}"
+                        draggable="true">
+                      <iron-icon icon="communication:vpn-key"item-icon></iron-icon>
+                      <span title="{{item.name}}">{{item.name}}</span>
+                    </div>
+                    <div class="value label-wide mono">
+                      <span>{{item.value}}</span>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </iron-list>
+          </div>
+
+        <!-- Dialogs for various registry operations -->
+
+        <paper-dialog id="newKeyDialog" modal>
+          <h1>Create New Key</h1>
+          <paper-input id="newKeyInput" label="Key" autofocus></paper-input>
+          <paper-textarea id="newValueInput" label="Value"></paper-textarea>
+          <template is="dom-if" if="{{errorMessage}}">
+            <div class="dialogError">
+              <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+              <p>{{errorMessage}}</p>
+            </div>
+          </template>
+          <div class="buttons">
+            <paper-button on-tap="doNewKey">OK</paper-button>
+            <paper-button dialog-dismiss>CANCEL</paper-button>
+          </div>
+        </paper-dialog>
+
+        <paper-dialog id="editValueDialog" modal>
+          <h1>Edit "<span id="editValueName"></span>"</h1>
+          <paper-textarea id="editValueInput" label="Value" autofocus></paper-textarea>
+          <template is="dom-if" if="{{errorMessage}}">
+            <div class="dialogError">
+              <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+              <p>{{errorMessage}}</p>
+            </div>
+          </template>
+          <div class="buttons">
+            <paper-button on-tap="doEditValue">OK</paper-button>
+            <paper-button dialog-dismiss>CANCEL</paper-button>
+          </div>
+        </paper-dialog>
+
+        <paper-dialog id="newFolderDialog" modal>
+          <h1>Create New Folder</h1>
+          <paper-input id="newFolderInput" label="Name" autofocus></paper-input>
+          <template is="dom-if" if="{{errorMessage}}">
+            <div class="dialogError">
+              <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+              <p>{{errorMessage}}</p>
+            </div>
+          </template>
+          <div class="buttons">
+            <paper-button on-tap="doNewFolder">OK</paper-button>
+            <paper-button dialog-dismiss>CANCEL</paper-button>
+          </div>
+        </paper-dialog>
+
+        <paper-dialog id="dragDialog" modal>
+          <h1>
+            <span id="dragOp"></span>
+            <span id="dragClass"></span>
+            "<span id="originName"></span>" from
+            <span id="originPath"></span>
+          </h1>
+          <paper-input id="dragNameInput" label="New Name" always-float-label></paper-input>
+          <paper-input id="dragPathInput" label="New Path" always-float-label></paper-input>
+          <template is="dom-if" if="{{errorMessage}}">
+            <div class="dialogError">
+              <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+              <p>{{errorMessage}}</p>
+            </div>
+          </template>
+          <div class="buttons">
+            <paper-button on-tap="doDragOp">OK</paper-button>
+            <paper-button dialog-dismiss>CANCEL</paper-button>
+          </div>
+        </paper-dialog>
+
+        <paper-dialog id="copyDialog" modal>
+          <h1>Copy <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
+          <paper-input id="copyNameInput" label="New Name" always-float-label autofocus></paper-input>
+          <paper-input id="copyPathInput" label="New Path" always-float-label></paper-input>
+          <template is="dom-if" if="{{errorMessage}}">
+            <div class="dialogError">
+              <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+              <p>{{errorMessage}}</p>
+            </div>
+          </template>
+          <div class="buttons">
+            <paper-button on-tap="doCopy">OK</paper-button>
+            <paper-button dialog-dismiss>CANCEL</paper-button>
+          </div>
+        </paper-dialog>
+
+        <paper-dialog id="renameDialog" modal>
+          <h1>Rename <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
+          <paper-input id="renameInput" label="New Name" always-float-label autofocus></paper-input>
+          <template is="dom-if" if="{{errorMessage}}">
+            <div class="dialogError">
+              <template is="dom-if" if="{{errorTitle}}"><h4>{{errorTitle}}</h4></template>
+              <p>{{errorMessage}}</p>
+            </div>
+          </template>
+          <div class="buttons">
+            <paper-button on-tap="doRename">OK</paper-button>
+            <paper-button dialog-dismiss>CANCEL</paper-button>
+          </div>
+        </paper-dialog>
+
+        <paper-dialog id="deleteDialog" modal>
+          <h1>Delete <span>{{selectedType}}</span> "<span>{{selected.name}}</span>"?</h1>
+          <div class="buttons">
+            <paper-button on-tap="doDelete" autofocus>OK</paper-button>
+            <paper-button dialog-dismiss>CANCEL</paper-button>
+          </div>
+        </paper-dialog>
+
+        <paper-dialog id="pendingDialog" modal>
+          <h1 id="pendingOp"></h1>
+        </paper-dialog>
+
+        <paper-toast id="toastCopySuccess" text="Copy Successful!" duration=3000></paper-toast>
+        <paper-toast id="toastMoveSuccess" text="Move Successful!" duration=3000></paper-toast>
+      </div>
+    `;
+  }
 
   @property({type: Array, notify: true, value: () => []})
   dirs: {name: string; url: string}[];
