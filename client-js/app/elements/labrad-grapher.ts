@@ -158,7 +158,7 @@ export class LabradGrapher extends PolymerElement {
         }
       </style>
       <iron-a11y-keys target="[[target]]" keys="up:keydown down:keydown"
-                    on-keys-pressed="cursorMove"></iron-a11y-keys>
+                      on-keys-pressed="cursorMove"></iron-a11y-keys>
       <iron-a11y-keys target="[[target]]" keys="right enter"
                       on-keys-pressed="cursorTraverse"></iron-a11y-keys>
       <iron-a11y-keys target="[[target]]" keys="left backspace"
