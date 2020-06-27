@@ -12,8 +12,5 @@ cache:
     - $HOME/.ivy2
     - $HOME/.m2
     - $HOME/.sbt
-before_script:
-  - npm install -g jspm
-  - jspm config registries.github.auth $JSPM_GITHUB_AUTH_TOKEN
 script:
   - scripts/travis_build
