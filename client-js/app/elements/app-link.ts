@@ -1,8 +1,11 @@
+import {PolymerElement} from "@polymer/polymer";
+import {customElement, property} from "@polymer/decorators";
+
 const MOUSE_MAIN_BUTTON = 0;
 
-@component('app-link')
-@extend('a')
-export class AppLink extends polymer.Base {
+@customElement('app-link')
+// @extend('a')  // TODO: https://polymer-library.polymer-project.org/3.0/docs/devguide/custom-elements#extending-elements
+export class AppLink extends PolymerElement {
 
   @property({type: Array})
   path: string[];

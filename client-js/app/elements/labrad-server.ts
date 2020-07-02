@@ -25,10 +25,9 @@ export class LabradServer extends PolymerElement {
           </template>
         </div>
       </div>
-    `;    
+    `;
   }
 
   @property({type: Object})
   info: ServerInfo;
-
 }

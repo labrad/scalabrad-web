@@ -48,8 +48,6 @@ global and project-level dependencies:
 
 ```
 $ npm install
-$ npm run jspm install
-$ npm run bower install
 ```
 
 Now, you should be able to run the gulp build to compile and launch the app:
